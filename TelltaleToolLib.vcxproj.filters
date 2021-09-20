@@ -45,4 +45,7 @@
     <None Include=".gitattributes" />
     <None Include="README.md" />
   </ItemGroup>
+  <ItemGroup>
+    <Text Include="Doc\Formats.txt" />
+  </ItemGroup>
 </Project>

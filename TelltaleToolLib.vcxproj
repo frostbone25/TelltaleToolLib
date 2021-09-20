@@ -161,6 +161,9 @@
     <None Include="README.md" />
     <None Include="TelltaleToolLib.licenseheader" />
   </ItemGroup>
+  <ItemGroup>
+    <Text Include="Doc\Formats.txt" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

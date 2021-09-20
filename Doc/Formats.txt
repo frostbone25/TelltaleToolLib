@@ -745,7 +745,7 @@ Flags mFlags;
 }
 
 struct ProjectDatabaseIDPair {
-unsigned lonhg mProjectID;
+unsigned long mProjectID;
 long mDBID;//database ID
 }
 
@@ -762,10 +762,12 @@ BlockEnd#1
 DCArray<LanguageResLocal> mLocalData;
 float mLengthOverride;
 BlockStart#1
-LanguageResLocal mResolvedLocalData;//TODO here FIX! GO ALONG WITH FILE <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+LanguageResLocal mResolvedLocalData;
 BlockEnd#1
+BlockStart#1 //(Baseclass_EnumBase)
 RecordingUtils::RecordingStatus mRecordingStatus;//Enum: 'Not Recorded' = 0, 'Sent To Studio' = 1, 'Recorded' = 2, 'Delivered' = 3 (script) OR eRecordingStatus_None = 0,
 //eRecordingStatus_AtStudio = 1, eRecordingStatus_Recorded = 2, eRecordingStatus_Delivered = 3
+BlockEnd#1
 Flags mFlags;//Flags: 'Synthesized' = 1, 'Lipsync ignore text' = 2, 'Hide Subtitles' = 4, 'Is Voiced' = 8, 'Is Silent' = 16, 'No Anim' = 32
 }
 
@@ -776,6 +778,12 @@ BlockEnd#1
 Flags mFlags;
 unsigned long mProjectID;
 DCArray<ProjectDatabaseIDPair> mExpandedIDRanges;
+//The rest of this is the *debug section*, there is no serialize functions for this as we only have access to the release version (shipping)
+
+String mDebugLangFileNames[mLanguageResources.mSize];//would be a .lang file, which is only used in the tool. probably a text file
+//for translators to translate into other languages
+String mOtherStrings[x];//x is unknown, you will have to keep reading string types until you cant (no bytes left.) use this to 
+//reserialize back to disk. i think its all referenced assets?
 
 ************************************************ struct DlgSystemSettings [.dss]
 DlgObjectPropsMap mPropsMapUser;
@@ -794,8 +802,44 @@ BlockEnd#1
 
 }
 
+************************************************ struct Animation [.anm]
+long mVersion;
+Flags mFlags;
+Symbol mName;
+float mLength;
+float mAdditiveMask;
+ToolProps mToolProps;
+//end of meta class description values
+BlockStart#1
+long mTotalAnimationValues;
+if mVersion >= 4:
+	long mNumA;//normally 0x10 bigger than the size of the first animationvalueinterfacebase?
+	long mNumAnimationValueTypes;
+
+	struct InternalTelltaleDocStruct_AnimationInterfaceTy {
+		Symbol mTypeSymbol;// a derived class from AnimationValueInterfaceBase
+		unsigned short mNumValuesOfTypeSerialized;
+		unsigned short mVersionMaybe;//if its not 0 contact me?
+	}
+
+	InternalTelltaleDocStruct_AnimationInterfaceTy mAnimationInterfaceClassTypes[mNumAnimationValueTypes];
+
+	AnimationValueInterfaceBase mAnimationValues[mTotalNumAnimationValues];
+	//the type of the array elements are the array before this one at mAnimationInterfaceClassTypes[x].mTypeSymbol. 
 
 
+	//compressedskeletonposekeys2 for example, but it has no parent class serialized in front of it: BECAUSE ITS SERIALIZEIN FUNCTION!
+	//NOTE use AnimationValueInterfaceBaseVtbl to find function mappings from Animation::MetaOperation_SerializeAsync, mainly 64 = serializein
+
+	AnimatedValueInterfaceBase::Flags mFlags[mTotalAnimationValues];
+
+	unsigned short mbDontSerializeSymbols;//if not 0 then the Symbol array below is serialized
+
+	Symbol mSymbols[mTotalAnimationValues];//what each holds??
+
+BlockEnd#1
+
+//TODO implement all fucking subclasses of AnimatedValueInterfaceBase
 
 
 
