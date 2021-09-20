@@ -1,0 +1,823 @@
+This document is by Lucas Saragosa: you can find my Github at https://github.com/LucasSaragosa.
+Im the author of LibTelltale, a library to reading all telltale types and also rewriting them. That library contains all
+these formats already programmed (or is in progress). This document gives you information I have gathered over the last 4 years
+modding Telltale games. This aim of this is to help you gain an understanding of the formats so, in future, you may make your own mods.
+
+This document describes all of telltale serialized structs' formats. BlockStart and BlockEnd are for blocks, and a block has a 4 byte
+Int at BlockStart which is the total size of the values all serialized between BlockStart and BlockEnd in bytes (includes the 4 byte block length in the size!).
+
+If the name of the struct has a [.X] at the end, the X is the file extension for files in which the struct is found in.
+NOTE That this is for games newer and including Minecraft Story Mode: Season Two. Some structs will work with games before that,
+but its not guarunteed.
+
+All types and files in this have the meta stream header excluded. At the bottom, the MetaStream struct type is the format
+for all meta headers (like MSV6/6VSM). When reading a file for example .wbox, read the meta header first, then the format of the
+.wbox in this case (look for struct WalkBoxes). Telltale do this to create structs in runtime memory which hold all offsets, sizes
+and names of member variables. This is then put into the meta header to allow for the engine to serialize and deserialize the types
+polymorphicly.
+
+To find the struct of a file type, search this document for [.FILE_EXTENSION] eg [.d3dtx] / [.wbox]
+If a struct does not have a file extension, then there will be no square brackets. The type will be an embedded type, which
+you only see *inside* of other types, as all types are just made of other types which eventually are all made from the
+intrinsic types: string, int8->uint64, bool, symbol. A Symbol is just a CRC64, a reference to another file (the crc is calculated
+using ECMA, of the LOWER CASE version of the wanted file name. Use LibTelltale in code to search the LibTelltale.HashDB
+to find the file name from CRC64 (it has a list of all file names and its precalculated CRCs, to spare the time)
+Telltale have a function in all compiled .exe's and executables called MakeInternalTypeName which takes the typeof(T).name() 
+and converts it to a string which can be hashed (CRC64, of lowercase)and placed into the meta stream header. This function simply
+replaces all occurences of the following strings with nothing and then removes all whitespace. 'class ','struct ','std::','enum '.
+This saves the following example class 'class SomeThing::SomeNestedClass<std::string>' to 'something::somenestedclass<string>'.
+This result string is then hashed (in lowercase) and then placed in the meta header. See the meta stream at the bottom more info.
+
+
+The document describes the formats in a C++'ish pseudocode manner. A long type is the same as int, (intrinsicly signed),
+a long long is a signed __int64, unsigned long long is therefore an unsigned __int64 (64 bit, unsigned). bool is a byte,
+and bools in telltale are serialized as 0x30 (false) or 0x31 (true). This is the ASCII of '0' and '1'. I like to do: b = readbyte()-0x30.
+C++ struct inheritance is compliant in this document; if struct A : B, then B contains the format before the format in A.
+Classes higher in the hierarchy are serialized first. Each time you go up the inheritance tree a block size is added.
+So if: struct A { int i = 5; } struct B : A {} struct C : B. on disk thats stored as (as 4 bytes per hex number) 0xC 0x8 0x5.
+The 0x5 is the int i = 5, 0x8 is the block size from struct B, and 0xC is the block size from A, which surrounds it all.
+
+Some parts of the formats have specific problem or unknown part. They will say 'contact me' if some bytes are set etc. If you find it
+in your deserialize code, then message me on DISCORD: lucassaragosa#0152
+
+
+************************************************ struct Symbol: //INSTRINSIC TYPE!
+unsigned long long mCrc64;//the crc64 (ECMA,lower case) of the file name which this symbol points to.
+
+************************************************ template<typename T> struct DCArray:
+BlockStart#1
+long mSize;
+T mData[mSize];
+BlockEnd#1
+
+************************************************ template<typename T> struct Set:
+BlockStart#1
+long mSize;
+T mData[mSize];
+BlockEnd#1
+
+************************************************ template<typename T, int Count> struct SArray:
+BlockStart#1
+T mData[Count];
+BlockEnd#1
+
+************************************************ template<typename K, typename V> struct Map:
+BlockStart#1
+long mSize;
+Pair<K,V> mData[mSize];//Where in Pair<K,V>, the values K and V on disk serialized are stored sequentially with no gaps.
+BlockEnd#1
+
+************************************************ struct String:
+long mSize;
+char mStringData[mSize];
+
+******************************** template<typename T> struct KeyframedValue
+T mMinVal, mMaxVal;
+DCArray<Sample> mSamples;
+
+struct Sample {
+float mTime;
+float mRecipTimeToNextSample;
+bool mbInterpolateToNextKey;
+int mTangentMode;//Enume: eTangetUnknown = 0, eTangentStepped = 1, eTangentKnot = 2, eTangentSmooth = 3, eTangentFlat = 4
+T mValue;
+}
+
+******************************** struct TransitionMap [.tmap]
+Map<Symbol, TransitionMap::TransitionMapInfo> mTransitionRemappers;
+Each TransitionMap::TransitionMapInfo has two BlockStarts so two header sizes
+
+struct TransitionMap::TransitionMapInfo {
+int mPriority;
+TransitionRemapper mRemapper;
+}
+
+struct TransitionRemapper {
+KeyframedValue<float> mRemapKeys;
+}
+
+******************************** struct EnumBase
+//No Data, marker inheritance struct for polymorphism
+
+******************************** struct WalkBoxes [.wbox]
+BlockStart#1
+String mName;
+BlockEnd#1
+DCArray<WalkBoxes::Tri> mTris;
+DCArray<WalkBoxes::Vert> mVerts;
+DCArray<Vector3> mNormals;
+DCArray<WalkBoxes::Quad> mQuads;
+
+Struct Edge {
+long mV1, mV2;
+long mEdgeDest;
+long mEdgeDestEdge;
+long mEdgeDir;
+float mMaxRadius;
+}
+
+struct Tri {
+BlockStart#1//!
+SoundFootsteps::EnumMaterial mFootstepMaterial;
+BlockEnd#1
+Flags mFlags;
+long mNormal;//index in normal array
+long mQuadBuddy;//index in quad array
+float mMaxRadius;
+SArray<int,3> mVerts;//each in array is index into verts array in WalkBoxes
+SArray<WalkBoxes::Edge,3> mEdgeInfo;
+SArray<int,3> mVertOffsets;//not indicies!
+SArray<float,3> mVertScales;
+}
+
+struct SoundFootsteps::EnumMaterial : EnumBase {
+SoundFootsteps::Material mVal;//Enum: Default = 0x1,Carpet = 0x2,Concrete = 0x3,Concrete_Wet = 0x4,Dirt = 0x5,Grass = 0x6,Grass_Tall = 0x7,Gravel = 0x8,Leaves = 0x9,Linoleum = 0xA,Metal_Thick = 0xB,Metal_Thin = 0xC,Mud = 0xD,Puddle = 0xE,Sand = 0xF,Snow = 0x10,Tile_Hard = 0x11,Wood = 0x12
+}
+
+struct Vert {
+Flags mFlags;
+Vector3 mPos;
+}
+
+struct Quad {
+SArray<int,4> mVerts;
+}
+
+************************************************ struct T3Texture [.d3dtx]:
+long mVersion;
+BlockStart#1
+T3SamplerStateBlock mSamplerState; //Struct Format = Unsigned Int mData
+BlockEnd#1
+BlockStart#1
+EnumPlatformType mPlatform;//PC = 2
+BlockEnd#1
+BlockStart#1
+String mName;
+BlockEnd#1
+BlockStart#1
+Start mImportName;
+BlockEnd#1
+float mImportScale;
+ToolProps mToolProps;//Struct Format = Bool mbHasProps
+unsigned long mNumMipLevels;
+unsigned long mWidth;
+unsigned long mHeight;
+unsigned long mDepth;
+unsigned long mArraySize;
+long mSurfaceFormat;//Enum: eSurface_Unknown = -1, eSurface_ARGB8 = 0, eSurface_RGBA8 = 10, eSurface_ARGB16 = 1,
+//eSurface_RGB565 = 2, eSurface_ARGB1555 = 3, eSurface_ARGB4 = 4, eSurface_ARGB2101010 = 5, eSurface_A8 = 16,
+//eSurface_L8 = 17, eSurface_AL8 = 18, eSurface_L16 = 19, eSurface_R16 = 6, eSurface_RG16 = 7, eSurface_RGBA16 = 8,
+//eSurface_RG8 = 9, eSurface_R16F = 32, eSurface_RG16F = 33, eSurface_RGBA16F = 34, eSurface_R32F = 35, eSurface_RG32F  = 36,
+//eSurface_RGBA32F = 37, eSurface_DepthPCF16 = 48, eSurface_DepthPCF24 = 49, eSurface_Depth16 = 50, eSurface_Depth24 = 51,
+//eSurface_DepthStencil32 = 52, eSurface_Depth32F_Stencil8 = 53, eSurface_DXT1 = 64, eSurface_DXT3 = 65, eSurface_DXT5 = 66,
+//eSurface_DXT5A = 67, eSurface_DXN = 68, eSurface_CTX1 = 69, eSurface_BC6 = 70, eSurface_BC7 = 71, eSurface_PVRTC2 = 80,
+//eSurface_PVRTC4 = 81, eSurface_PVRTC2a = 82, eSurface_PVRTC4a = 83, eSurface_ATC_RGB = 96, eSurface_ATC_RGB1A = 97,
+//eSurface_ATC_RGBA = 98, eSurface_ETC1_RGB = 112, eSurface_ETC2_RGB = 113, eSurface_ETC2_RGB1A = 114, eSurface_ETC2_RGBA = 115,
+//eSurface_ETC2_R = 116, eSurface_ETC2_RG = 117, eSurface_ATSC_RGBA_4x4 = 128, eSurface_R8 = 14
+long mTextureLayout;//Enum: eTextureLayout_Unknown = -1, eTextureLayout_2D = 0, eTextureLayout_Cube = 1, eTextureLayout_3D = 2,
+//eTextureLayout_2DArray = 3, eTextureLayout_CubeArray = 4
+long mSurfaceGamma;//Enum: eSurfaceGamma_Unknown = -1, eSurfaceGamma_Linear = 0, eSurfaceGamma_sRGB = 1
+long mSurfaceMultisample;//Enum: eSurfaceMultisample_None = 0, eSurfaceMultisample_2x = 1, eSurfaceMultisample_4x = 2
+//eSurfaceMultisample_8x = 3, eSurfaceMultisample_16x = 4
+long mResourceUsage;//Enum: eResourceUsage_Static = 0, eResourceUsage_Dynamic = 1, eResourceUsage_System = 2
+long mType;//Enum: eTxUnknown = 0, eTxStandard = 15, eTxLightmap_V0 = 1, eTxBumpmap = 2, eTxNormalMap = 3,
+//eTxSubsurfaceScatteringMap_V0 = 6, eTxSubsurfaceScatteringMap = 7, eTxDetailMap = 8, eTxStaticShadowMap = 9, eTxLightmapHDR = 10,
+//eTxLightmapHDRScaled = 17, eTxSDFDetailMap = 11, eTxEnvMap = 12, eTxSpecularColor = 13, eTxToonLookup = 14,
+//eTxOutlineDiscontinuity = 16, eTxEmissiveMap = 18, eTxParticleProperties = 19, eTxNormalGlossMap = 22, eTxLookup = 23,
+//eTxAmbientOcclusion = 24, eTxPrefilteredEnvCubeMapHDR = 25, eTxBrushLookupMap = 26, eTxVector2Map = 27, eTxNormalDxDyMap = 28,
+//eTxPackedSDFDetailMap = 29, eTxSingleChannelSDFDetailMap = 30, eTxLightmapDirection = 31, eTxLightmapStaticShadows = 32,
+//eTxLightStaticShadowMapAtlas = 33, eTxLightStaticShadowMap = 34, eTxPrefilteredEnvCubeMapHDRScaled = 35,
+//eTxLightStaticShadowVolume = 36, eTxLightmapAtlas = 37, eTxNormalXYMap = 38, eTxLightmapFlatAtlas = 39, eTxLookupXY = 40,
+//eTxObjectNormalMap = 41
+RenderSwizzleParams mSwizzle;//Struct: char mSwizzle[4];
+float mSpecularGlossExponent;
+float mHDRLightmapScale;
+float mToonGradientCutoff;
+long mAlphaMode;//Enum: eTxColorUnknown = -1, eTxColorFull = 0, eTxColorBlack = 1, eTxColorGrayscale = 2, eTxColorGrayscaleAlpha = 3
+Vector2 mUVOffset;//Struct: float x,y;
+Vector2 mUVScale;//Struct: float x,y;
+DCArray<Symbol> mArrayFrameNames;//Symbol Struct: mCrc64
+DCArray<T3ToonGradientRegion> mToonRegions;//T3ToonGradientRegion Struct: Color mColor (Struct: float r,g,b,a); 
+//float mSize, mGradientSize
+T3Texture::StreamHeader {
+int mRegionCount;
+int mAuxDataCount;
+int mTotalDataSize;
+}
+T3Texture::RegionStreamHeader[T3Texture::StreamHeader::mRegionCount] mRegions;//Struct T3Texture::RegionStreamHeader:
+//long mFaceIndex, mMipIndex, mMipCount, mDataSize, mPitch, mSlicePitch
+T3Texture::AuxilaryData[T3Texture::StreamHeader::mAuxDataCount] mAuxData;//Struct T3Texture::AuxilaryData:
+//Symbol mType; BinaryBuffer mData; //Struct BinaryBuffer: char* mpData/*THIS VARIABLE IS NOT SERIALIZED*/; long mDataSize;
+char mPixelData[T3Texture::StreamHeader::mTotalDataSize]
+
+************************************************ struct AssetCollection [.acol]:
+DCArray<String> mIncludeMasks, mExcludeMasks;
+BlockStart#1
+String mPreFilter;
+BlockEnd#1
+
+************************************************ struct Rule:
+BlockStart#1
+String mName;
+BlockEnd#1
+BlockStart#1
+Srting mRuntimePropName;
+BlockEnd#1
+Flags mFlags;
+BlockStart#1
+LogicGroup mConditions;
+BlockEnd#1
+BlockStart#1
+LogicGroup mActions;
+BlockEnd#1
+BlockStart#1
+LogicGroup mElse;
+BlockEnd#1
+BlockStart#1
+String mAgentCategory;
+BlockEnd#1
+
+struct LogicGroup {
+long mOperator;
+Map<String,LogicItem> mItems;
+DCArray<LogicGroup> mLogicGroups;
+long mGroupOperator;
+long mType;
+BlockStart#1
+String mName;
+BlockEnd#1
+
+struct LogicItem : PropertySet {
+BlockStart#1
+String mName;
+BlockEnd#1
+Map<Symbol,bool> mKeyNegateList;
+Map<Symbol,int> mKeyComparisonList;
+Map<Symbol,int> mKeyActionList;
+DCArray<String> mReferenceKeyList;
+}
+
+}
+
+************************************************ struct SoundBusSystem::BusHolder [.audiobus]:
+BlockStart#1
+SoundBusSystem::BusDescription masterBus;
+BlockEnd#1
+BlockStart#1
+Map<Symbol, Symbol> assetMap;
+BlockEnd#1
+
+struct BusDescription {
+float fVolumedB;
+float fReverbWetLeveldB;
+float fLowPassFrequencyCutoff;
+float fHighPassFrequencyCutoff;
+bool bEnableLowPass;
+bool bEnableHighPass;
+Map<String, BusDescription> children;
+AssetCollection autoAssignPatternCollection;
+}
+
+************************************************ struct InputMapper [.imap]:
+
+BlockStart#1
+String mName;
+BlockEnd#1
+DCArray<InputMapper::EventMapping> mMappedEvents;
+//Where InputMapper::EventMapping = Struct { long mInputCode; long mEvent; String mScriptFunction; long mControllerIndexOverride; }
+
+************************************************ struct AgentMap [.amap]:
+
+Map<String,AgentMap::AgentMapEntry> maAgents;
+//Where AgentMap::AgentMapEntry is: Struct { String mzName, mzActor; Set<String> mazModels, mazGuides, mazStyleIdles; }
+
+************************************************ struct ActorAgentMapper [.aam]
+BlockStart#1//for the prop set
+PropertySet mActorAgentMap;
+BlockEnd#1
+Set<String> mActionActors;
+
+************************************************ template<typename T> struct Handle
+Symbol mObjectName;
+
+************************************************ struct Flags
+long mFlags;
+
+************************************************ struct PropertySet [.prop]
+long mPropVersion;
+Flags mPropertyFlags;//Enum: eResetNavCamsOnExit = 1, eBackgroundFade = 2, eBackgroundLoop = 4, eEndPause = 8,
+//eAdditive_Depreciated = 0x10 /*excuse telltale games' spelling*/, eEmbedded = 0x20, eChoreCut = 0x40
+//If the flag 0x8000 is set, this from what I deciphered means there is an embedded .prop in it, IE another serialized .prop
+//serialized right at the end of this current one. This should be flag 0x20, but Im not sure why!
+
+BlockStart#1
+
+List<Handle<PropertySet>> mParentList;//or in memory, List<PropertySet::ParentInfo>, where ParentInfo =
+//Struct { Handle<PropertySet> mhParent; /*then a list iterator from the boost lib, not serialized!*/ }
+long mPropertyMappingTypeCount;
+
+struct PropertyTypeContainer {
+Symbol mTypeSymbol;
+int mNumMappings;
+
+struct PropertyMapping {//A serialized property
+Symbol mKeyNameSymbol;//The key name of this property
+T mValue;//Where T is the type specific by mTypeSymbol: The CRC64 of it is the hash of the class of the type, for example
+//if the mTypeSymbol was the CRC64 (ECMA) of 'float' then T is a float. This requires making a reverse CRC map, however this
+//can be found in full in my LibTelltale library for C#.
+}
+
+PropertyMapping mMappings[mNumMappings];
+}
+
+PropertyTypeContainer mPropertyMap[mPropertyMappingTypeCount];
+
+BlockEnd#1
+
+************************************************ struct LanguageResProxy:
+unsigned int mID;
+
+************************************************ struct DlgObjID:
+Symbol mID;
+
+************************************************ struct DlgObjIDOwner:
+DlgObjID mDlgObjID;
+
+************************************************ struct Dlg : DlgObjIDOwner [.dlog]:
+//Note: Each inherited class adds a block size to it. So there are two ints before the mID. (0x10, 0xC since a symbol is 8 bytes,
+//and each block size before it adds 4 bytes, because 4 bytes is the size of the block size int serialized: yes it includes the 
+//block size's size (4 bytes always) aswell as the memory inside the block.
+BlockStart#1
+String mName;
+BlockEnd#1
+long mVersion;
+BlockStart#1
+DlgObjID mDefFolderID;
+BlockEnd#1
+BlockStart#1
+LanguageDB mLangDB;
+BlockEnd#1
+unsigned long mProjectID;
+Symbol mResourceLocationID;
+long mChronology;
+Flags mFlags;
+BlockStart#1
+DependencyLoader<1> mDependencies;
+BlockEnd#1
+BlockStart#1
+PropertySet mProdReportProps;
+BlockEnd#1
+BlockStart#1 //this block size should ALWAYS be 4, if its not CONTACT ME and terminate the read!
+JiraRecordManager mJiraRecordManager;//there is actually no data in this struct! Read the struct info below!
+BlockEnd#1
+bool mbHasToolOnlyData;
+//For IDA Telltale Modders: Next section is serialized in the overloaded specialization function for MetaOperation_SerializeAsync (id74)
+//and not the default Meta::MetaOperation_SerializeAsync as the rest was according to Dlg's MetaClassDescription.
+List<DlgFolder> mFolders;//or long mNumFolders, DlgFolder[mNumFolders];
+long mNumNodes;
+
+struct InternalTelltaleDocStruct_DlgNodeTyAndValue {
+Symbol mDlgNodeTypeSymbol;
+DlgNode mDlgNodeValue;//type is the type from the mDlgNodeTypeSymbol (a subclass of DlgNode, see ones below). To find the type name from CRC use the libtelltale DB.
+}
+
+InternalTelltaleDocStruct_DlgNodeTyAndValue mNodes[mNumNodes];
+bool mbSomething;??
+
+struct DlgNode : DlgObjIDOwner, DlgVisibilityConditionsOwner, DlgObjectPropsOwner {
+BlockStart#1
+DlgNodeLink mPrev;
+BlockEnd#1
+BlockStart#1
+DlgNodeLink mNext;
+BlockEnd#1
+Symbol mName;
+Flags mFlags;
+long mChainContextTypeID;
+}
+
+struct DlgNodeChore : DlgNode {//DlgNode baseclass is serialized *after* the members
+BlockStart#1
+Handle<Chore> mChore;
+BlockEnd#1
+int mPriority;//9k?
+bool mLoopings;
+}
+
+struct DlgNodeMarket : DlgNode {}
+
+struct DlgNodeNotes : DlgNode {
+BlockStart#1
+String mNoteText;
+BlockEnd#1
+}
+
+struct DlgNodeStoryBoard : DlgNode {
+Symbol mStoryBoardImage;
+}
+
+struct DlgNodeText : DlgNode {
+BlockStart#1
+LanguageResProxy mLangResProxy;
+BlockEnd#1
+}
+
+struct DlgNodeStats : DlgNode {
+
+struct DlgChildSetCohort : DlgChildSet {}
+
+StatsType mStatsType;//Enum: kChoices = 0x1, kExtended = 0x2, kCrowdPlay = 0x3, kRelationships = 0x4
+BlockStart#1
+DlgChildSetCohort mCohorts;
+BlockEnd#1
+BlockStart#1
+Handle<T3Texture> mhImage;
+BlockEnd#1
+BlockStart#1
+LanguageResProxy mDisplayText;
+BlockEnd#1
+}
+
+struct DlgNodeSequence : DlgNode {
+
+struct DlgChildSetElement : DlgChildSet {}
+
+BlockStart#1
+DlgChildSetElement mElements;
+BlockEnd#1
+PlaybackModeT mPlaybackMode;//eSequential = 0x1, eShuffle = 0x2
+LifetimeModeT mLifetimeMode;//eLooping = 0x1, eSingleSequence = 0x2, eSingleSequenceRepeatFinal = 0x3
+BlockStart#1
+DlgNodeCriteria mElemUseCriteria;
+BlockEnd#1
+}
+
+struct DlgNodeScript : DlgNode {
+BlockStart#1
+String mScriptText;//lua!
+BlockEnd#1
+bool mbBlocking;
+bool mbExecuteOnInstanceRetire;
+}
+
+struct DlgNodeParallel : DlgNode {
+
+struct DlgChildSetElement : DlgChildSet {}
+
+BlockStart#1
+DlgChildSetElement mPElements;
+BlockEnd#1
+BlockStart#1
+DlgNodeCriteria mElemUseCriteria;
+BlockEnd#1
+}
+
+struct DlgNodeLogic : DlgNode {
+BlockStart#1
+Rule mRule;
+BlockEnd#1
+}
+
+struct DlgNodeExit : DlgNode {}
+
+struct DlgNodeJump : DlgNode {
+BlockStart#1
+DlgNodeLink mJumpToLink;
+BlockEnd#1
+Symbol mJumpToName;
+JumpTargetClass mJumpTargetClass;//Enum: eToNae = 0x1, eToParent = 0x2, eToNodeAfterParentWaitNode = 0x3 }
+JumpBehaviour mJumpBehaviour;//Enum: eJumpAndExecute = 0x1, eJumpExecuteAndReturn = 0x2, eReturn = 0x3 }
+VisibilityBehaviour mVisibilityBehaviour;//Enum: eIgnoreVisibility = 0x1, eObeyVisibility = 0x2 }
+long mChoiceTransparency;
+BlockStart#1
+Handle<Dlg> mhJumpToDlg;
+BlockEnd#1
+}
+
+struct DlgNodeIdle : DlgNode { 
+
+enum OverrideOption { eUseDefaults = 1, eOverride = 2 };
+struct EnumOverrideOption { OverrideOption mVal; }
+
+BlockStart#1
+Handle<Chore> mhIdle;
+BlockEnd#1
+EnumOverrideOption mOverrideOptionTime, mOverrideOptionStyle;
+float mTransitionTimeOverride, mTransitionStyleOverride;
+int mIdleSlot;
+}
+
+struct DlgNodeExchange : DlgNode {//DlgNode baseclass is serialized *after* the members
+float mPriority;//9900?
+BlockStart#1
+Handle<Chore> mhChore;
+BlockEnd#1
+}
+
+struct DlgNodeConditional : DlgNode {
+BlockStart#1
+DlgChildSetConditionalCase mCases;
+BlockEnd#1
+}
+
+struct DlgNodeWait : DlgNode, DlgConditionSet {}
+
+struct DlgNodeCancelChoices : DlgNode {
+
+enum CancelGroupT { eAllActiveChoices = 0x1 };
+
+CancelGroupT mCancelGroup;
+}
+
+struct DlgNodeChoices : DlgNode {
+BlockStart#1
+DlgChildSetChoices mChoices;
+BlockEnd#1
+BlockStart#1
+DlgChildSetChoicesChildPre mPreChoice;
+BlockEnd#1
+BlockStart#1
+DlgChildSetChoicesChildPost mPostChoice;
+BlockEnd#1
+}
+
+struct DlgNodeStart : DlgNode {
+BlockStart#1
+PropertySet mProdReportProps;//production report properties
+BlockEnd#1
+}
+
+struct DlgNodeCriteria {
+TestT mTestType;//Enum: eRequired = 0x1, eForbidden = 0x2
+ThresholdT mFlagsThreshold;//Enum: eRender = 0, eCapture = 1, eAll = 2, EDataFlow_enum_count = 3
+ThresholdT mCriteriaThreshold;//^
+DefaultResultT mDefaultResult;//Enum: eDefaultToPass = 0x1, eDefaultToNotPass = 0x2, eDefaultToNotPassUnlessTransparent = 0x3
+Flags mClassFlags;
+Set<int> mClassIDs;
+}
+
+struct DlgObjectProps {
+BlockStart#1//Block because the specialized metaop serialize async function (id74) calls meta::metaoperation_serializeasync which +'s a block
+Flags mFlags;//Enum (DlgObjectProps::PropsTypeT) = eUserProps = 0x1, eProductionProps = 0x2, eToolProps = 0x4
+BlockEnd#1
+
+if mFlags.mFlags & eUserProps: 		PropertySet mUserProps
+if mFlags.mFlags & eProductionProps: 	PropertySet mProductionProps
+if mFlags.mFlags & eToolProps: 		PropertySet mToolProps
+//The above three propertyset variables are actually pointers (should be PropertySet *mpUserProps etc), as they point to a 
+//global GPool buffer for propertysets (game engine etc)
+}
+
+struct DlgNodeLink : DlgObjIDOwner {
+long mRequiredCCType;//Enum (DlgConstants::ChainContextTypeID, CC = ChainContext): eCCUnspecified = 0x1, eCCAction = 0x2, eCCData = 0x3
+}
+
+struct DlgChainHead : DlgObjIDOwner {
+BlockStart#1
+DlgNodeLink mLink;
+BlockEnd#1
+}
+
+struct DlgDownstreamVisibilityConditions {//inlined getmetaclassdescription
+Flags mNodeTypeFlags;
+signed long mMaxNumNodeEvals;//make sure its signed (normally -999)
+}
+
+struct DlgVisibilityConditions {
+bool mbDiesOff;
+Flags mFlags;
+BlockStart#1
+DlgDownstreamVisibilityConditions mDownstreamVisCond;
+BlockEnd#1
+BlockStart#1
+String mScriptVisCond;//lua code!
+BlockEnd#1
+}
+
+struct DlgVisibilityConditionsOwner {
+BlockStart#1
+DlgVisibilityConditions mVisCond;
+BlockEnd#1
+}
+
+struct DlgChild : DlgChainHead, DlgVisibilityConditionsOwner, DlgObjectPropsOwner {
+Symbol mName;//THIS VALUE IS A ANOMALY! THIS COMES BEFORE DlgVisibilityConditionsOwner! So its DlgChainHead, mName, DlgVisibilityConditionsOwner, etc
+BlockEnd#1
+DlgNodeLink mParent;
+BlockEnd#1
+}
+
+struct DlgChildSetChoice : DlgChildSet {}
+struct DlgChildSetChoicesChildPost : DlgChildSet {}
+struct DlgChildSetChoicesChildPre : DlgChildSet {}
+struct DlgChildSetConditionalCase : DlgChildSet {}
+
+struct DlgChildSet {
+int mNumChildren;//DCArray normally, specialized serialize function so no capacity (written manually).
+
+struct InternalTelltaleDocStruct_DlgChildTyAndValue {
+Symbol mChildTypeSymbol;
+DlgChild mChildValue;//type is mChildTypeSymbol (DlgChild is the baseclass). Use libtelltale DB to find the type name from symbol crc.
+//it will be one of the DlgChild subclasses below.
+}
+
+InternalTelltaleDocStruct_DlgChildTyAndValue mChildren[mNumChildren];
+}
+
+struct DlgFolderChild : DlgChild {}//Empty, marker
+struct DlgChoice : DlgChild, DlgConditionSet {}
+struct DlgChoicesChildPre : DlgChild {}
+struct DlgChoicesChildPost : DlgChild {}
+struct DlgConditionalCase : DlgChild {}
+struct DlgNodeParallel : DlgChild {}
+
+struct DlgCondition : DlgObjIDOwner {}
+
+struct DlgConditionSet {
+int mNumConditions;//DCArray normally
+
+struct InternalTelltaleDocStruct_DlgConditionTyAndValue {
+Symbol mConditionTypeSymbol;
+DlgCondition mConditionValue;//type is mConditionTypeSymbol. Use telltale DB to find its type name from CRC. Its type struct
+//will be below
+}
+
+InternalTelltaleDocStruct_DlgConditionTyAndValue mConditions[mNumConditions];
+}
+
+struct DlgConditionInput : DlgCondition {} //Empty marker
+
+struct DlgConditionRule : DlgCondition {
+BlockStart#1
+Rule mRule;
+BlockEnd#1
+}
+
+struct DlgConditionTime : DlgCondition {
+
+enum DurationClass {//typedef DlgNodeSequence::RepeatT
+eIndefinitely = 0x1,
+eOne = 0x2,
+eTwo = 0x3,
+eThree = 0x4,
+eFour = 0x5,
+eFive = 0x6,
+eSix = 0x7,
+eMaxPlusOne = 0x8
+}
+
+struct EnumDurationClass {
+DurationClass mVal;
+}
+
+float mSeconds;
+DlgConditionTime::EnumDurationClass mDurationClass;
+}
+
+struct DlgObjectPropsOwner {
+BlockStart#1
+DlgObjectProps mDlgObjectProps;
+BlockEnd#1
+}
+
+struct DlgFolder : DlgObjIDOwner, DlgObjectPropsOwner, DlgChildSet {
+//DlgObjIDOwner, then DlgObjectPropsOwner, then DlgChildSet serialized
+Symbol mName;
+PropertySet mProdReportProps;
+}
+
+struct JiraRecordManager {
+//Map<String,Ptr<JiraRecord>> mRecords; //Although this is the runtime data type, Ptrs aren't stored (obviously) so the JiraRecords
+//in the map are inexistent on disk. This means on disk it WOULD look like a List<String>. The JiraRecord is created with default values when each
+//string key is read. List<String> does not have a capacity, just a size (unlike all other containers) (see struct List above)!
+//List<String> mRecordNames; It should look like this. But actually there is no data here whatsoever. This is because its in a debug
+//section of some sort. So theres no data! So just skip this struct!
+}
+
+struct JiraRecord {//not ever serialized! for you if you find it useful :P
+String mLocalID, mLocalResourceName, mResourceLocationID, mType, mData;
+int mJiraTaskID;
+long long mSyncTime;
+String mSourceControlID;
+Flags mFlags;
+Symbol mParentResourceID;
+Set<Symbol> mChildrenResourceIDs;
+bool mbBaseRecord;
+}
+
+template<int I> struct DependencyLoader {
+//Ptr<DCArray<String>> mpResNames; //Not serialized! Has 'MetaFlag_Memberless' set (0x100000).
+//The rest of the values in this struct are its structure serialized, not in runtime memory:
+bool mbHasData;
+Symbol mTypeSymbol;//if mbHasData
+T mSymbolTypeData;//where T = GetTypeFromCRC(mTypeSymbol). Such function should find the type with the mTypeSymbol.mCrc64 hash,
+//and T should then be the type the symbol points to. The value of this type should then be read, or written.
+//mTypeSymbol type should derive from DCArray<String> *always*. The value of this is an array of resource names (from mpResNames)
+}
+
+************************************************ struct UID::Owner 
+long miUniqueID;
+
+************************************************ struct UID::Generator
+long miNextUniqueID;
+
+************************************************ struct LocalizationRegistry [.locreg]
+Map<Symbol,int> mFlagIndexMap;
+Map<int,Symbol> mFlagIndexMapReverse;
+ToolProps mToolProps;
+
+************************************************ struct LanguageDB : UID::Owner, UID::Generator [.landb]:
+
+struct LanguageResLocal {
+BlockStart#1
+String mPrefix;
+BlockEnd#1
+BlockStart#1
+String mText;
+BlockEnd#1
+BlockStart#1
+LocalizeInfo mLocalInfo;
+BlockEnd#1
+}
+
+struct LocalizeInfo {
+Flags mFlags;
+}
+
+struct ProjectDatabaseIDPair {
+unsigned lonhg mProjectID;
+long mDBID;//database ID
+}
+
+struct LanguageRes {
+Symbol mResName;
+unsigned long mID;
+unsigned long mIDAlias;
+BlockStart#1
+Handle<Animation> mhAnimation;
+BlockEnd#1
+BlockStart#1
+Handle<SoundData> mhVoiceData;
+BlockEnd#1
+DCArray<LanguageResLocal> mLocalData;
+float mLengthOverride;
+BlockStart#1
+LanguageResLocal mResolvedLocalData;//TODO here FIX! GO ALONG WITH FILE <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+BlockEnd#1
+RecordingUtils::RecordingStatus mRecordingStatus;//Enum: 'Not Recorded' = 0, 'Sent To Studio' = 1, 'Recorded' = 2, 'Delivered' = 3 (script) OR eRecordingStatus_None = 0,
+//eRecordingStatus_AtStudio = 1, eRecordingStatus_Recorded = 2, eRecordingStatus_Delivered = 3
+Flags mFlags;//Flags: 'Synthesized' = 1, 'Lipsync ignore text' = 2, 'Hide Subtitles' = 4, 'Is Voiced' = 8, 'Is Silent' = 16, 'No Anim' = 32
+}
+
+Map<unsigned int,LanguageRes> mLanguageResources;
+BlockStart#1
+LocalizationRegistry mRegistry;
+BlockEnd#1
+Flags mFlags;
+unsigned long mProjectID;
+DCArray<ProjectDatabaseIDPair> mExpandedIDRanges;
+
+************************************************ struct DlgSystemSettings [.dss]
+DlgObjectPropsMap mPropsMapUser;
+DlgObjectPropsMap mPropsMapProduction;
+
+struct DlgObjectPropsMap {
+DCArray<GroupDefinition> mGroupDefs;
+
+struct GroupDefinition : UID::Owner {
+long mCat;
+long mVer;
+BlockStart#1
+Handle<PropertySet> mhProps;
+BlockEnd#1
+}
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
