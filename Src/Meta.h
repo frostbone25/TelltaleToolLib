@@ -1,3 +1,8 @@
+// This file was written by Lucas Saragosa. The code derives from Telltale Games' Engine.
+// I do not intend to take credit for it, however; Im the author of this interpretation of 
+// the engine and require that if you use this code or library, you give credit to me and
+// the amazing Telltale Games.
+
 #ifndef _META
 #define _META
 
@@ -17,12 +22,16 @@ class SerializedVersionInfo {
 
 };
 
-class MetaSerializeAccel {
-
-};
-
 struct MetaMemberDescription;
 struct MetaClassDescription;
+
+struct MetaSerializeAccel {
+	MetaOpResult(__cdecl* mpFunctionAsync)(void*, MetaClassDescription*,
+		MetaMemberDescription*, void*); 
+	MetaOpResult(__cdecl* mpFunctionMain)(void*, MetaClassDescription*, 
+		MetaMemberDescription*, void*);
+	MetaMemberDescription* mpMemberDesc;
+};
 
 typedef MetaOpResult(*MetaOperation)(void*, MetaClassDescription*, MetaMemberDescription*, void*);
 
@@ -46,11 +55,16 @@ struct MetaClassDescription {
 };
 
 struct MetaEnumDescription {
-
+	const char* mpEnumName;
+	i32 mFlags;
+	i32 mEnumIntValue;
+	MetaEnumDescription* mpNext;
 };
 
 struct MetaFlagDescription {
-
+	const char* mpFlagName;
+	i32 mFlagValue;
+	MetaFlagDescription* mpNext;
 };
 
 struct MetaMemberDescription {
@@ -60,7 +74,7 @@ struct MetaMemberDescription {
 	MetaClassDescription* mpHostClass;
 	MetaMemberDescription* mpNextMember;
 	union {
-		MetaEnumDescription mpEnumDescriptions;
+		MetaEnumDescription* mpEnumDescriptions;
 		MetaFlagDescription* mpFlagDescriptions;
 	};
 	MetaClassDescription* mpMemberDesc;

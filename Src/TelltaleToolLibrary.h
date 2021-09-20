@@ -1,3 +1,7 @@
+// This file was written by Lucas Saragosa. If you use this code or library,
+// I ask you to you give credit to me and the amazing Telltale Games.
+
+
 #ifndef _TTToolLib
 #define _TTToolLib
 
