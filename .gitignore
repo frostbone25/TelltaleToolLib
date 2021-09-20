@@ -16,12 +16,6 @@
 # Mono auto generated files
 mono_crash.*
 
-*.licenseheader
-*.user
-*.sln
-*.vcxproj
-*.filters
-
 
 # Build results
 [Dd]ebug/
