@@ -1,6 +1,8 @@
 # TelltaleToolLib
 A Library which implements the Meta part of the Telltale Tool Engine. The meta part of the engine is for serializing all structures in the game engine to disk. This library also implements many other types which are in the engine aswell, for example TTArchive2 bundles.
 
+This is an updated version of my old LibTelltale library. This library will not only be more precise, but will have better memory management and is completely public.
+
 This is of course a LIBRARY: this means that you can compile it to a dynamic library (.dll/.dylib/.so). However, it is designed so that you can (since its a library) use the code to read
 files etc from telltale in your own mods.
 
