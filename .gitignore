@@ -18,7 +18,7 @@ mono_crash.*
 
 *.user
 *.sln
-*.vcsproj
+*.vcxproj
 *.filters
 
 
