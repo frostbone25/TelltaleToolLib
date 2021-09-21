@@ -38,6 +38,9 @@
     <ClCompile Include="Src\TelltaleToolLibrary.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Src\Meta.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="TelltaleToolLib.licenseheader" />

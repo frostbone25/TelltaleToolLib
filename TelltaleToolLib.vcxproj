@@ -153,6 +153,7 @@
     <ClInclude Include="Src\TelltaleToolLibrary.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Src\Meta.cpp" />
     <ClCompile Include="Src\TelltaleToolLibrary.cpp" />
   </ItemGroup>
   <ItemGroup>

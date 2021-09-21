@@ -9,7 +9,13 @@
 #include <string>
 #include <typeinfo>
 #include <vector>
+#include "HandleObjectInfo.h"
 #include "MetaStream.h"
+
+#define METAOP_FUNC_DEF(_FuncName) static MetaOpResult MetaOperation_##_FuncName(void *,MetaClassDescription*,MetaMemberDescription*,void*);
+#define METAOP_FUNC_IMPL(_FuncName) static MetaOpResult Meta::MetaOperation_##_FuncName(void *pObj,MetaClassDescription* pObjDescription,\
+	MetaMemberDescription *pContextDescription,void *pUserData)
+
 
 enum MetaFlag {
 	MetaFlag_MetaSerializeDisable = 1,
@@ -41,9 +47,8 @@ enum MetaFlag {
 	MetaFlag_IsNotMetaFile = 0x4000000,
 	Internal_MetaFlag_Initialized = 0x20000000,
 };
-
 /*
-* 
+*
 00000050 ReadData        dq ? ; offset 80
 00000058 WriteData       dq ? ; offset 88
 00000060 ReadDataStream  dq ? ; offset 96
@@ -113,6 +118,13 @@ struct SerializedVersionInfo {
 struct MetaMemberDescription;
 struct MetaClassDescription;
 
+typedef void* (*FuncNew)(void);
+typedef void (*FuncDestroy)(void*);
+typedef void (*FuncDelete)(void*);
+typedef void (*FuncCopyConstruct)(void*, void*);
+typedef void (*FuncConstruct)(void*);
+typedef void (*FuncCastToConcreteObject)(void**, MetaClassDescription**);
+
 struct MetaSerializeAccel {
 	MetaOpResult(__cdecl* mpFunctionAsync)(void*, MetaClassDescription*,
 		MetaMemberDescription*, void*); 
@@ -124,7 +136,95 @@ struct MetaSerializeAccel {
 typedef MetaOpResult(*MetaOperation)(void*, MetaClassDescription*, MetaMemberDescription*, void*);
 
 struct MetaOperationDescription {
-	u32 id;
+
+	enum sIDs {
+		eMetaOpZero = 0x0,
+		eMetaOpOne = 0x1,
+		eMetaOpTwo = 0x2,
+		eMetaOpThree = 0x3,
+		eMetaOpFour = 0x4,
+		eMetaOpFive = 0x5,
+		eMetaOpSix = 0x6,
+		eMetaOpSeven = 0x7,
+		eMetaOpEight = 0x8,
+		eMetaOpNine = 0x9,
+		eMetaOpTen = 0x0A,
+		eMetaOpEleven = 0x0B,
+		eMetaOpTwelve = 0x0C,
+		eMetaOpThirteen = 0x0D,
+		eMetaOpFourteen = 0x0E,
+		eMetaOpFifteen = 0x0F,
+		eMetaOpSixteen = 0x10,
+		eMetaOpSeventeen = 0x11,
+		eMetaOpEighteen = 0x12,
+		eMetaOpNineteen = 0x13,
+		eMetaOpTwenty = 0x14,
+		eMetaOpTwentyOne = 0x15,
+		eMetaOpTwentyTwo = 0x16,
+		eMetaOpTwentyThree = 0x17,
+		eMetaOpTwentyFour = 0x18,
+		eMetaOpTwentyFive = 0x19,
+		eMetaOpTwentySix = 0x1A,
+		eMetaOpTwentySeven = 0x1B,
+		eMetaOpTwentyEight = 0x1C,
+		eMetaOpTwentyNine = 0x1D,
+		eMetaOpThirty = 0x1E,
+		eMetaOpThirtyOne = 0x1F,
+		eMetaOpThirtyTwo = 0x20,
+		eMetaOpThirtyThree = 0x21,
+		eMetaOpThirtyFour = 0x22,
+		eMetaOpThirtyFive = 0x23,
+		eMetaOpThirtySix = 0x24,
+		eMetaOpThirtySeven = 0x25,
+		eMetaOpThirtyEight = 0x26,
+		eMetaOpThirtyNine = 0x27,
+		eMetaOpForty = 0x28,
+		eMetaOpFortyOne = 0x29,
+		eMetaOpFortyTwo = 0x2A,
+		eMetaOpFortyThree = 0x2B,
+		eMetaOpFortyFour = 0x2C,
+		eMetaOpFortyFive = 0x2D,
+		eMetaOpFortySix = 0x2E,
+		eMetaOpFortySeven = 0x2F,
+		eMetaOpFortyEight = 0x30,
+		eMetaOpFortyNine = 0x31,
+		eMetaOpFifty = 0x32,
+		eMetaOpFiftyOne = 0x33,
+		eMetaOpFiftyTwo = 0x34,
+		eMetaOpFiftyThree = 0x35,
+		eMetaOpFiftyFour = 0x36,
+		eMetaOpFiftyFive = 0x37,
+		eMetaOpFiftySix = 0x38,
+		eMetaOpFiftySeven = 0x39,
+		eMetaOpFiftyEight = 0x3A,
+		eMetaOpFiftyNine = 0x3B,
+		eMetaOpSixty = 0x3C,
+		eMetaOpSixtyOne = 0x3D,
+		eMetaOpSixtyTwo = 0x3E,
+		eMetaOpGetAssetCost = 0x3F,
+		eMetaOpFromUiString = 0x40,
+		eMetaOpToUiString = 0x41,
+		eMetaOpWidgetFromClass = 0x42,
+		eMetaOpUserOpen = 0x43,
+		eMetaOpSave = 0x44,
+		eMetaOpGetVersion = 0x45,
+		eMetaOpCopy = 0x46,
+		eMetaOpDelete = 0x47,
+		eMetaOpAddToCache = 0x48,
+		eMetaOpRemoveFromCache = 0x49,
+		eMetaOpSerializeAsync = 0x4A,
+		eMetaOpSerializeMain = 0x4B,
+		eMetaOpDestroy = 0x4C,
+		eMetaOpGetEstimatedVramUsage = 0x4D,
+		eMetaOpEnumerateMembers = 0x4E,
+		eMetaOpSetupPropertyValue = 0x4F,
+		eMetaOpSavePropertyValue = 0x50,
+		eMetaOpRecursiveVersionCRC = 0x51,
+		eMetaOpNewResource = 0x52,
+		eNumMetaOps = 0x0x53,
+	};
+
+	sIDs id;
 	MetaOperation mpOpFn;
 	MetaOperationDescription* mpNext;
 };
@@ -139,8 +239,18 @@ struct MetaClassDescription {
 	MetaMemberDescription* mpFirstMember;
 	MetaOperationDescription* mMetaOperationsList; 
 	MetaClassDescription* pNextMetaClassDescription; 
-	//const void** mpVTable; 
+	const void** mpVTable; 
 	MetaSerializeAccel* mpSerializeAccel;//atomic
+
+	String* GetToolDescriptionName(String* result);
+	void Delete(void* pObj);
+	void Destroy(void* pObj);
+	void* New();
+	void Construct(void*);
+	void CopyConstruct(void*, void*);
+	~MetaClassDescription();
+	bool MatchesHash(u64 hash);
+
 };
 
 struct MetaEnumDescription {
@@ -174,47 +284,20 @@ namespace Meta {
 	//set the version crc in the serializedversioninfo
 	static MetaOpResult MetaOperation_SerializedVersionInfo(void* pObj,
 		MetaClassDescription* pObjDescription, MetaMemberDescription* pContextDesc,
-		void* pUserData) {
-		//if pObj, warn its not needed in the call
-		SerializedVersionInfo* ver = static_cast<SerializedVersionInfo*>(pUserData);
-		if (ver) {
-			if (pObjDescription->mFlags.mFlags & MetaFlag::MetaFlag_MetaSerializeDisable || 
-				pContextDesc && pContextDesc->mFlags & MetaFlag::MetaFlag_MetaSerializeDisable	)
-				return MetaOpResult::eMetaOp_Invalid;//if its not serialized no need for this
-			ver->mTypeSymbolCrc = pObjDescription->mHash;
-			ver->mSize = pObjDescription->mClassSize;
-			char versionCrcBuffer[4], hashBuffer[8];
-			u8 crcFlags = ~(unsigned __int8)((unsigned int)pObjDescription->mFlags.
-				mFlags >> 1) & MetaFlag::MetaFlag_MetaSerializeDisable;
-			ver->mbBlocked = crcFlags;
-			versionCrcBuffer[0] = (crcFlags ^ 1) - 1;
-			ver->mVersionCrc = CRC32(ver->mVersionCrc, versionCrcBuffer, 4);
-			for (MetaMemberDescription* i = pObjDescription->mpFirstMember; i; i = i->mpNextMember) {
-				if (i->mFlags & 1)continue;//flag 1 = metaflags:: dont seralized etc
-				SerializedVersionInfo::MemberDesc member{ 0 };
-				member.mSize = i->mpMemberDesc->mClassSize;
-				member.mTypeNameSymbolCrc = i->mpMemberDesc->mHash;
-				member.mbBlocked = !(i->mpMemberDesc->mFlags.mFlags 
-					& MetaFlag::MetaFlag_MetaSerializeBlockingDisabled)
-					&& !(i->mFlags & MetaFlag::MetaFlag_MetaSerializeBlockingDisabled);
-				member.mName = String(i->mpName);
-				member.mTypeName = String(i->mpMemberDesc->mpTypeInfoName);
-				ver->mVersionCrc = CRC32(ver->mVersionCrc, member.mName.c_str(), 
-					member.mName.length());
-				memcpy(hashBuffer, &i->mpMemberDesc->mHash, 8);
-				ver->mVersionCrc = CRC32(ver->mVersionCrc, hashBuffer, 8);
-				memcpy(hashBuffer, &member.mbBlocked, 1);
-				ver->mVersionCrc = CRC32(ver->mVersionCrc, hashBuffer, 1);
-				ver->mMembers.push_back(member);
-			}
-			
-		}
-		return MetaOpResult::eMetaOp_Succeed;
-	}
+		void* pUserData);
 
 	struct Equivalence {
 		bool mbEqual;
 		void* mpOther;
+	};
+
+	struct EnumerateMembersInfo;
+
+	typedef void (EnumerateMembersFunc*)(void*,MetaClassDescription*, MetaMemberDescription*);
+
+	struct EnumerateMembersInfo {
+		EnumerateMembersFunc* mpFunc;
+		std::vector<void*> mArgs;//DCArray<void*>
 	};
 
 	struct ConvertFromInfo {
@@ -222,22 +305,25 @@ namespace Meta {
 		MetaClassDescription* mpFromObjDescription;
 	};
 
-	static MetaOpResult MetaOperation_ConvertFrom(void* pObj,
-		MetaClassDescription* pObjDescription, MetaMemberDescription *pContextDescription,
-		void * pUserData);
+	METAOP_FUNC_DEF(GetObjectName)
 
-	static MetaOpResult MetaOperation_SerializeAsync(void* pObj,
-		MetaClassDescription* pObjDescription, MetaMemberDescription* pCtxDesc, void* pUserData);
+	METAOP_FUNC_DEF(EnumerateMembers)
 
-	static MetaOpResult MetaOperation_Invalid(void* pObj,
+	METAOP_FUNC_DEF(Destroy)
+
+	METAOP_FUNC_DEF(SerializeAsync)
+
+	METAOP_FUNC_DEF(SerializeMain)
+
+	//the goto function!
+	METAOP_FUNC_DEF(AsyncSave)
+
+	static INLINE MetaOpResult MetaOperation_Invalid(void* pObj,
 		MetaClassDescription* pObjDescription, MetaMemberDescription* pContextDescription,
 		void* pUserData) {
 		return MetaOpResult::eMetaOp_Invalid;
 	}
-
-	static MetaOpResult MetaOperation_SerializeMain(void* pObj,
-		MetaClassDescription* pObjDescription, MetaMemberDescription* pCtxDesc, void* pUserData);
-
+	
 
 };
 

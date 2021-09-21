@@ -29,6 +29,41 @@ struct Flags {
 	u32 mFlags;
 };
 
+template<typename T> void PtrModifyRefCount(T*, int delta) {}//deprecated in engine/not needed for shipping
+
+//telltale impl of pointers, mainly its calls to the ref count 
+template<typename T>
+class Ptr {
+private:
+	T* mpData;
+public:
+
+	Ptr(const T* pObj) : mpData(pObj) {}
+
+	Ptr(const Ptr<T>& other) : mpData(other.mpData) {}
+
+	~Ptr() {}
+
+	Ptr<T> operator=(const Ptr<T>& pObj) {
+		mpData = pObj.mpData;
+	}
+
+	Ptr<T> operator=(T* pOther) {
+		mpData = pOther;
+	}
+
+	void Assign(const T* pObj) {
+		mpData = pObj;
+	}
+
+	void DeleteObject() {
+		if (mpData) {
+			delete mpData;
+		}
+	}
+
+};
+
 const char* _TTToolLib_Exp TelltaleToolLib_GetVersion();
 //allocate below function param using calloc/malloc
 void _TTToolLib_Exp TelltaleToolLib_MakeInternalTypeName(char**);

@@ -6,5 +6,8 @@
 #ifndef _HOI
 #define _HOI
 
+class HandleObjectInfo {
+
+};
 
 #endif
