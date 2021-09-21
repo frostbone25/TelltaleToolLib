@@ -1,4 +1,4 @@
-This document is by Lucas Saragosa: you can find my Github at https://github.com/LucasSaragosa.
+``This document is by Lucas Saragosa: you can find my Github at https://github.com/LucasSaragosa.
 Im the author of LibTelltale, a library to reading all telltale types and also rewriting them. That library contains all
 these formats already programmed (or is in progress). This document gives you information I have gathered over the last 4 years
 modding Telltale games. This aim of this is to help you gain an understanding of the formats so, in future, you may make your own mods.

@@ -8,7 +8,40 @@
 
 #include <string>
 #include <typeinfo>
+#include <vector>
 #include "MetaStream.h"
+
+enum MetaFlag {
+	MetaFlag_MetaSerializeDisable = 1,
+	MetaFlag_MetaSerializeBlockingDisabled = 2,
+	MetaFlag_PlaceInAddPropMenu = 4,
+	MetaFlag_NoPanelCaption = 8,
+	MetaFlag_BaseClass = 0x10,
+	MetaFlag_EditorHide = 0x20,
+	MetaFlag_EnumIntType = 0x40,
+	MetaFlag_EnumStringType = 0x80,
+	MetaFlag_ContainerType = 0x100,
+	MetaFlag_ScriptEnum = 0x200,
+	MetaFlag_Heap = 0x400,
+	MetaFlag_ScriptTransient = 0x800,
+	MetaFlag_SelectAgentType = 0x1000,
+	MetaFlag_SkipObjectState = 0x2000,
+	MetaFlag_NotCacheable = 0x4000,
+	MetaFlag_EnumWrapperClass = 0x8000,
+	MetaFlag_TempDescription = 0x10000,
+	MetaFlag_Handle = 0x20000,
+	MetaFlag_FlagType = 0x40000,
+	MetaFlag_SelectFolderType = 0x80000,
+	MetaFlag_Memberless = 0x100000,
+	MetaFlag_RenderResource = 0x200000,
+	MetaFlag_MetaSerializeNonBlockedVariableSize = 0x400002,
+	MetaFlag_EmbeddedCacheableResource = 0x800000,
+	MetaFlag_VirtualResource = 0x1000000,
+	MetaFlag_DontAsyncLoad = 0x2000000,
+	MetaFlag_IsNotMetaFile = 0x4000000,
+	Internal_MetaFlag_Initialized = 0x20000000,
+};
+
 /*
 * 
 00000050 ReadData        dq ? ; offset 80
@@ -58,8 +91,23 @@ enum MetaOpResult {
 	eMetaOp_MAX = 0x4,
 };
 
-class SerializedVersionInfo {
-	
+struct SerializedVersionInfo {
+
+	struct MemberDesc {
+		String mName;
+		String mTypeName;
+		u64 mTypeNameSymbolCrc;
+		bool mbBlocked;
+		u32 mSize;
+		u32 mVersionCrc;
+	};
+
+	String mFileName;
+	u64 mTypeSymbolCrc;
+	u32 mVersionCrc;
+	u32 mSize;
+	bool mbBlocked;
+	std::vector<MemberDesc> mMembers;//DCArrayNM<MemberDesc> mMembers;
 };
 
 struct MetaMemberDescription;
@@ -85,6 +133,7 @@ struct MetaClassDescription {
 	const char* mpExt;
 	const char* mpTypeInfoName;
 	u64 mHash;
+	Flags mFlags;
 	u32 mClassSize;
 	SerializedVersionInfo* mpCompiledVersionSerializedVersionInfo;//atomic
 	MetaMemberDescription* mpFirstMember;
@@ -121,6 +170,47 @@ struct MetaMemberDescription {
 };
 
 namespace Meta {
+
+	//set the version crc in the serializedversioninfo
+	static MetaOpResult MetaOperation_SerializedVersionInfo(void* pObj,
+		MetaClassDescription* pObjDescription, MetaMemberDescription* pContextDesc,
+		void* pUserData) {
+		//if pObj, warn its not needed in the call
+		SerializedVersionInfo* ver = static_cast<SerializedVersionInfo*>(pUserData);
+		if (ver) {
+			if (pObjDescription->mFlags.mFlags & MetaFlag::MetaFlag_MetaSerializeDisable || 
+				pContextDesc && pContextDesc->mFlags & MetaFlag::MetaFlag_MetaSerializeDisable	)
+				return MetaOpResult::eMetaOp_Invalid;//if its not serialized no need for this
+			ver->mTypeSymbolCrc = pObjDescription->mHash;
+			ver->mSize = pObjDescription->mClassSize;
+			char versionCrcBuffer[4], hashBuffer[8];
+			u8 crcFlags = ~(unsigned __int8)((unsigned int)pObjDescription->mFlags.
+				mFlags >> 1) & MetaFlag::MetaFlag_MetaSerializeDisable;
+			ver->mbBlocked = crcFlags;
+			versionCrcBuffer[0] = (crcFlags ^ 1) - 1;
+			ver->mVersionCrc = CRC32(ver->mVersionCrc, versionCrcBuffer, 4);
+			for (MetaMemberDescription* i = pObjDescription->mpFirstMember; i; i = i->mpNextMember) {
+				if (i->mFlags & 1)continue;//flag 1 = metaflags:: dont seralized etc
+				SerializedVersionInfo::MemberDesc member{ 0 };
+				member.mSize = i->mpMemberDesc->mClassSize;
+				member.mTypeNameSymbolCrc = i->mpMemberDesc->mHash;
+				member.mbBlocked = !(i->mpMemberDesc->mFlags.mFlags 
+					& MetaFlag::MetaFlag_MetaSerializeBlockingDisabled)
+					&& !(i->mFlags & MetaFlag::MetaFlag_MetaSerializeBlockingDisabled);
+				member.mName = String(i->mpName);
+				member.mTypeName = String(i->mpMemberDesc->mpTypeInfoName);
+				ver->mVersionCrc = CRC32(ver->mVersionCrc, member.mName.c_str(), 
+					member.mName.length());
+				memcpy(hashBuffer, &i->mpMemberDesc->mHash, 8);
+				ver->mVersionCrc = CRC32(ver->mVersionCrc, hashBuffer, 8);
+				memcpy(hashBuffer, &member.mbBlocked, 1);
+				ver->mVersionCrc = CRC32(ver->mVersionCrc, hashBuffer, 1);
+				ver->mMembers.push_back(member);
+			}
+			
+		}
+		return MetaOpResult::eMetaOp_Succeed;
+	}
 
 	struct Equivalence {
 		bool mbEqual;
