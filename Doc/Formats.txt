@@ -817,7 +817,7 @@ if mVersion >= 4:
 	long mNumAnimationValueTypes;
 
 	struct InternalTelltaleDocStruct_AnimationInterfaceTy {
-		Symbol mTypeSymbol;// a derived class from AnimationValueInterfaceBase
+		Symbol mTypeSymbol;// a derived class from AnimationValueInterfaceBase (see all below)
 		unsigned short mNumValuesOfTypeSerialized;
 		unsigned short mVersionMaybe;//if its not 0 contact me?
 	}
@@ -839,7 +839,9 @@ if mVersion >= 4:
 
 BlockEnd#1
 
-//TODO implement all fucking subclasses of AnimatedValueInterfaceBase
+template<typename T> struct SingleValue: AnimationValueInterfaceBase{
+T mComputedValue;
+}
 
 
 

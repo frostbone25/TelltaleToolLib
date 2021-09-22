@@ -16,6 +16,15 @@
 #define METAOP_FUNC_IMPL(_FuncName) static MetaOpResult Meta::MetaOperation_##_FuncName(void *pObj,MetaClassDescription* pObjDescription,\
 	MetaMemberDescription *pContextDescription,void *pUserData)
 
+enum VTableFunction {
+	eVTableNew = 0,
+	eVTableDelete = 1,
+	eVTableConstruct = 2,
+	eVTableCopyConstruct = 3,
+	eVTableDestroy = 4,
+	eVTableCastToConcreteObject = 5,
+	eVTableCount = 6
+};
 
 enum MetaFlag {
 	MetaFlag_MetaSerializeDisable = 1,
@@ -261,6 +270,11 @@ struct MetaClassDescription {
 	}
 	void Initialize(const char*);
 	void Insert();
+	bool IsDerivedFrom(MetaClassDescription* pDesc);
+	void InstallSpecializedMetaOperation(MetaOperationDescription*);
+	MetaOperation GetOperationSpecialization(int ID);
+	void CastToConcreteObject(void** pObj, MetaClassDescription** pDesc);
+	void* CastToBase(const void* pObj, MetaClassDescription* pBaseClassDesc);
 
 };
 
@@ -288,9 +302,19 @@ struct MetaMemberDescription {
 		MetaFlagDescription* mpFlagDescriptions;
 	};
 	MetaClassDescription* mpMemberDesc;
+	~MetaMemberDescription();
 };
 
 namespace Meta {
+
+	//Types
+	void Initialize();
+	//Handle<T>
+	void Initialize2();
+	//AnimatedValueInterfaceBases
+	void Initialize3();
+	//Containers
+	void Initialize4();
 
 	//set the version crc in the serializedversioninfo
 	static MetaOpResult MetaOperation_SerializedVersionInfo(void* pObj,
@@ -335,22 +359,5 @@ namespace Meta {
 	
 
 };
-
-namespace MetaHelpers {
-
-	template<typename T>
-	MetaClassDescription* GetMetaClassDescription() {
-		return NULL;
-	}
-
-}
-
-
-
-
-
-
-
-
 
 #endif

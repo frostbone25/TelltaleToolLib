@@ -6,6 +6,129 @@
 
 #include "Meta.h"
 
+#define DEFINET(name) }static MetaClassDescription meta_##name; \
+if(!(meta_##name.mFlags.mFlags & MetaFlag::Internal_MetaFlag_Initialized)){
+
+void Meta::Initialize() {{
+	DEFINET(char)
+	meta_char.mFlags = MetaFlag::MetaFlag_MetaSerializeBlockingDisabled;
+	meta_char.Initialize("int8");
+	meta_char.mClassSize = 1;
+	meta_char.Insert();
+	}
+	Initialize2();
+	Initialize3();
+	Initialize4();
+}
+
+void Meta::Initialize2() {
+
+}
+
+void Meta::Initialize3() {
+
+}
+
+void Meta::Initialize4() {
+
+}
+
+MetaMemberDescription::~MetaMemberDescription() {
+	if (this->mFlags & (MetaFlag::MetaFlag_EnumIntType | MetaFlag::MetaFlag_EnumStringType)) {
+		MetaEnumDescription* i = this->mpEnumDescriptions;
+		while (i) {
+			if (i->mpEnumName && (i->mFlags & MetaFlag::MetaFlag_Heap)) {
+				free((void*)i->mpEnumName);
+				free(i);
+				continue;
+			}
+			else {
+				i->mpEnumName = NULL;
+				i->mFlags = 0;
+				i->mpNext;
+			}
+
+			i = i->mpNext;
+		}
+	}
+	else if (this->mFlags & MetaFlag::MetaFlag_FlagType) {
+		for (MetaEnumDescription* i = this->mpEnumDescriptions; i; i = i->mpNext) {
+			i->mpEnumName = NULL;
+			i->mFlags = 0;
+		}
+	}
+}
+
+void* MetaClassDescription::CastToBase(const void* pObj, MetaClassDescription* pBaseClassDesc) {
+	if (this == pBaseClassDesc)
+		return (void*)pObj;
+	void* result = NULL;
+	MetaMemberDescription* mem = mpFirstMember;
+	if (mem) {
+		while (true) {
+			if (mem->mFlags & MetaFlag::MetaFlag_BaseClass) {
+				if(result=mem->mpMemberDesc->CastToBase(&((char*)pObj)[mem->mOffset], pBaseClassDesc))
+					return result;
+			}
+		}
+		mem = mem->mpNextMember;
+		if (!mem)return NULL;
+	}
+}
+
+void MetaClassDescription::CastToConcreteObject(void** pObj, MetaClassDescription** pDesc) {
+	if (this->mpVTable) {
+		void(* func)(void**, MetaClassDescription**);
+		func = (void(*)(void**, MetaClassDescription**))this->mpVTable[5];
+		if (func)
+			func(pObj, pDesc);
+	}
+}
+
+MetaOperation MetaClassDescription::GetOperationSpecialization(int ID) {
+	if (this->mMetaOperationsList) {
+		MetaOperationDescription* i = mMetaOperationsList;
+		while (i->id != ID) {
+			i = i->mpNext;
+			if (!i)return NULL;
+		}
+		return i->mpOpFn;
+	}
+	else {
+		return NULL;
+	}
+}
+
+void MetaClassDescription::InstallSpecializedMetaOperation(MetaOperationDescription* pNewOperation) {
+	if (this->mMetaOperationsList) {
+		MetaOperationDescription* i = this->mMetaOperationsList;
+		while (i->id != pNewOperation->id) {
+			i = i->mpNext;
+			if (!i) {
+				pNewOperation->mpNext = this->mMetaOperationsList;
+				this->mMetaOperationsList = pNewOperation;
+				return;
+			}
+		}
+	}
+	else {
+		pNewOperation->mpNext = this->mMetaOperationsList;//this->mMetaOperationsList is NULL so its just NULL
+		this->mMetaOperationsList = pNewOperation;
+	}
+}
+
+bool MetaClassDescription::IsDerivedFrom(MetaClassDescription* pDesc) {
+	if (this == pDesc)return true;
+	if (pDesc) {
+		for (MetaMemberDescription* i = this->mpFirstMember; i; i = i->mpNextMember) {
+			if (i->mFlags & MetaFlag::MetaFlag_BaseClass) {
+				if (i->mpMemberDesc->IsDerivedFrom(pDesc))return true;
+			}
+		}
+	}
+	return false;
+}
+
 void MetaClassDescription::Insert() {
 	if (!pNextMetaClassDescription) {
 		pNextMetaClassDescription = spFirstMetaClassDescription;
@@ -49,7 +172,8 @@ bool MetaClassDescription::MatchesHash(u64 o) {
 }
 
 MetaClassDescription::~MetaClassDescription() {
-	
+	if (this->mpSerializeAccel)
+		free(mpSerializeAccel);
 }
 
 void MetaClassDescription::Construct(void* pObj) {

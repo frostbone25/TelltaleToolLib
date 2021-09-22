@@ -2,9 +2,14 @@
 // I ask you to you give credit to me and the amazing Telltale Games.
 
 #include "TelltaleToolLibrary.h"
+#include "Meta.h"
 
 const char* TelltaleToolLib_GetVersion() {
 	return _VERSION;
+}
+
+bool TelltaleToolLib_Initialize() {
+    Meta::Initialize();//init all types
 }
 
 void TelltaleToolLib_MakeInternalTypeName(char** _StringPtr) {

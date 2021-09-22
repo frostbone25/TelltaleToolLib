@@ -27,6 +27,18 @@ typedef std::basic_string<i8,std::char_traits<i8>, std::allocator<i8>> String;
 
 struct Flags {
 	u32 mFlags;
+	INLINE Flags& operator=(u32 i) {
+		mFlags = i;
+		return *this;
+	}
+	INLINE Flags& operator|=(u32 i) {
+		mFlags |= i;
+		return *this;
+	}
+	INLINE Flags& operator&=(u32 i) {
+		mFlags &= i;
+		return *this;
+	}
 };
 
 template<typename T> void PtrModifyRefCount(T*, int delta) {}//deprecated in engine/not needed for shipping
@@ -67,6 +79,7 @@ public:
 const char* _TTToolLib_Exp TelltaleToolLib_GetVersion();
 //allocate below function param using calloc/malloc
 void _TTToolLib_Exp TelltaleToolLib_MakeInternalTypeName(char**);
+bool TelltaleToolLib_Initialize();
 
 
 #endif
