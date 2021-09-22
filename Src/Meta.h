@@ -221,7 +221,7 @@ struct MetaOperationDescription {
 		eMetaOpSavePropertyValue = 0x50,
 		eMetaOpRecursiveVersionCRC = 0x51,
 		eMetaOpNewResource = 0x52,
-		eNumMetaOps = 0x0x53,
+		eNumMetaOps = 0x53,
 	};
 
 	sIDs id;
@@ -230,6 +230,7 @@ struct MetaOperationDescription {
 };
 
 struct MetaClassDescription {
+	static MetaClassDescription* spFirstMetaClassDescription;
 	const char* mpExt;
 	const char* mpTypeInfoName;
 	u64 mHash;
@@ -250,6 +251,16 @@ struct MetaClassDescription {
 	void CopyConstruct(void*, void*);
 	~MetaClassDescription();
 	bool MatchesHash(u64 hash);
+	void GetDescriptionSymbol(Symbol*);
+	MetaMemberDescription* GetMemberDescription(const char* memberName);
+	INLINE MetaMemberDescription* GetMemberDescription(String* _Str) {
+		return GetMemberDescription(_Str->c_str());
+	}
+	INLINE void Initialize(std::type_info* info) {
+		Initialize(info->name());
+	}
+	void Initialize(const char*);
+	void Insert();
 
 };
 
@@ -291,12 +302,10 @@ namespace Meta {
 		void* mpOther;
 	};
 
-	struct EnumerateMembersInfo;
-
-	typedef void (EnumerateMembersFunc*)(void*,MetaClassDescription*, MetaMemberDescription*);
+	typedef void (*EnumerateMembersFunc)(void*,MetaClassDescription*, MetaMemberDescription*);
 
 	struct EnumerateMembersInfo {
-		EnumerateMembersFunc* mpFunc;
+		EnumerateMembersFunc mpFunc;
 		std::vector<void*> mArgs;//DCArray<void*>
 	};
 

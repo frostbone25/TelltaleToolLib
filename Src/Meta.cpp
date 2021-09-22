@@ -6,6 +6,34 @@
 
 #include "Meta.h"
 
+void MetaClassDescription::Insert() {
+	if (!pNextMetaClassDescription) {
+		pNextMetaClassDescription = spFirstMetaClassDescription;
+		spFirstMetaClassDescription = this;
+	}
+	this->mFlags.mFlags |= MetaFlag::Internal_MetaFlag_Initialized;
+}
+
+void MetaClassDescription::Initialize(const char* typeInfoName) {
+	this->mpTypeInfoName = typeInfoName;
+	this->mHash = CRC64_CaseInsensitive(0, typeInfoName);
+}
+
+MetaMemberDescription* MetaClassDescription::GetMemberDescription(const char* memberName) {
+	for (MetaMemberDescription* i = mpFirstMember; i; i = i->mpNextMember) {
+		if (!strcmp(i->mpName, memberName))return i;
+	}
+	return NULL;
+}
+
+void MetaClassDescription::GetDescriptionSymbol(Symbol* sym) {
+	String result;
+	GetToolDescriptionName(&result);
+	Symbol nsym(result.c_str());
+	*sym = nsym;
+}
+
+
 METAOP_FUNC_IMPL(Destroy) {
 	pObjDescription->Delete(pObj);
 	return MetaOpResult::eMetaOp_Succeed;
@@ -15,8 +43,6 @@ void MetaClassDescription::CopyConstruct(void* pDest, void* pSrc) {
 	if (mpVTable && mpVTable[3])
 		((FuncCopyConstruct)mpVTable[3])(pDest, pSrc);
 }
-
-//TODO
 
 bool MetaClassDescription::MatchesHash(u64 o) {
 	return o == mHash;
