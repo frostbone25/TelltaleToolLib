@@ -805,7 +805,7 @@ BlockEnd#1
 ************************************************ struct Animation [.anm]
 long mVersion;
 Flags mFlags;
-Symbol mName;
+Symbol mName;//crc64 of file name normally
 float mLength;
 float mAdditiveMask;
 ToolProps mToolProps;

@@ -24,13 +24,7 @@
     <ClInclude Include="Src\TelltaleToolLibrary.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Src\Symbol.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Src\Meta.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Src\MetaStream.h">
+    <ClInclude Include="Src\Meta.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

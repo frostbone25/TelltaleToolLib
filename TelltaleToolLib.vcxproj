@@ -127,6 +127,9 @@
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
+    <PostBuildEvent>
+      <Command>"C:\Vunder\Projects\TelltaleToolLib\Post_Build.bat"</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -147,9 +150,7 @@
   <ItemGroup>
     <ClInclude Include="Src\HandleObjectInfo.h" />
     <ClInclude Include="Src\HashManager.h" />
-    <ClInclude Include="Src\Meta.h" />
-    <ClInclude Include="Src\MetaStream.h" />
-    <ClInclude Include="Src\Symbol.h" />
+    <ClInclude Include="Src\Meta.hpp" />
     <ClInclude Include="Src\TelltaleToolLibrary.h" />
   </ItemGroup>
   <ItemGroup>

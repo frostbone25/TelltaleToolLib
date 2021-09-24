@@ -2,14 +2,121 @@
 // I ask you to you give credit to me and the amazing Telltale Games.
 
 #include "TelltaleToolLibrary.h"
-#include "Meta.h"
+#include "Meta.hpp"
+
+bool sInitialized = false;
+
+const char* TelltaleToolLib_GetMetaClassDescriptionName(MetaClassDescription* pObjDesc) {
+    return pObjDesc->mpTypeInfoName;
+}
+
+char* TelltaleToolLib_Alloc_GetFixed1024ByteStringBuffer() {
+    static char buf[1024];
+    return &buf[0];
+}
+
+char* TelltaleToolLib_Alloc_GetFixed8BytePointerBuffer() {
+    static char buf[8];
+    return &buf[0];
+}
+
+void TelltaleToolLib_GetNextMetaClassDescription(MetaClassDescription** pObjDescPtr) {
+    if (pObjDescPtr && *pObjDescPtr) *pObjDescPtr = (*pObjDescPtr)->pNextMetaClassDescription;
+}
+
+void TelltaleToolLib_GetNextMetaMemberDescription(MetaMemberDescription** pMemberDescPtr) {
+    if (pMemberDescPtr && *pMemberDescPtr)*pMemberDescPtr = (*pMemberDescPtr)->mpNextMember;
+}
+
+MetaClassDescription* TelltaleToolLib_FindMetaClassDescription(const char* pStr, bool pIsName) {
+    for (MetaClassDescription* i = TelltaleToolLib_GetFirstMetaClassDescription(); i;) {
+        if (!i->mpExt && !pIsName) {//stfu:(cba
+            TelltaleToolLib_GetNextMetaClassDescription(&i);
+            continue;
+        }else if (!_stricmp(pStr, pIsName ? i->mpTypeInfoName : i->mpExt))return i;
+        TelltaleToolLib_GetNextMetaClassDescription(&i);
+    }
+    return NULL;
+}
+
+void TelltaleToolLib_GetMetaMemberDescriptionInfo(MetaMemberDescription* pMemberDesc, void* pDest, MetaMemberDescriptionParam param) {
+    switch (param) {
+    case MetaMemberDescriptionParam::eMMDP_Name:
+        *static_cast<const void**>(pDest) = pMemberDesc->mpName;
+        break;
+    case MetaMemberDescriptionParam::eMMDP_Offset:
+        *static_cast<u64*>(pDest) = pMemberDesc->mOffset;
+        break;
+    case MetaMemberDescriptionParam::eMMDP_Flags:
+        *static_cast<u32*>(pDest) = pMemberDesc->mFlags;
+        break;
+    case MetaMemberDescriptionParam::eMMDP_HostClass:
+        *static_cast<MetaClassDescription**>(pDest) = pMemberDesc->mpHostClass;
+        break;
+    case MetaMemberDescriptionParam::eMMDP_MemberClassDesc:
+        *static_cast<MetaClassDescription**>(pDest) = pMemberDesc->mpMemberDesc;
+        break;
+    default:
+        return;
+    }
+}
+
+void TelltaleToolLib_GetMetaClassDescriptionInfo(MetaClassDescription* pObj, void* pDest, MetaClassDescriptionParam param) {
+    switch (param) {
+    case MetaClassDescriptionParam::eMCDP_Extension:
+        *static_cast<const char**>(pDest) = pObj->mpExt;
+        break;
+    case MetaClassDescriptionParam::eMCDP_Name:
+        *static_cast<const char**>(pDest) = pObj->mpTypeInfoName;
+        break;
+    case MetaClassDescriptionParam::eMCDP_Hash:
+        *static_cast<u64*>(pDest) = pObj->mHash;
+        break;
+    case MetaClassDescriptionParam::eMCDP_Flags:
+        *static_cast<u32*>(pDest) = pObj->mFlags.mFlags;
+        break;
+    case MetaClassDescriptionParam::eMCDP_ClassSize:
+        *static_cast<u32*>(pDest) = pObj->mClassSize;
+        break;
+    case MetaClassDescriptionParam::eMCDP_FirstMemberPtr:
+        *static_cast<MetaMemberDescription**>(pDest) = pObj->mpFirstMember;
+        break;
+    case MetaClassDescriptionParam::eMCDP_OperationsList:
+        *static_cast<MetaOperationDescription**>(pDest) = pObj->mMetaOperationsList;
+        break;
+    case MetaClassDescriptionParam::eMCDP_VTable:
+        *static_cast<void***>(pDest) = &pObj->mpVTable[0];
+        break;
+    case MetaClassDescriptionParam::eMCDP_SerializeAccel:
+        *static_cast<MetaSerializeAccel**>(pDest) = pObj->mpSerializeAccel;
+        break;
+    default:
+        return;
+    }
+}
+
+MetaClassDescription* TelltaleToolLib_GetFirstMetaClassDescription() {
+    return spFirstMetaClassDescription;
+}
 
 const char* TelltaleToolLib_GetVersion() {
 	return _VERSION;
 }
 
+i32 TelltaleToolLib_GetMetaTypesCount() {
+    return sMetaTypesCount;
+}
+
+bool TelltaleToolLib_Initialized() {
+    return sInitialized;
+}
+
 bool TelltaleToolLib_Initialize() {
+    if (sInitialized)return false;
     Meta::Initialize();//init all types
+
+    sInitialized = true;
+    return true;
 }
 
 void TelltaleToolLib_MakeInternalTypeName(char** _StringPtr) {

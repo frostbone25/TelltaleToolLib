@@ -3,41 +3,12 @@
 // the engine and require that if you use this code or library, you give credit to me and
 // the amazing Telltale Games.
 
-#pragma once
-const unsigned __int32 CRCTable[256];
-const unsigned __int64 crc_tab[256];
+#ifndef _HASHMANAGER
+#define _HASHMANAGER
 
-unsigned __int32 CRC32(unsigned __int32 crc, const char* const buffer, unsigned int count) {
-	for(int i = 0; i < count; i++)
-	{
-		crc = (crc << 8) ^ CRCTable[((crc >> 24) ^  buffer[i]) & 255];
-	}
-	return crc;
-}
+#include "TelltaleToolLibrary.h"
 
-unsigned __int64 CRC64(unsigned __int64 crc, const char* buf) {
-	const char* buf1 = buf;
-	while (buf1[0]) {
-		crc = crc_tab[((int)(crc >> 56) ^ buf1[0]) & 0xFF] ^ (crc << 8);
-		buf1++;
-	}
-	return crc;
-}
-
-
-unsigned __int64 CRC64_CaseInsensitive(unsigned __int64 crc, const char* buf) {
-	const char* cur = buf;
-	while (cur) {
-		unsigned char ch = cur[0];
-		if (ch >= 0b01000001 && ch <= 0b01011010)
-			ch |= 0b00100000;
-		crc = crc_tab[((int)(crc >> 56) ^ ch) & 0xFF] ^ (crc << 8);
-		cur++;
-	}
-	return crc;
-}
-
-unsigned __int32 CRCTable[256] = 
+const unsigned __int32 CRCTable[256] =
 {
 	0, 0x77073096, 0xEE0E612C, 0x990951BA,
 		0x076DC419, 0x706AF48F, 0xE963A535, 0x9E6495A3,
@@ -193,3 +164,35 @@ const unsigned __int64 crc_tab[] = {
 		0x913F6188692D6F4BL, 0xD3CF8063C0C759D8L, 0x5DEDC41A34BBEEB2L,
 		0x1F1D25F19D51D821L, 0xD80C07CD676F8394L, 0x9AFCE626CE85B507L
 };
+
+unsigned __int32 INLINE CRC32(unsigned __int32 crc, const char* const buffer, unsigned int count) {
+	for(int i = 0; i < count; i++)
+	{
+		crc = (crc << 8) ^ CRCTable[((crc >> 24) ^  buffer[i]) & 255];
+	}
+	return crc;
+}
+
+unsigned __int64 INLINE CRC64(unsigned __int64 crc, const char* buf) {
+	const char* buf1 = buf;
+	while (buf1[0]) {
+		crc = crc_tab[((int)(crc >> 56) ^ buf1[0]) & 0xFF] ^ (crc << 8);
+		buf1++;
+	}
+	return crc;
+}
+
+
+unsigned __int64 INLINE CRC64_CaseInsensitive(unsigned __int64 crc, const char* buf) {
+	const char* cur = buf;
+	while (*cur) {
+		unsigned char ch = cur[0];
+		if (ch >= 0b01000001 && ch <= 0b01011010)
+			ch |= 0b00100000;
+		crc = crc_tab[((int)(crc >> 56) ^ ch) & 0xFF] ^ (crc << 8);
+		cur++;
+	}
+	return crc;
+}
+
+#endif

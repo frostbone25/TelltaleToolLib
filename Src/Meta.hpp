@@ -6,15 +6,179 @@
 #ifndef _META
 #define _META
 
+#include "TelltaleToolLibrary.h"
 #include <string>
 #include <typeinfo>
 #include <vector>
-#include "HandleObjectInfo.h"
-#include "MetaStream.h"
+#include "HashManager.h"
 
 #define METAOP_FUNC_DEF(_FuncName) static MetaOpResult MetaOperation_##_FuncName(void *,MetaClassDescription*,MetaMemberDescription*,void*);
-#define METAOP_FUNC_IMPL(_FuncName) static MetaOpResult Meta::MetaOperation_##_FuncName(void *pObj,MetaClassDescription* pObjDescription,\
+#define METAOP_FUNC_IMPL(_FuncName) MetaOpResult Meta::MetaOperation_##_FuncName(void *pObj,MetaClassDescription* pObjDescription,\
 	MetaMemberDescription *pContextDescription,void *pUserData)
+
+struct MetaClassDescription;
+struct MetaMemberDescription;
+
+enum MetaOpResult {
+	eMetaOp_Fail = 0x0,
+	eMetaOp_Succeed = 0x1,
+	eMetaOp_Invalid = 0x2,
+	eMetaOp_OutOfMemory = 0x3,
+	eMetaOp_MAX = 0x4,
+};
+
+
+struct Meta {
+
+	//Types
+	static void Initialize();
+	//Handle<T>
+	static void Initialize2();
+	//AnimatedValueInterfaceBases
+	static void Initialize3();
+	//Containers
+	static void Initialize4();
+
+	//set the version crc in the serializedversioninfo
+	static MetaOpResult MetaOperation_SerializedVersionInfo(void* pObj,
+		MetaClassDescription* pObjDescription, MetaMemberDescription* pContextDesc,
+		void* pUserData);
+
+	struct Equivalence {
+		bool mbEqual;
+		void* mpOther;
+	};
+
+	typedef void (*EnumerateMembersFunc)(void*, MetaClassDescription*, MetaMemberDescription*);
+
+	struct EnumerateMembersInfo {
+		EnumerateMembersFunc mpFunc;
+		std::vector<void*> mArgs;//DCArray<void*>
+	};
+
+	struct ConvertFromInfo {
+		const void* mpFromObject;
+		MetaClassDescription* mpFromObjDescription;
+	};
+
+	METAOP_FUNC_DEF(GetObjectName)
+
+	METAOP_FUNC_DEF(EnumerateMembers)
+
+	METAOP_FUNC_DEF(Destroy)
+
+	METAOP_FUNC_DEF(SerializeAsync)
+
+	METAOP_FUNC_DEF(SerializeMain)
+
+	METAOP_FUNC_DEF(Equivalence)
+
+	//the goto function!
+	METAOP_FUNC_DEF(AsyncSave)
+
+	static INLINE MetaOpResult MetaOperation_Invalid(void* pObj,
+		MetaClassDescription* pObjDescription, MetaMemberDescription* pContextDescription,
+		void* pUserData) {
+		return MetaOpResult::eMetaOp_Invalid;
+	}
+
+
+};
+class MetaStream {
+
+public:
+
+	//MetaOpResult serialize_Symbol(Symbol*);
+
+};
+
+typedef void* (*FuncNew)(void);
+typedef void (*FuncDestroy)(void*);
+typedef void (*FuncDelete)(void*);
+typedef void (*FuncCopyConstruct)(void*, void*);
+typedef void (*FuncConstruct)(void*);
+typedef void (*FuncCastToConcreteObject)(void**, MetaClassDescription**);
+
+extern i32 sMetaTypesCount;
+
+class Symbol {
+private:
+	static char smSymbolBuffer[sizeof(u64) * 2 + 1];//1byte= 2 hex chars
+	u64 mCrc64;
+public:
+
+	Symbol(void) : mCrc64(0) {}
+	Symbol(char const* pString) {
+		mCrc64 = pString ? CRC64_CaseInsensitive(0, pString) : 0;
+	}
+	Symbol(const String& pString) {
+		mCrc64 = CRC64_CaseInsensitive(0, pString.c_str());
+	}
+	Symbol(u64 crc) : mCrc64(crc) {}
+
+	Symbol& operator=(const Symbol& rhs) {
+		this->mCrc64 = rhs.mCrc64;
+		return *this;
+	}
+
+	INLINE const char* CRCAsCstr() const {//not async
+		sprintf(smSymbolBuffer, "%llx", mCrc64);
+		return smSymbolBuffer;
+	}
+
+	INLINE void SetCRC(u64 crc) { mCrc64 = crc; }
+
+	Symbol& Concat(const String& tName) {
+		mCrc64 = CRC64_CaseInsensitive(0, tName.c_str());
+		return *this;
+	}
+	//AsConcat isnt needed
+
+	INLINE operator const char* () const { return CRCAsCstr(); }
+
+	static MetaOpResult MetaOperation_Equivalence(void* pObj,
+		MetaClassDescription* pClassDescription, MetaMemberDescription* pContextDescription,
+		void* pUserData) {//userdata=meta::equivalence
+		static_cast<Meta::Equivalence*>(pUserData)->mbEqual = static_cast<Symbol*>(pObj)->mCrc64 ==
+			static_cast<Symbol*>(static_cast<Meta::Equivalence*>(pUserData)->mpOther)->mCrc64;
+		return MetaOpResult::eMetaOp_Succeed;
+	}
+
+	static MetaOpResult MetaOperation_SerializeAsync(void* pObj, MetaClassDescription* pClassDescription,
+		MetaMemberDescription* pContextDescription, void* pUserData) {
+		//static_cast<MetaStream*>(pUserData)->serialize_Symbol(static_cast<Symbol*>(pObj));---------------------------------------
+		return eMetaOp_Succeed;
+	}
+
+	static const Symbol EmptySymbol;
+
+};
+
+template<typename T>
+struct MetaClassDescription_Typed {
+
+	static void* New(void) {
+		return operator new(sizeof(T));
+	}
+
+	static void Destroy(void* pObj) {
+		static_cast<T*>(pObj)->~T();
+	}
+
+	static void Delete(void* pObj) {
+		static_cast<T*>(pObj)->~T();
+		operator delete(pObj);
+	}
+
+	static void CopyConstruct(void* pDest, void* pSrc) {
+		new (pDest) T(*static_cast<T*>(pSrc));
+	}
+
+	static void Construct(void* pObj) {
+		new (pObj) T();
+	}
+
+};
 
 enum VTableFunction {
 	eVTableNew = 0,
@@ -22,8 +186,8 @@ enum VTableFunction {
 	eVTableConstruct = 2,
 	eVTableCopyConstruct = 3,
 	eVTableDestroy = 4,
-	eVTableCastToConcreteObject = 5,
-	eVTableCount = 6
+	//eVTableCastToConcreteObject = 5,
+	eVTableCount = 5//6
 };
 
 enum MetaFlag {
@@ -97,14 +261,6 @@ enum MetaFlag {
 00000190 serialize_bool  dq ? ; offset 400
 00000198 serialize_bytes dq ? ; offset 408*/
 
-enum MetaOpResult {
-	eMetaOp_Fail = 0x0,
-	eMetaOp_Succeed = 0x1,
-	eMetaOp_Invalid = 0x2,
-	eMetaOp_OutOfMemory = 0x3,
-	eMetaOp_MAX = 0x4,
-};
-
 struct SerializedVersionInfo {
 
 	struct MemberDesc {
@@ -127,17 +283,10 @@ struct SerializedVersionInfo {
 struct MetaMemberDescription;
 struct MetaClassDescription;
 
-typedef void* (*FuncNew)(void);
-typedef void (*FuncDestroy)(void*);
-typedef void (*FuncDelete)(void*);
-typedef void (*FuncCopyConstruct)(void*, void*);
-typedef void (*FuncConstruct)(void*);
-typedef void (*FuncCastToConcreteObject)(void**, MetaClassDescription**);
-
 struct MetaSerializeAccel {
 	MetaOpResult(__cdecl* mpFunctionAsync)(void*, MetaClassDescription*,
-		MetaMemberDescription*, void*); 
-	MetaOpResult(__cdecl* mpFunctionMain)(void*, MetaClassDescription*, 
+		MetaMemberDescription*, void*);
+	MetaOpResult(__cdecl* mpFunctionMain)(void*, MetaClassDescription*,
 		MetaMemberDescription*, void*);
 	MetaMemberDescription* mpMemberDesc;
 };
@@ -156,6 +305,7 @@ struct MetaOperationDescription {
 		eMetaOpSix = 0x6,
 		eMetaOpSeven = 0x7,
 		eMetaOpEight = 0x8,
+		//equivalence
 		eMetaOpNine = 0x9,
 		eMetaOpTen = 0x0A,
 		eMetaOpEleven = 0x0B,
@@ -239,7 +389,6 @@ struct MetaOperationDescription {
 };
 
 struct MetaClassDescription {
-	static MetaClassDescription* spFirstMetaClassDescription;
 	const char* mpExt;
 	const char* mpTypeInfoName;
 	u64 mHash;
@@ -247,9 +396,9 @@ struct MetaClassDescription {
 	u32 mClassSize;
 	SerializedVersionInfo* mpCompiledVersionSerializedVersionInfo;//atomic
 	MetaMemberDescription* mpFirstMember;
-	MetaOperationDescription* mMetaOperationsList; 
-	MetaClassDescription* pNextMetaClassDescription; 
-	const void** mpVTable; 
+	MetaOperationDescription* mMetaOperationsList;
+	MetaClassDescription* pNextMetaClassDescription;
+	void* mpVTable[5/*6*/];
 	MetaSerializeAccel* mpSerializeAccel;//atomic
 
 	String* GetToolDescriptionName(String* result);
@@ -273,10 +422,12 @@ struct MetaClassDescription {
 	bool IsDerivedFrom(MetaClassDescription* pDesc);
 	void InstallSpecializedMetaOperation(MetaOperationDescription*);
 	MetaOperation GetOperationSpecialization(int ID);
-	void CastToConcreteObject(void** pObj, MetaClassDescription** pDesc);
+	//void CastToConcreteObject(void** pObj, MetaClassDescription** pDesc); //doesnt exist
 	void* CastToBase(const void* pObj, MetaClassDescription* pBaseClassDesc);
 
 };
+
+extern MetaClassDescription* spFirstMetaClassDescription;
 
 struct MetaEnumDescription {
 	const char* mpEnumName;
@@ -303,61 +454,6 @@ struct MetaMemberDescription {
 	};
 	MetaClassDescription* mpMemberDesc;
 	~MetaMemberDescription();
-};
-
-namespace Meta {
-
-	//Types
-	void Initialize();
-	//Handle<T>
-	void Initialize2();
-	//AnimatedValueInterfaceBases
-	void Initialize3();
-	//Containers
-	void Initialize4();
-
-	//set the version crc in the serializedversioninfo
-	static MetaOpResult MetaOperation_SerializedVersionInfo(void* pObj,
-		MetaClassDescription* pObjDescription, MetaMemberDescription* pContextDesc,
-		void* pUserData);
-
-	struct Equivalence {
-		bool mbEqual;
-		void* mpOther;
-	};
-
-	typedef void (*EnumerateMembersFunc)(void*,MetaClassDescription*, MetaMemberDescription*);
-
-	struct EnumerateMembersInfo {
-		EnumerateMembersFunc mpFunc;
-		std::vector<void*> mArgs;//DCArray<void*>
-	};
-
-	struct ConvertFromInfo {
-		const void* mpFromObject;
-		MetaClassDescription* mpFromObjDescription;
-	};
-
-	METAOP_FUNC_DEF(GetObjectName)
-
-	METAOP_FUNC_DEF(EnumerateMembers)
-
-	METAOP_FUNC_DEF(Destroy)
-
-	METAOP_FUNC_DEF(SerializeAsync)
-
-	METAOP_FUNC_DEF(SerializeMain)
-
-	//the goto function!
-	METAOP_FUNC_DEF(AsyncSave)
-
-	static INLINE MetaOpResult MetaOperation_Invalid(void* pObj,
-		MetaClassDescription* pObjDescription, MetaMemberDescription* pContextDescription,
-		void* pUserData) {
-		return MetaOpResult::eMetaOp_Invalid;
-	}
-	
-
 };
 
 #endif

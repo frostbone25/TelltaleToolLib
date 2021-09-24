@@ -4,13 +4,22 @@
 // the amazing Telltale Games.
 
 
-#include "Meta.h"
+#include "Meta.hpp"
 
-#define DEFINET(name) }static MetaClassDescription meta_##name; \
-if(!(meta_##name.mFlags.mFlags & MetaFlag::Internal_MetaFlag_Initialized)){
+#define DEFINET(name,Ty) }++sMetaTypesCount;static MetaClassDescription meta_##name; \
+if(!(meta_##name.mFlags.mFlags & MetaFlag::Internal_MetaFlag_Initialized)){ \
+meta_##name.mpVTable[0] = MetaClassDescription_Typed<Ty>::New;\
+meta_##name.mpVTable[1] = MetaClassDescription_Typed<Ty>::Delete;\
+meta_##name.mpVTable[2] = MetaClassDescription_Typed<Ty>::Construct;\
+meta_##name.mpVTable[3] = MetaClassDescription_Typed<Ty>::CopyConstruct;\
+meta_##name.mpVTable[4] = MetaClassDescription_Typed<Ty>::Destroy;
 
-void Meta::Initialize() {{
-	DEFINET(char)
+i32 sMetaTypesCount = 0;
+MetaClassDescription* spFirstMetaClassDescription = NULL;
+
+void Meta::Initialize() {
+	{
+	DEFINET(char,char)
 	meta_char.mFlags = MetaFlag::MetaFlag_MetaSerializeBlockingDisabled;
 	meta_char.Initialize("int8");
 	meta_char.mClassSize = 1;
@@ -30,7 +39,7 @@ void Meta::Initialize3() {
 }
 
 void Meta::Initialize4() {
-
+	
 }
 
 MetaMemberDescription::~MetaMemberDescription() {
@@ -73,15 +82,6 @@ void* MetaClassDescription::CastToBase(const void* pObj, MetaClassDescription* p
 		}
 		mem = mem->mpNextMember;
 		if (!mem)return NULL;
-	}
-}
-
-void MetaClassDescription::CastToConcreteObject(void** pObj, MetaClassDescription** pDesc) {
-	if (this->mpVTable) {
-		void(* func)(void**, MetaClassDescription**);
-		func = (void(*)(void**, MetaClassDescription**))this->mpVTable[5];
-		if (func)
-			func(pObj, pDesc);
 	}
 }
 
@@ -208,12 +208,40 @@ String* MetaClassDescription::GetToolDescriptionName(String* result) {
 }
 
 METAOP_FUNC_IMPL(EnumerateMembers) {
-	EnumerateMembersInfo* handle = static_cast<EnumerateMembersInfo*>(pUserData);
+	Meta::EnumerateMembersInfo* handle = static_cast<Meta::EnumerateMembersInfo*>(pUserData);
 	if (!handle)return MetaOpResult::eMetaOp_Fail;
 	for (MetaMemberDescription* member = pObjDescription->mpFirstMember; member; member = member->mpNextMember) {
 		handle->mpFunc(&((char*)pObj)[member->mOffset], member->mpMemberDesc, member);
 	}
 	return MetaOpResult::eMetaOp_Succeed;
+}
+
+METAOP_FUNC_IMPL(Equivalence) {
+	MetaOpResult(*function)(void*, MetaClassDescription*, MetaMemberDescription*, void*);
+	Meta::Equivalence* userData = static_cast<Meta::Equivalence*>(pUserData);
+	char isEqual;
+	if (pObjDescription->mpFirstMember) {
+		userData->mbEqual = 1;
+		for (MetaMemberDescription* i = pObjDescription->mpFirstMember; i; i = i->mpNextMember) {
+			isEqual = false;
+			function = i->mpMemberDesc->GetOperationSpecialization(MetaOperationDescription::sIDs::eMetaOpNine);
+			if (function) {
+				function(&((char*)pObj)[i->mOffset], i->mpMemberDesc, i, &isEqual);
+			}
+			else {
+				Meta::MetaOperation_Equivalence(&((char*)pObj)[i->mOffset], i->mpMemberDesc, i, &isEqual);
+			}
+			if (!isEqual)
+				break;
+			if (!i->mpNextMember) return MetaOpResult::eMetaOp_Succeed;
+		}
+		userData->mbEqual = 0;
+
+	}
+	else {
+		userData->mbEqual = memcmp(pObj, userData->mpOther, pObjDescription->mClassSize) == 0;
+	}
+	return MetaOpResult::eMetaOp_Fail;
 }
 
 METAOP_FUNC_IMPL(GetObjectName) {
