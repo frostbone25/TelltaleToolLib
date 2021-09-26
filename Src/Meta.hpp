@@ -117,27 +117,75 @@ struct Meta {
 
 };
 
-enum MetaStreamMode {
+const struct MetaStreamParams {
+	bool mbCompress;
+};
+
+enum class MetaStreamMode {
 	eMetaStream_Closed = 0x0, eMetaStream_Read = 0x1, eMetaStream_Write = 0x2,
+};
+
+struct MetaVersionInfo {
+	u64 mTypeSymbolCrc;
+	u32 mVersionCrc;
 };
 
 class MetaStream {
 
 public:
 
+	enum class RuntimeFlags {
+		eWriteback = 0x1,
+		eStreamIsCompiledVersion = 0x2,
+		eIsUndo = 0x4
+	};
+
+	enum class SectionType {
+		eSection_Header = 0x0,
+		eSection_Default = 0x1,
+		eSection_Debug = 0x2,
+		eSection_Async = 0x3, 
+		eSection_Count = 0x4
+	};
+
+	enum class StreamType {
+		eStream_Binary = 0x0,
+		eStream_JSON = 0x1
+	};
+
+	struct BlockInfo {
+		int mBlockLength;
+	};
+
+	struct SectionInfo {
+		DataStream* mpDataStream;
+		u64 mCompressedSize;
+		std::vector<BlockInfo> mBlockInfo;
+		bool mbEnable;
+		bool mbCompressed;
+		//mReadBuffer, dont need it
+	};
 
 	struct SubStreamInfo {
-
+		SectionInfo mSection;
+		std::vector<MetaVersionInfo> mVersionInfo;
+		MetaStreamParams mParams;
+		int mDebugSectionDepth;
+		int mCurrentSection;
 	};
 
 	int mStreamVersion;
-	void* mpResourceAddress;//address of this stream
+	//void* mpResourceAddress;//address of this stream
 	std::vector<SubStreamInfo> mSubStreams;
-	void* mpWriteStream;
+	DataStream* mpWriteStream;
 	MetaStreamMode mMode;
+	Blowfish* mpBlowfish;
+	Flags mRuntimeFlags;//flag values: RuntimeFlags enum
 
 	int serialize_bytes(void* pBytes, u64 length) { return 0; }
 	//MetaOpResult serialize_Symbol(Symbol*);
+
+	MetaStream();//TODO
 
 };
 

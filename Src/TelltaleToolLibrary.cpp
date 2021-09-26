@@ -119,10 +119,41 @@ bool TelltaleToolLib_Initialized() {
     return sInitialized;
 }
 
-bool TelltaleToolLib_Initialize() {
-    if (sInitialized)return false;
-    Meta::Initialize();//init all types
+void TelltaleToolLib_SetBlowfishKey(const char* game_id) {
+    if (game_id) {
+        for (int i = 0; i < KEY_COUNT; i++) {
+            if (!stricmp(sBlowfishKeys[i].game_id, game_id)) {
+                sSetKeyIndex = i;
+                break;
+            }
+        }
+    }
+    else sSetKeyIndex = DEFAULT_BLOWFISH_GAME_KEY;
+    if (spBlowfish) {
+        spBlowfish->Init(sBlowfishKeys[sSetKeyIndex].game_key);
+    }
+}
 
+const char* TelltaleToolLib_GetBlowfishKey() {
+    return sBlowfishKeys[sSetKeyIndex].game_id;
+}
+
+bool TelltaleToolLib_Initialize(const char* game_id) {
+    if (sInitialized)return false;
+    if (game_id) {
+        const BlowfishKey* k = NULL;
+        for (int i = 0; i < KEY_COUNT; i++) {
+            if (!stricmp(sBlowfishKeys[i].game_id, game_id)) {
+                k = &sBlowfishKeys[i];
+                sSetKeyIndex = i;
+                break;
+            }
+        }
+        if (k == NULL)return false;
+        Blowfish::Initialize(k);
+    }
+    else Blowfish::Initialize(&sBlowfishKeys[sSetKeyIndex]);
+    Meta::Initialize();//init all types
     sInitialized = true;
     return true;
 }

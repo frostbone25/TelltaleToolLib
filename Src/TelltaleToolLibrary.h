@@ -10,6 +10,7 @@
 #include <type_traits>
 #include <string>
 #include "DataStream/DataStream.h"
+#include "Blowfish.h"
 
 #define INLINE __inline
 #define FORCE_INLINE __forceinline
@@ -66,8 +67,12 @@ _TTToolLib_Exp void TelltaleToolLib_MakeInternalTypeName(char**);
 
 /*
 * Initialize the library. This must be called before you call any file reading and writing functions.
+* Must pass a game id for the game that you are going to be working with files from. This is used for decryption keys.
+* See TelltaleToolLib_SetBlowfishKey. The game id *can* be NULL, where it will be set to the default game id which can be 
+* found in the Blowfish translation unit. If you pass an invalid game id, this will return false and fail. Passing NULL succeeds 
+* with the default ID, this goes aswell for the SetBlowfishKey function.
 */
-_TTToolLib_Exp bool TelltaleToolLib_Initialize();
+_TTToolLib_Exp bool TelltaleToolLib_Initialize(const char* game_id);
 
 /*
 * Returns the first meta class description in the list of all meta class description types.
@@ -94,6 +99,16 @@ _TTToolLib_Exp void TelltaleToolLib_GetMetaMemberDescriptionInfo(MetaMemberDescr
 * one then NULL is inserted.
 */
 _TTToolLib_Exp void TelltaleToolLib_GetNextMetaMemberDescription(MetaMemberDescription**);
+
+/*
+* Sets the current game ID which is used for decryption of files when needed. Game IDs can be found in the github repo.
+*/
+_TTToolLib_Exp void TelltaleToolLib_SetBlowfishKey(const char* game_id);
+
+/*
+* Gets the game id of the currently set blowfish key
+*/
+_TTToolLib_Exp const char* TelltaleToolLib_GetBlowfishKey();
 
 /*
 * Searches for the given meta class description file extension or name. If the second parameter is false, then its by extension

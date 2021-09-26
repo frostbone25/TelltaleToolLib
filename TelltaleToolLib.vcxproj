@@ -148,6 +148,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="Src\Blowfish.h" />
     <ClInclude Include="Src\DataStream\DataStream.h" />
     <ClInclude Include="Src\HandleObjectInfo.h" />
     <ClInclude Include="Src\HashManager.h" />
@@ -155,6 +156,7 @@
     <ClInclude Include="Src\TelltaleToolLibrary.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Src\Blowfish.cpp" />
     <ClCompile Include="Src\DataStream\DataStream.cpp" />
     <ClCompile Include="Src\Meta.cpp" />
     <ClCompile Include="Src\TelltaleToolLibrary.cpp" />
@@ -167,6 +169,7 @@
   </ItemGroup>
   <ItemGroup>
     <Text Include="Doc\Formats.txt" />
+    <Text Include="Doc\GameIDs.txt" />
     <Text Include="Src\todo.txt" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

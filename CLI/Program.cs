@@ -8,7 +8,7 @@ public class _Main {
        extern unsafe public static IntPtr TelltaleToolLib_GetVersion();
 
         [DllImport("LibTelltaleTool.dll")]
-        extern public static bool TelltaleToolLib_Initialize();
+        extern public static bool TelltaleToolLib_Initialize(IntPtr game_id);
 
         [DllImport("LibTelltaleTool.dll")]
         extern public static bool TelltaleToolLib_Initialized();
@@ -54,7 +54,7 @@ public class _Main {
     {
         Console.WriteLine("Loading libraries..");
         string version = PtrToStr(Link.TelltaleToolLib_GetVersion());
-        bool init = Link.TelltaleToolLib_Initialize();
+        bool init = Link.TelltaleToolLib_Initialize(IntPtr.Zero);//default to WDC
         if (!init) exit("Could not initialize LibTelltaleTool.");
         Console.WriteLine("Initialized LibTelltaleTool version {0} successfully. Total of {1} types found.", version,
             Link.TelltaleToolLib_GetMetaTypesCount());
