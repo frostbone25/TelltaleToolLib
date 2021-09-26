@@ -5,13 +5,16 @@
 #ifndef _TTToolLib
 #define _TTToolLib
 
+#pragma once
+
 #include <type_traits>
 #include <string>
+#include "DataStream/DataStream.h"
 
 #define INLINE __inline
 #define FORCE_INLINE __forceinline
 
-#define _VERSION "1.1"
+#define _VERSION "1.2"
 
 #define _TTToolLib_Exp extern "C" __declspec(dllexport)
 
@@ -112,6 +115,16 @@ _TTToolLib_Exp i32 TelltaleToolLib_GetMetaTypesCount();
 * Returns if this library is initialized yet.
 */
 _TTToolLib_Exp bool TelltaleToolLib_Initialized();
+
+/*
+* Creates a datastream for the given file path.
+*/
+_TTToolLib_Exp DataStream* TelltaleToolLib_CreateDataStream(const char* fp, DataStreamMode);
+
+/*
+* Deletes the given data stream. Only use this if you know what you're doing, normally its deleted internally.
+*/
+_TTToolLib_Exp void TelltaleToolLib_DeleteDataStream(DataStream*);
 
 /*
 * A static 1024 byte char buffer for strings. This can be used by other programs to store strings passed in between the library.

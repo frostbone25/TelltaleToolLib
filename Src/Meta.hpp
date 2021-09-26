@@ -16,6 +16,9 @@
 #define METAOP_FUNC_IMPL(_FuncName) MetaOpResult Meta::MetaOperation_##_FuncName(void *pObj,MetaClassDescription* pObjDescription,\
 	MetaMemberDescription *pContextDescription,void *pUserData)
 
+#define METAOP_FUNC_IMPL_(NS,_FuncName) MetaOpResult NS::MetaOperation_##_FuncName(void *pObj,MetaClassDescription* pObjDescription,\
+	MetaMemberDescription *pContextDescription,void *pUserData)
+
 struct MetaClassDescription;
 struct MetaMemberDescription;
 
@@ -27,6 +30,42 @@ enum MetaOpResult {
 	eMetaOp_MAX = 0x4,
 };
 
+namespace UID {
+	typedef int idT;
+	
+	struct __declspec(align(8)) Owner {
+		idT miUniqueID;
+	};
+
+	struct __declspec(align(8)) Generator {
+		idT miNextUniqueID;
+	};
+
+};
+
+struct T3VertexSampleDataBase {
+	//mAllocator, mRefCount
+	int mNumVerts;
+	int mVertSize;
+	char* mpData;
+
+	T3VertexSampleDataBase() : mpData(NULL) {}
+
+	~T3VertexSampleDataBase() {
+		if (mpData)
+			free(mpData);
+	}
+
+	METAOP_FUNC_DEF(SerializeAsync);
+
+};
+
+struct ZTestFunction {
+	enum zFuncTypes {
+		eNever = 0x1, eLess = 0x2, eEqual = 0x3, eLessEqual = 0x4, eGreater = 0x5, eNotEqual = 0x6, eGreaterEqual = 0x7, eAlways = 0x8,
+	};
+	zFuncTypes mZTestType;
+};
 
 struct Meta {
 
@@ -76,18 +115,28 @@ struct Meta {
 	//the goto function!
 	METAOP_FUNC_DEF(AsyncSave)
 
-	static INLINE MetaOpResult MetaOperation_Invalid(void* pObj,
-		MetaClassDescription* pObjDescription, MetaMemberDescription* pContextDescription,
-		void* pUserData) {
-		return MetaOpResult::eMetaOp_Invalid;
-	}
-
-
 };
+
+enum MetaStreamMode {
+	eMetaStream_Closed = 0x0, eMetaStream_Read = 0x1, eMetaStream_Write = 0x2,
+};
+
 class MetaStream {
 
 public:
 
+
+	struct SubStreamInfo {
+
+	};
+
+	int mStreamVersion;
+	void* mpResourceAddress;//address of this stream
+	std::vector<SubStreamInfo> mSubStreams;
+	void* mpWriteStream;
+	MetaStreamMode mMode;
+
+	int serialize_bytes(void* pBytes, u64 length) { return 0; }
 	//MetaOpResult serialize_Symbol(Symbol*);
 
 };
@@ -153,6 +202,11 @@ public:
 	static const Symbol EmptySymbol;
 
 };
+
+template<typename T, typename U> constexpr size_t memberOffset(U T::* member)
+{
+	return (char*)&((T*)nullptr->*member) - (char*)nullptr;
+}
 
 template<typename T>
 struct MetaClassDescription_Typed {
@@ -300,8 +354,10 @@ struct MetaOperationDescription {
 		eMetaOpOne = 0x1,
 		eMetaOpTwo = 0x2,
 		eMetaOpThree = 0x3,
+		//add to panel
 		eMetaOpFour = 0x4,
 		eMetaOpFive = 0x5,
+		//convert
 		eMetaOpSix = 0x6,
 		eMetaOpSeven = 0x7,
 		eMetaOpEight = 0x8,
@@ -441,6 +497,8 @@ struct MetaFlagDescription {
 	i32 mFlagValue;
 	MetaFlagDescription* mpNext;
 };
+
+MetaSerializeAccel* MetaSerialize_GenerateAccel(MetaClassDescription*);
 
 struct MetaMemberDescription {
 	const char* mpName;

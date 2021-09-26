@@ -5,6 +5,7 @@
 
 
 #include "Meta.hpp"
+#include <typeinfo>
 
 #define DEFINET(name,Ty) }++sMetaTypesCount;static MetaClassDescription meta_##name; \
 if(!(meta_##name.mFlags.mFlags & MetaFlag::Internal_MetaFlag_Initialized)){ \
@@ -12,7 +13,13 @@ meta_##name.mpVTable[0] = MetaClassDescription_Typed<Ty>::New;\
 meta_##name.mpVTable[1] = MetaClassDescription_Typed<Ty>::Delete;\
 meta_##name.mpVTable[2] = MetaClassDescription_Typed<Ty>::Construct;\
 meta_##name.mpVTable[3] = MetaClassDescription_Typed<Ty>::CopyConstruct;\
-meta_##name.mpVTable[4] = MetaClassDescription_Typed<Ty>::Destroy;
+meta_##name.mpVTable[4] = MetaClassDescription_Typed<Ty>::Destroy;\
+meta_##name.mClassSize = sizeof(Ty);
+
+#define DEFINEOP(name, opName,fid,fun)static MetaOperationDescription meta_##name##_##opName; meta_##name##_##opName.id = fid;\
+meta_##name##_##opName.mpOpFn = fun;
+
+#define DEFINEM(name,memberName)static MetaMemberDescription meta_##name##_##memberName
 
 i32 sMetaTypesCount = 0;
 MetaClassDescription* spFirstMetaClassDescription = NULL;
@@ -22,8 +29,120 @@ void Meta::Initialize() {
 	DEFINET(char,char)
 	meta_char.mFlags = MetaFlag::MetaFlag_MetaSerializeBlockingDisabled;
 	meta_char.Initialize("int8");
-	meta_char.mClassSize = 1;
 	meta_char.Insert();
+	DEFINET(ushort, u16)
+	meta_ushort.mFlags = MetaFlag::MetaFlag_MetaSerializeBlockingDisabled;
+	meta_ushort.Initialize("uint16");
+	meta_ushort.Insert();
+	DEFINET(short, i16)
+	meta_short.mFlags = MetaFlag::MetaFlag_MetaSerializeBlockingDisabled;
+	meta_short.Initialize("int16");
+	meta_short.Insert();
+	DEFINET(int, i32)
+	meta_int.mFlags = MetaFlag::MetaFlag_MetaSerializeBlockingDisabled;
+	meta_int.Initialize("int");
+	meta_int.Insert();
+	DEFINET(long, i32)
+	meta_long.mFlags = MetaFlag::MetaFlag_MetaSerializeBlockingDisabled | MetaFlag::MetaFlag_PlaceInAddPropMenu;
+	meta_long.Initialize("long");
+	meta_long.Insert();
+	DEFINET(u64, u64)
+	meta_u64.mFlags = MetaFlag::MetaFlag_MetaSerializeBlockingDisabled;
+	meta_u64.Initialize("uint64");
+	meta_u64.Insert();
+	DEFINET(float,float)
+	meta_float.mFlags = MetaFlag::MetaFlag_MetaSerializeBlockingDisabled | MetaFlag::MetaFlag_PlaceInAddPropMenu;
+	meta_float.Initialize("float");
+	meta_float.Insert();
+	DEFINET(double,double)
+	meta_double.mFlags = MetaFlag::MetaFlag_MetaSerializeBlockingDisabled;
+	meta_double.Initialize("double");
+	meta_double.Insert();
+	DEFINET(__int64, __int64)
+	meta___int64.mFlags = MetaFlag::MetaFlag_MetaSerializeBlockingDisabled;
+	meta___int64.Initialize("int64");
+	meta___int64.Insert();
+	DEFINET(__uint32, unsigned __int32)
+	meta___uint32.mFlags = MetaFlag::MetaFlag_MetaSerializeBlockingDisabled;
+	meta___uint32.Initialize("uint32");
+	meta___uint32.Insert();
+	DEFINET(__int32, __int32)
+	meta___int32.mFlags = MetaFlag::MetaFlag_MetaSerializeBlockingDisabled;
+	meta___int32.Initialize("int32");
+	meta___int32.Insert();
+	DEFINET(__uint8, unsigned __int8)
+	meta___uint8.mFlags = MetaFlag::MetaFlag_MetaSerializeBlockingDisabled;
+	meta___uint8.Initialize("uint8");
+	meta___uint8.Insert();
+	DEFINET(symbol, Symbol)
+	meta_symbol.mFlags = MetaFlag::MetaFlag_MetaSerializeNonBlockedVariableSize;
+	meta_symbol.Initialize("Symbol");
+	meta_symbol.Insert();
+	DEFINET(flags, Flags)
+	meta_flags.Initialize(typeid(Flags).name());
+	DEFINEM(flags, mFlags);
+	meta_flags_mFlags.mpName = "mFlags";
+	meta_flags_mFlags.mFlags |= MetaFlag::MetaFlag_MetaSerializeBlockingDisabled;
+	meta_flags_mFlags.mpMemberDesc = &meta_long;
+	meta_flags_mFlags.mOffset = memberOffset(&Flags::mFlags);
+	meta_flags.mpFirstMember = &meta_flags_mFlags;
+	meta_flags.Insert();
+	DEFINET(bool,bool)
+	meta_bool.mFlags = MetaFlag::MetaFlag_MetaSerializeBlockingDisabled;
+	meta_bool.Initialize("bool");
+	meta_bool.Insert();
+	DEFINET(ztest, ZTestFunction)
+	meta_ztest.mFlags |= MetaFlag_EnumWrapperClass;
+	meta_ztest.Initialize(typeid(ZTestFunction).name());
+	DEFINEM(ztest, mZTestType);
+	meta_ztest_mZTestType.mpName = "mZTestType";
+	meta_ztest_mZTestType.mpMemberDesc = &meta_long;
+	meta_ztest_mZTestType.mOffset = memberOffset(&ZTestFunction::mZTestType);
+	meta_ztest.mpFirstMember = &meta_ztest_mZTestType;
+	meta_ztest.Insert();
+	DEFINET(uidowner, UID::Owner)
+	meta_uidowner.Initialize(typeid(UID::Owner).name());
+	DEFINEM(uidowner, miUniqueID);
+	meta_uidowner_miUniqueID.mpName = "miUniqueID";
+	meta_uidowner_miUniqueID.mpMemberDesc = &meta_long;
+	meta_uidowner_miUniqueID.mOffset = memberOffset(&UID::Owner::miUniqueID);
+	meta_uidowner.mFlags |= MetaFlag_EditorHide;
+	meta_uidowner.mpFirstMember = &meta_uidowner_miUniqueID;
+	meta_uidowner.Insert();
+
+	//UID::Generator
+
+	DEFINET(uidgen, UID::Generator)
+	meta_uidgen.Initialize(typeid(UID::Generator).name());
+	DEFINEM(uidgen, miNextUniqueID);
+	meta_uidgen_miNextUniqueID.mpName = "miNextUniqueID";
+	meta_uidgen_miNextUniqueID.mpMemberDesc = &meta_long;
+	meta_uidgen_miNextUniqueID.mOffset = memberOffset(&UID::Generator::miNextUniqueID);
+	meta_uidgen.mpFirstMember = &meta_uidgen_miNextUniqueID;
+	meta_uidgen.Insert();
+
+	//T3VertexSampleDataBase
+
+	DEFINET(t3vsdb, T3VertexSampleDataBase);
+	meta_t3vsdb.Initialize(typeid(T3VertexSampleDataBase).name());
+
+	DEFINEOP(t3vsdb, serialize, MetaOperationDescription::sIDs::eMetaOpSerializeAsync, NULL);
+	meta_t3vsdb.InstallSpecializedMetaOperation(&meta_t3vsdb_serialize);
+
+	DEFINEM(t3vsdb, numverts);
+	meta_t3vsdb.mpFirstMember = &meta_t3vsdb_numverts;
+	meta_t3vsdb_numverts.mpName = "mNumVerts";
+	meta_t3vsdb_numverts.mOffset = memberOffset(&T3VertexSampleDataBase::mNumVerts);
+	meta_t3vsdb_numverts.mpMemberDesc = &meta_long;
+
+	DEFINEM(t3vsdb, vertsize);
+	meta_t3vsdb_vertsize.mpName = "mVertSize";
+	meta_t3vsdb_vertsize.mOffset = memberOffset(&T3VertexSampleDataBase::mVertSize);
+	meta_t3vsdb_vertsize.mpMemberDesc = &meta_long;
+	meta_t3vsdb_numverts.mpNextMember = &meta_t3vsdb_vertsize;
+
+	meta_t3vsdb.Insert();
+
 	}
 	Initialize2();
 	Initialize3();
@@ -40,6 +159,22 @@ void Meta::Initialize3() {
 
 void Meta::Initialize4() {
 	
+}
+
+METAOP_FUNC_IMPL_(T3VertexSampleDataBase, SerializeAsync) {
+	MetaStream* ms = static_cast<MetaStream*>(pUserData);
+	MetaOpResult result = Meta::MetaOperation_SerializeAsync(pObj, pObjDescription, pContextDescription, pUserData);
+	if (result == MetaOpResult::eMetaOp_Succeed) {
+		T3VertexSampleDataBase* db = static_cast<T3VertexSampleDataBase*>(pObj);
+		int verts_size = db->mNumVerts * db->mVertSize;
+		if (verts_size) {
+			if (ms->mMode == MetaStreamMode::eMetaStream_Read) {
+				db->mpData = (char*)malloc(verts_size);
+			}
+			ms->serialize_bytes(db->mpData, verts_size);
+		}
+	}
+	return result;
 }
 
 MetaMemberDescription::~MetaMemberDescription() {
@@ -173,7 +308,7 @@ bool MetaClassDescription::MatchesHash(u64 o) {
 
 MetaClassDescription::~MetaClassDescription() {
 	if (this->mpSerializeAccel)
-		free(mpSerializeAccel);
+		delete[] this->mpSerializeAccel;
 }
 
 void MetaClassDescription::Construct(void* pObj) {
@@ -250,6 +385,66 @@ METAOP_FUNC_IMPL(GetObjectName) {
 	if (pDestStr)
 		pDestStr->operator=(szConstObjName.c_str());
 	return MetaOpResult::eMetaOp_Succeed;
+}
+
+MetaSerializeAccel* MetaSerialize_GenerateAccel(MetaClassDescription* pObj) {
+	if (!pObj->mpFirstMember)
+		return NULL;
+	if (pObj->mpSerializeAccel)return pObj->mpSerializeAccel;
+	MetaMemberDescription* member = pObj->mpFirstMember;
+	u64 toserialize = 0;
+	do {
+		bool dont = member->mFlags & MetaFlag::MetaFlag_MetaSerializeDisable || member->mpMemberDesc->mFlags.mFlags & MetaFlag_MetaSerializeDisable;
+		member = member->mpNextMember;
+		if (!dont)
+			toserialize++;
+	} while (member);
+	if (toserialize > 0) {
+		MetaSerializeAccel* accels = new MetaSerializeAccel[toserialize+1i64];
+		MetaSerializeAccel* first = accels;
+		member = pObj->mpFirstMember;
+		do {
+			MetaClassDescription* memberDesc = member->mpMemberDesc;
+			if (!(memberDesc->mFlags.mFlags & MetaFlag_MetaSerializeDisable) && (!member->mFlags & MetaFlag_MetaSerializeDisable)) {
+				accels->mpMemberDesc = member;
+				MetaOperation op = memberDesc->GetOperationSpecialization(74);
+				accels->mpFunctionAsync = op ? op : Meta::MetaOperation_SerializeAsync;
+				op = memberDesc->GetOperationSpecialization(75);
+				accels->mpFunctionMain = op ? op : Meta::MetaOperation_SerializeMain;
+				accels++;
+			}
+			member = member->mpNextMember;
+		} while (member);
+		//reason we have this trailing one is because its the null terminator. bit stupid they could just store a size to spare
+		//them 20 or so bytes but telltale ok then
+		first[toserialize].mpFunctionAsync = 0;
+		first[toserialize].mpFunctionMain = 0;
+		first[toserialize].mpMemberDesc = 0;
+		pObj->mpSerializeAccel = first;
+		return first;
+	}
+	return NULL;
+}
+
+METAOP_FUNC_IMPL(SerializeMain) {
+	MetaSerializeAccel* accelerated = pObjDescription->mpSerializeAccel;
+	if (accelerated || ((accelerated = MetaSerialize_GenerateAccel(pObjDescription)) != NULL)) {
+		while (true) {
+			if (!accelerated->mpFunctionMain)return eMetaOp_Succeed;//nothing to serialize
+			MetaOpResult result = accelerated->mpFunctionMain(&((char*)pObj)[accelerated->mpMemberDesc->mOffset], 
+				accelerated->mpMemberDesc->mpMemberDesc, accelerated->mpMemberDesc, pUserData);
+			if (result != eMetaOp_Succeed)return result;
+			accelerated++;
+			if (!accelerated)
+				break;
+		}
+	}
+	return eMetaOp_Succeed;//can still succeed since it could be memberless!
+}
+
+METAOP_FUNC_IMPL(SerializeAsync) {
+//DO AFTER META STRAEM IMPL
+	return eMetaOp_Succeed;
 }
 
 METAOP_FUNC_IMPL(SerializedVersionInfo) {

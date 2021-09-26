@@ -27,12 +27,18 @@
     <ClInclude Include="Src\Meta.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Src\DataStream\DataStream.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Src\TelltaleToolLibrary.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Src\Meta.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\DataStream\DataStream.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -44,5 +50,6 @@
   </ItemGroup>
   <ItemGroup>
     <Text Include="Doc\Formats.txt" />
+    <Text Include="Src\todo.txt" />
   </ItemGroup>
 </Project>

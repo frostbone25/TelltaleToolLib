@@ -148,12 +148,14 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="Src\DataStream\DataStream.h" />
     <ClInclude Include="Src\HandleObjectInfo.h" />
     <ClInclude Include="Src\HashManager.h" />
     <ClInclude Include="Src\Meta.hpp" />
     <ClInclude Include="Src\TelltaleToolLibrary.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Src\DataStream\DataStream.cpp" />
     <ClCompile Include="Src\Meta.cpp" />
     <ClCompile Include="Src\TelltaleToolLibrary.cpp" />
   </ItemGroup>
@@ -165,6 +167,7 @@
   </ItemGroup>
   <ItemGroup>
     <Text Include="Doc\Formats.txt" />
+    <Text Include="Src\todo.txt" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

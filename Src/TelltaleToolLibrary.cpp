@@ -10,6 +10,14 @@ const char* TelltaleToolLib_GetMetaClassDescriptionName(MetaClassDescription* pO
     return pObjDesc->mpTypeInfoName;
 }
 
+DataStream* TelltaleToolLib_CreateDataStream(const char* fp, DataStreamMode mode) {
+    return new DataStreamFileDisc((FileHandle)PlatformSpecOpenFile(fp, mode), mode);
+}
+
+void TelltaleToolLib_DeleteDataStream(DataStream* stream) {
+    delete stream;//calls destructor
+}
+
 char* TelltaleToolLib_Alloc_GetFixed1024ByteStringBuffer() {
     static char buf[1024];
     return &buf[0];
