@@ -30,7 +30,53 @@ void Blowfish::Init(const char* password) {
 	this->PA[15] = -1253635817;
 	this->PA[16] = -1843997223;
 	this->PA[17] = -1988494565;
-	//TODO
+	for (int i = 0; i < 256; i++) {
+		this->SB[0][i] = ks0[i];
+		this->SB[1][i] = ks1[i];
+		this->SB[2][i] = ks2[i];
+		this->SB[3][i] = ks3[i];
+	}
+	this->Gen_Subkeys(password);
+	mbInitialized = true;
+}
+
+void Blowfish::Gen_Subkeys(const char* Passwd) {
+	int len = 0;
+	while (Passwd[len]) {
+		len++;
+	}
+	if (len) {
+		short j = 0, i = 0,k = 0, N = 16;
+		unsigned long data,datal,datar;//32bits
+
+		for (i = 0; i < N + 2; ++i) {
+			data = 0x00000000;
+			for (k = 0; k < 4; ++k) {
+				data = (data << 8) | Passwd[j];
+				j = j + 1;
+				if (j >= len)j = 0;
+			}
+			PA[i] = PA[i] ^ data;
+		}
+		datal = 0;
+		datar = 0;
+		for (i = 0; i < N + 2; i += 2) {
+			BF_En(&datal, &datar);
+			PA[i] = datal;
+			PA[i + 1] = datar;
+		}
+		for (i = 0; i < 4; ++i) {
+			for (j = 0; j < 256; j += 2) {
+				BF_En(&datal, &datar);
+				SB[i][j] = datal;
+				SB[i][j + 1] = datar;
+			}
+		}
+	}
+}
+
+void Blowfish::Encrypt(void* buffer, unsigned int size) {
+
 }
 
 Blowfish::Blowfish(const char* password) : Blowfish() {

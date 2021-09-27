@@ -130,7 +130,7 @@ struct MetaVersionInfo {
 	u32 mVersionCrc;
 };
 
-class MetaStream {
+class MetaStream {//can implement child class MetaStream_JSON
 
 public:
 
@@ -164,6 +164,11 @@ public:
 		bool mbEnable;
 		bool mbCompressed;
 		//mReadBuffer, dont need it
+
+		SectionInfo() {
+			mbEnable = true;
+		}
+
 	};
 
 	struct SubStreamInfo {
@@ -179,13 +184,64 @@ public:
 	std::vector<SubStreamInfo> mSubStreams;
 	DataStream* mpWriteStream;
 	MetaStreamMode mMode;
-	Blowfish* mpBlowfish;
+	//Blowfish* mpBlowfish;
 	Flags mRuntimeFlags;//flag values: RuntimeFlags enum
+	char mName[260];
 
-	int serialize_bytes(void* pBytes, u64 length) { return 0; }
-	//MetaOpResult serialize_Symbol(Symbol*);
+	INLINE virtual const char* GetName() { return mName; }
+	INLINE virtual MetaStream::StreamType GetStreamType() { return StreamType::eStream_Binary; }
+	void Close();//TODO
+	void CloseAndDetachStream(DataStream*);
+	void Open(DataStream*, MetaStreamMode, MetaStreamParams);
+	void DisableDebugSection();
+	u64 GetPartialStreamSize();
+	virtual i64 ReadData(void*, u32);
+	virtual i64 WriteData(void*, u32);
+	virtual DataStream* ReadDataStream(DataStream*, u64);
+	char BeginSubStream();
+	void EndSubStream();
+	virtual bool BeginAsyncSection();
+	virtual void EndAsyncSection();
+	virtual bool HasAsyncSection();
+	virtual char BeginDebugSection();
+	virtual void EndDebugSection();
+	virtual bool HasDebugSection();
+	virtual u64 GetSize();
+	virtual u64 GetPos();
+	virtual void SetPos(u64);
+	virtual void Advance(int numBytes);
+	virtual void BeginBlock();
+	virtual void EndBlock();
+	virtual void SkipToEndOfCurrentBlock();
+	virtual void BeginObject(Symbol*, void*);
+	virtual void EndObject(Symbol*);
+	virtual void BeginObject(const char*, void*);
+	virtual void EndObject(const char*);
+	virtual int BeginAnonObject(void*);
+	virtual void EndAnonObject(int id);
+	virtual i64 BeginObject(Symbol*, MetaClassDescription*, MetaMemberDescription*);
+	virtual void EndObject(Symbol*, MetaClassDescription*, MetaMemberDescription*);
+	virtual void SetObjectAsArrayType();
+	virtual void AddVersion(const SerializedVersionInfo*);
+	virtual MetaVersionInfo* GetStreamVersion(u64 typeSymbolCrc);
+	virtual MetaVersionInfo* GetStreamVersion(MetaClassDescription*);
+	virtual void serialize_String(String*);
+	virtual void serialie_Symbol(Symbol*);
+	virtual void serialize_bool(bool*);
+	virtual int serialize_bytes(void*, u32);
+	char _ReadHeader(SubStreamInfo*, DataStream* partial, u64, u64);
+	void _WriteHeader(SubStreamInfo*);
+	void _FinalizeStream(SubStreamInfo*);
+	char _SetSection(SubStreamInfo*, SectionType);
+	virtual void serialize_double(long double*);
+	virtual void serialize_float(float*);
+	virtual void serialize_uint16(short*);
+	virtual void serialize_uint32(u32*);
+	virtual void serialize_uint64(u64*);
+	virtual void serialize_int8(char*);
 
-	MetaStream();//TODO
+	MetaStream(const char* Name);
+	~MetaStream();
 
 };
 

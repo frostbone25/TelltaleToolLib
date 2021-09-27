@@ -26,122 +26,122 @@ MetaClassDescription* spFirstMetaClassDescription = NULL;
 
 void Meta::Initialize() {
 	{
-	DEFINET(char,char)
-	meta_char.mFlags = MetaFlag::MetaFlag_MetaSerializeBlockingDisabled;
-	meta_char.Initialize("int8");
-	meta_char.Insert();
-	DEFINET(ushort, u16)
-	meta_ushort.mFlags = MetaFlag::MetaFlag_MetaSerializeBlockingDisabled;
-	meta_ushort.Initialize("uint16");
-	meta_ushort.Insert();
-	DEFINET(short, i16)
-	meta_short.mFlags = MetaFlag::MetaFlag_MetaSerializeBlockingDisabled;
-	meta_short.Initialize("int16");
-	meta_short.Insert();
-	DEFINET(int, i32)
-	meta_int.mFlags = MetaFlag::MetaFlag_MetaSerializeBlockingDisabled;
-	meta_int.Initialize("int");
-	meta_int.Insert();
-	DEFINET(long, i32)
-	meta_long.mFlags = MetaFlag::MetaFlag_MetaSerializeBlockingDisabled | MetaFlag::MetaFlag_PlaceInAddPropMenu;
-	meta_long.Initialize("long");
-	meta_long.Insert();
-	DEFINET(u64, u64)
-	meta_u64.mFlags = MetaFlag::MetaFlag_MetaSerializeBlockingDisabled;
-	meta_u64.Initialize("uint64");
-	meta_u64.Insert();
-	DEFINET(float,float)
-	meta_float.mFlags = MetaFlag::MetaFlag_MetaSerializeBlockingDisabled | MetaFlag::MetaFlag_PlaceInAddPropMenu;
-	meta_float.Initialize("float");
-	meta_float.Insert();
-	DEFINET(double,double)
-	meta_double.mFlags = MetaFlag::MetaFlag_MetaSerializeBlockingDisabled;
-	meta_double.Initialize("double");
-	meta_double.Insert();
-	DEFINET(__int64, __int64)
-	meta___int64.mFlags = MetaFlag::MetaFlag_MetaSerializeBlockingDisabled;
-	meta___int64.Initialize("int64");
-	meta___int64.Insert();
-	DEFINET(__uint32, unsigned __int32)
-	meta___uint32.mFlags = MetaFlag::MetaFlag_MetaSerializeBlockingDisabled;
-	meta___uint32.Initialize("uint32");
-	meta___uint32.Insert();
-	DEFINET(__int32, __int32)
-	meta___int32.mFlags = MetaFlag::MetaFlag_MetaSerializeBlockingDisabled;
-	meta___int32.Initialize("int32");
-	meta___int32.Insert();
-	DEFINET(__uint8, unsigned __int8)
-	meta___uint8.mFlags = MetaFlag::MetaFlag_MetaSerializeBlockingDisabled;
-	meta___uint8.Initialize("uint8");
-	meta___uint8.Insert();
-	DEFINET(symbol, Symbol)
-	meta_symbol.mFlags = MetaFlag::MetaFlag_MetaSerializeNonBlockedVariableSize;
-	meta_symbol.Initialize("Symbol");
-	meta_symbol.Insert();
-	DEFINET(flags, Flags)
-	meta_flags.Initialize(typeid(Flags).name());
-	DEFINEM(flags, mFlags);
-	meta_flags_mFlags.mpName = "mFlags";
-	meta_flags_mFlags.mFlags |= MetaFlag::MetaFlag_MetaSerializeBlockingDisabled;
-	meta_flags_mFlags.mpMemberDesc = &meta_long;
-	meta_flags_mFlags.mOffset = memberOffset(&Flags::mFlags);
-	meta_flags.mpFirstMember = &meta_flags_mFlags;
-	meta_flags.Insert();
-	DEFINET(bool,bool)
-	meta_bool.mFlags = MetaFlag::MetaFlag_MetaSerializeBlockingDisabled;
-	meta_bool.Initialize("bool");
-	meta_bool.Insert();
-	DEFINET(ztest, ZTestFunction)
-	meta_ztest.mFlags |= MetaFlag_EnumWrapperClass;
-	meta_ztest.Initialize(typeid(ZTestFunction).name());
-	DEFINEM(ztest, mZTestType);
-	meta_ztest_mZTestType.mpName = "mZTestType";
-	meta_ztest_mZTestType.mpMemberDesc = &meta_long;
-	meta_ztest_mZTestType.mOffset = memberOffset(&ZTestFunction::mZTestType);
-	meta_ztest.mpFirstMember = &meta_ztest_mZTestType;
-	meta_ztest.Insert();
-	DEFINET(uidowner, UID::Owner)
-	meta_uidowner.Initialize(typeid(UID::Owner).name());
-	DEFINEM(uidowner, miUniqueID);
-	meta_uidowner_miUniqueID.mpName = "miUniqueID";
-	meta_uidowner_miUniqueID.mpMemberDesc = &meta_long;
-	meta_uidowner_miUniqueID.mOffset = memberOffset(&UID::Owner::miUniqueID);
-	meta_uidowner.mFlags |= MetaFlag_EditorHide;
-	meta_uidowner.mpFirstMember = &meta_uidowner_miUniqueID;
-	meta_uidowner.Insert();
+		DEFINET(char, char)
+			meta_char.mFlags = MetaFlag::MetaFlag_MetaSerializeBlockingDisabled;
+		meta_char.Initialize("int8");
+		meta_char.Insert();
+		DEFINET(ushort, u16)
+			meta_ushort.mFlags = MetaFlag::MetaFlag_MetaSerializeBlockingDisabled;
+		meta_ushort.Initialize("uint16");
+		meta_ushort.Insert();
+		DEFINET(short, i16)
+			meta_short.mFlags = MetaFlag::MetaFlag_MetaSerializeBlockingDisabled;
+		meta_short.Initialize("int16");
+		meta_short.Insert();
+		DEFINET(int, i32)
+			meta_int.mFlags = MetaFlag::MetaFlag_MetaSerializeBlockingDisabled;
+		meta_int.Initialize("int");
+		meta_int.Insert();
+		DEFINET(long, i32)
+			meta_long.mFlags = MetaFlag::MetaFlag_MetaSerializeBlockingDisabled | MetaFlag::MetaFlag_PlaceInAddPropMenu;
+		meta_long.Initialize("long");
+		meta_long.Insert();
+		DEFINET(u64, u64)
+			meta_u64.mFlags = MetaFlag::MetaFlag_MetaSerializeBlockingDisabled;
+		meta_u64.Initialize("uint64");
+		meta_u64.Insert();
+		DEFINET(float, float)
+			meta_float.mFlags = MetaFlag::MetaFlag_MetaSerializeBlockingDisabled | MetaFlag::MetaFlag_PlaceInAddPropMenu;
+		meta_float.Initialize("float");
+		meta_float.Insert();
+		DEFINET(double, double)
+			meta_double.mFlags = MetaFlag::MetaFlag_MetaSerializeBlockingDisabled;
+		meta_double.Initialize("double");
+		meta_double.Insert();
+		DEFINET(__int64, __int64)
+			meta___int64.mFlags = MetaFlag::MetaFlag_MetaSerializeBlockingDisabled;
+		meta___int64.Initialize("int64");
+		meta___int64.Insert();
+		DEFINET(__uint32, unsigned __int32)
+			meta___uint32.mFlags = MetaFlag::MetaFlag_MetaSerializeBlockingDisabled;
+		meta___uint32.Initialize("uint32");
+		meta___uint32.Insert();
+		DEFINET(__int32, __int32)
+			meta___int32.mFlags = MetaFlag::MetaFlag_MetaSerializeBlockingDisabled;
+		meta___int32.Initialize("int32");
+		meta___int32.Insert();
+		DEFINET(__uint8, unsigned __int8)
+			meta___uint8.mFlags = MetaFlag::MetaFlag_MetaSerializeBlockingDisabled;
+		meta___uint8.Initialize("uint8");
+		meta___uint8.Insert();
+		DEFINET(symbol, Symbol)
+			meta_symbol.mFlags = MetaFlag::MetaFlag_MetaSerializeNonBlockedVariableSize;
+		meta_symbol.Initialize("Symbol");
+		meta_symbol.Insert();
+		DEFINET(flags, Flags)
+			meta_flags.Initialize(typeid(Flags).name());
+		DEFINEM(flags, mFlags);
+		meta_flags_mFlags.mpName = "mFlags";
+		meta_flags_mFlags.mFlags |= MetaFlag::MetaFlag_MetaSerializeBlockingDisabled;
+		meta_flags_mFlags.mpMemberDesc = &meta_long;
+		meta_flags_mFlags.mOffset = memberOffset(&Flags::mFlags);
+		meta_flags.mpFirstMember = &meta_flags_mFlags;
+		meta_flags.Insert();
+		DEFINET(bool, bool)
+			meta_bool.mFlags = MetaFlag::MetaFlag_MetaSerializeBlockingDisabled;
+		meta_bool.Initialize("bool");
+		meta_bool.Insert();
+		DEFINET(ztest, ZTestFunction)
+			meta_ztest.mFlags |= MetaFlag_EnumWrapperClass;
+		meta_ztest.Initialize(typeid(ZTestFunction).name());
+		DEFINEM(ztest, mZTestType);
+		meta_ztest_mZTestType.mpName = "mZTestType";
+		meta_ztest_mZTestType.mpMemberDesc = &meta_long;
+		meta_ztest_mZTestType.mOffset = memberOffset(&ZTestFunction::mZTestType);
+		meta_ztest.mpFirstMember = &meta_ztest_mZTestType;
+		meta_ztest.Insert();
+		DEFINET(uidowner, UID::Owner)
+			meta_uidowner.Initialize(typeid(UID::Owner).name());
+		DEFINEM(uidowner, miUniqueID);
+		meta_uidowner_miUniqueID.mpName = "miUniqueID";
+		meta_uidowner_miUniqueID.mpMemberDesc = &meta_long;
+		meta_uidowner_miUniqueID.mOffset = memberOffset(&UID::Owner::miUniqueID);
+		meta_uidowner.mFlags |= MetaFlag_EditorHide;
+		meta_uidowner.mpFirstMember = &meta_uidowner_miUniqueID;
+		meta_uidowner.Insert();
 
-	//UID::Generator
+		//UID::Generator
 
-	DEFINET(uidgen, UID::Generator)
-	meta_uidgen.Initialize(typeid(UID::Generator).name());
-	DEFINEM(uidgen, miNextUniqueID);
-	meta_uidgen_miNextUniqueID.mpName = "miNextUniqueID";
-	meta_uidgen_miNextUniqueID.mpMemberDesc = &meta_long;
-	meta_uidgen_miNextUniqueID.mOffset = memberOffset(&UID::Generator::miNextUniqueID);
-	meta_uidgen.mpFirstMember = &meta_uidgen_miNextUniqueID;
-	meta_uidgen.Insert();
+		DEFINET(uidgen, UID::Generator)
+			meta_uidgen.Initialize(typeid(UID::Generator).name());
+		DEFINEM(uidgen, miNextUniqueID);
+		meta_uidgen_miNextUniqueID.mpName = "miNextUniqueID";
+		meta_uidgen_miNextUniqueID.mpMemberDesc = &meta_long;
+		meta_uidgen_miNextUniqueID.mOffset = memberOffset(&UID::Generator::miNextUniqueID);
+		meta_uidgen.mpFirstMember = &meta_uidgen_miNextUniqueID;
+		meta_uidgen.Insert();
 
-	//T3VertexSampleDataBase
+		//T3VertexSampleDataBase
 
-	DEFINET(t3vsdb, T3VertexSampleDataBase);
-	meta_t3vsdb.Initialize(typeid(T3VertexSampleDataBase).name());
+		DEFINET(t3vsdb, T3VertexSampleDataBase);
+		meta_t3vsdb.Initialize(typeid(T3VertexSampleDataBase).name());
 
-	DEFINEOP(t3vsdb, serialize, MetaOperationDescription::sIDs::eMetaOpSerializeAsync, NULL);
-	meta_t3vsdb.InstallSpecializedMetaOperation(&meta_t3vsdb_serialize);
+		DEFINEOP(t3vsdb, serialize, MetaOperationDescription::sIDs::eMetaOpSerializeAsync, NULL);
+		meta_t3vsdb.InstallSpecializedMetaOperation(&meta_t3vsdb_serialize);
 
-	DEFINEM(t3vsdb, numverts);
-	meta_t3vsdb.mpFirstMember = &meta_t3vsdb_numverts;
-	meta_t3vsdb_numverts.mpName = "mNumVerts";
-	meta_t3vsdb_numverts.mOffset = memberOffset(&T3VertexSampleDataBase::mNumVerts);
-	meta_t3vsdb_numverts.mpMemberDesc = &meta_long;
+		DEFINEM(t3vsdb, numverts);
+		meta_t3vsdb.mpFirstMember = &meta_t3vsdb_numverts;
+		meta_t3vsdb_numverts.mpName = "mNumVerts";
+		meta_t3vsdb_numverts.mOffset = memberOffset(&T3VertexSampleDataBase::mNumVerts);
+		meta_t3vsdb_numverts.mpMemberDesc = &meta_long;
 
-	DEFINEM(t3vsdb, vertsize);
-	meta_t3vsdb_vertsize.mpName = "mVertSize";
-	meta_t3vsdb_vertsize.mOffset = memberOffset(&T3VertexSampleDataBase::mVertSize);
-	meta_t3vsdb_vertsize.mpMemberDesc = &meta_long;
-	meta_t3vsdb_numverts.mpNextMember = &meta_t3vsdb_vertsize;
+		DEFINEM(t3vsdb, vertsize);
+		meta_t3vsdb_vertsize.mpName = "mVertSize";
+		meta_t3vsdb_vertsize.mOffset = memberOffset(&T3VertexSampleDataBase::mVertSize);
+		meta_t3vsdb_vertsize.mpMemberDesc = &meta_long;
+		meta_t3vsdb_numverts.mpNextMember = &meta_t3vsdb_vertsize;
 
-	meta_t3vsdb.Insert();
+		meta_t3vsdb.Insert();
 
 	}
 	Initialize2();
@@ -158,7 +158,29 @@ void Meta::Initialize3() {
 }
 
 void Meta::Initialize4() {
-	
+
+}
+
+MetaStream::MetaStream(const char* Name) {
+	MetaStream* v1;
+	v1 = this;
+	this->mpWriteStream = 0i64;
+	this->mMode = MetaStreamMode::eMetaStream_Closed;
+	v1->mRuntimeFlags.mFlags = 0;
+	int len = strlen(Name);
+	memcpy(mName, Name, len >= 260 ? 259 : len);
+}
+
+MetaStream::~MetaStream() {
+	if (mpWriteStream) {
+		delete mpWriteStream;
+	}
+}
+
+void MetaStream::Close() {
+	if ((int)mMode) {
+
+	}
 }
 
 METAOP_FUNC_IMPL_(T3VertexSampleDataBase, SerializeAsync) {
