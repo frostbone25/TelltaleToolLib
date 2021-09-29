@@ -169,6 +169,7 @@ MetaStream::MetaStream(const char* Name) {
 	v1->mRuntimeFlags.mFlags = 0;
 	int len = strlen(Name);
 	memcpy(mName, Name, len >= 260 ? 259 : len);
+	mSubStreams.resize(4);
 }
 
 MetaStream::~MetaStream() {
@@ -177,10 +178,88 @@ MetaStream::~MetaStream() {
 	}
 }
 
-void MetaStream::Close() {
-	if ((int)mMode) {
-
+bool MetaStream::Attach(DataStream* stream, MetaStreamMode mode, MetaStreamParams params) {
+	if (mode == MetaStreamMode::eMetaStream_Closed || !stream)return false;
+	this->mMode = mode;
+	SubStreamInfo* v11 = new SubStreamInfo;
+	mSubStreams.push_back(v11);
+	if (mode != MetaStreamMode::eMetaStream_Read) {
+		this->mStreamVersion = 6;//MSV6
+		v11->mParams = params;
+		this->mpWriteStream = stream;
+		_SetSection(v11, MetaStream::SectionType::eSection_Default);
+		return true;
 	}
+	u64 completeStreamSize = stream->GetSize();
+	if (_ReadHeader(v11, stream, completeStreamSize,NULL)) {
+		u64 offset = v11->mSection[(int)SectionType::eSection_Header].mStreamSize;
+		for (int i = 1; i <= 3; i++) {//for each section (default,async,debug)
+			SectionInfo currentSect = v11->mSection[i];
+			if (currentSect.mCompressedSize) {
+				if (currentSect.mbCompressed) {
+					throw "COMPRESSED SECTION! NEED TO LOOK AT THIS FILE AND IMPL";
+					//datastreamcontainer::read is called here. I think this function
+					//does some sort of decompression? todo. this is found in most 
+					//save game files like estore epage etc
+					currentSect.mpDataStream = stream->GetSubStream
+						(offset, currentSect.mCompressedSize);
+					offset += currentSect.mCompressedSize;
+					currentSect.mStreamOffset = 0;//notice this! stream offset is zero.
+					//uncompressed sects the offset is the current file offset
+					currentSect.mStreamSize = currentSect.mpDataStream->GetSize();
+				}
+				else {
+					currentSect.mStreamOffset = offset;
+					currentSect.mStreamSize = currentSect.mCompressedSize;
+				}
+				offset += currentSect.mCompressedSize;
+			}
+		}
+		if (!METASTREAM_ENABLE_DEBUG) {
+			//delete debug stream since this version was not built in debug mode, was built in release
+			/**/DataStream* debugStream = v11->mSection
+				[(int)SectionType::eSection_Debug].mpDataStream;
+			if (debugStream)
+				delete debugStream;
+			v11->mSection[(int)SectionType::eSection_Debug].mpDataStream = NULL;
+			v11->mSection[(int)SectionType::eSection_Debug].mStreamOffset = 0;
+			v11->mSection[(int)SectionType::eSection_Debug].mStreamSize = 0;
+			v11->mSection[(int)SectionType::eSection_Debug].mCompressedSize = 0;
+		}
+		v11->mCurrentSection = SectionType::eSection_Default;
+	}
+	else return false;
+	return true;
+}
+
+void MetaStream::CloseAndDetachStream(DataStream* pStream) {
+	if (this->mMode != MetaStreamMode::eMetaStream_Closed) {
+		_FinalizeStream(mSubStreams[0]);
+		_WriteHeader(mSubStreams[0]);
+		this->mMode = MetaStreamMode::eMetaStream_Closed;
+		if (mpWriteStream)
+			delete mpWriteStream;
+		mpWriteStream = 0;
+		for (int i = 0; i < 4; i++) {
+			SubStreamInfo* info = mSubStreams[i];
+			if (!info->mSection[0].mStreamSize)continue;
+			if (info->mSection[0].mpDataStream)
+				delete info->mSection[0].mpDataStream;
+			info->mSection[0].mpDataStream = NULL;
+			info->mSection[0].mStreamOffset = 0;
+			info->mSection[0].mStreamPosition = 0;
+			info->mSection[0].mStreamSize = 0;
+			info->mSection[0].mCompressedSize = 0;
+			info->mSection[0].mBlockInfo.clear();
+			//+40 = mbenable
+		}
+	}
+}
+
+void MetaStream::Open(DataStream* stream, MetaStreamMode mode, MetaStreamParams p) {
+	//here, the datastream would be loaded from the resource getters, since its not the tool
+	//we can just let you pass the file stream in/datastream
+	Attach(stream, mode, p);
 }
 
 METAOP_FUNC_IMPL_(T3VertexSampleDataBase, SerializeAsync) {

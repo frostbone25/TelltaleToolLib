@@ -12,6 +12,9 @@
 #include <vector>
 #include "HashManager.h"
 
+//set to false to disallow the debug section of meta stream files to be loaded. default true
+#define METASTREAM_ENABLE_DEBUG true
+
 #define METAOP_FUNC_DEF(_FuncName) static MetaOpResult MetaOperation_##_FuncName(void *,MetaClassDescription*,MetaMemberDescription*,void*);
 #define METAOP_FUNC_IMPL(_FuncName) MetaOpResult Meta::MetaOperation_##_FuncName(void *pObj,MetaClassDescription* pObjDescription,\
 	MetaMemberDescription *pContextDescription,void *pUserData)
@@ -165,6 +168,8 @@ public:
 		bool mbCompressed;
 		//mReadBuffer, dont need it
 
+		u64 mStreamSize, mStreamOffset, mStreamPosition;
+
 		SectionInfo() {
 			mbEnable = true;
 		}
@@ -172,16 +177,16 @@ public:
 	};
 
 	struct SubStreamInfo {
-		SectionInfo mSection;
+		SectionInfo mSection[(int)SectionType::eSection_Count];
 		std::vector<MetaVersionInfo> mVersionInfo;
 		MetaStreamParams mParams;
 		int mDebugSectionDepth;
-		int mCurrentSection;
+		SectionType mCurrentSection;
 	};
 
-	int mStreamVersion;
+	u32 mStreamVersion;
 	//void* mpResourceAddress;//address of this stream
-	std::vector<SubStreamInfo> mSubStreams;
+	std::vector<SubStreamInfo*> mSubStreams;
 	DataStream* mpWriteStream;
 	MetaStreamMode mMode;
 	//Blowfish* mpBlowfish;
@@ -191,7 +196,9 @@ public:
 	INLINE virtual const char* GetName() { return mName; }
 	INLINE virtual MetaStream::StreamType GetStreamType() { return StreamType::eStream_Binary; }
 	void Close();//TODO
+	bool Attach(DataStream*, MetaStreamMode, MetaStreamParams);
 	void CloseAndDetachStream(DataStream*);
+	//IMPORTANT: THIS CLASS TAKES *OWNERSHIP* OF THE DATASTREAM AND WILL DELETE IT WHEN DONE!
 	void Open(DataStream*, MetaStreamMode, MetaStreamParams);
 	void DisableDebugSection();
 	u64 GetPartialStreamSize();
@@ -229,7 +236,7 @@ public:
 	virtual void serialie_Symbol(Symbol*);
 	virtual void serialize_bool(bool*);
 	virtual int serialize_bytes(void*, u32);
-	char _ReadHeader(SubStreamInfo*, DataStream* partial, u64, u64);
+	char _ReadHeader(SubStreamInfo*, DataStream* partial, u64, u64 *pOutBytesNeeded);
 	void _WriteHeader(SubStreamInfo*);
 	void _FinalizeStream(SubStreamInfo*);
 	char _SetSection(SubStreamInfo*, SectionType);

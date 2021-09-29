@@ -3,3 +3,6 @@ TODO LIST:
 - Implement DataStream
 - Implement MetaStream
 - Meta::MetaOperation_SerializeAsync
+
+notes:
+metastream deletes the datastream passed on open
