@@ -41,68 +41,73 @@ bool DataStream::SetMode(DataStreamMode mode) {
 }
 
 bool DataStreamMemory::Serialize(void* buffer, unsigned __int64 bufsize) {
-	if (!IsWrite())return false;
 	if (!buffer && bufsize)return false;
 	if (!bufsize)return true;
-	int rem = mSize % mPageSize;
-	char* buf = (char*)buffer;
-	int size = bufsize;
-	if (rem) {
-		if(rem >= bufsize){
-			memcpy(mPageTable[mPageTable.size() - 1] + rem, buf, bufsize);
-			mSize += bufsize;
-			return true;
+	if (IsRead()) {
+		if (bufsize + mOffset > mSize)return false;
+		memcpy(buffer, (char*)mMemoryBuffer + mOffset, bufsize);
+		mOffset += bufsize;
+	}
+	else {
+		if (mOffset != mSize) {
+
 		}
 		else {
-			memcpy(mPageTable[mPageTable.size() - 1] + rem, buf, mPageSize-rem);
-			bufsize -= rem;
-			buf += rem;
+
 		}
 	}
-	int newpgs = bufsize / mPageSize;
-	for (int i = 0; i < newpgs; i++) {
-		char* newbuf = (char*)calloc(1, mPageSize);
-		memcpy(newbuf, buf, mPageSize);
-		buf += mPageSize;
-		bufsize -= mPageSize;
-		mPageTable.push_back(newbuf);
+	return true;
+}
+
+bool DataStreamMemory::SetPosition(signed __int64 pos, DataStreamSeekType type) {
+	unsigned __int64 final = 0;
+	switch (type) {
+	case DataStreamSeekType::eSeekType_Begin:
+		final = pos;
+		break;
+	case DataStreamSeekType::eSeekType_Current:
+		final = mOffset + pos;
+		break;
+	case DataStreamSeekType::eSeekType_End:
+		final = mSize - pos;
+		break;
 	}
-	if (bufsize) {
-		char* newbuf = (char*)calloc(1, mPageSize);
-		memcpy(newbuf, buf, bufsize);
-		mPageTable.push_back(newbuf);
-	}
-	mSize = size;
+	if (final > mSize)return false;
+	mOffset = final;
 	return true;
 }
 
 DataStreamMemory::~DataStreamMemory() {
-	int pages = mPageTable.size();
-	for (int i = 0; i < pages; i++) {
-		delete[] mPageTable[i];
-	}
-}
-
-DataStreamMemory::DataStreamMemory(unsigned __int64 pageSize) : DataStream(DataStreamMode::eMode_Write) {
-	this->mPageSize = pageSize;
-	this->mSize = 0;
+	if (mMemoryBuffer)
+		free(mMemoryBuffer);
 }
 
 DataStreamMemory& DataStreamMemory::operator=(DataStreamMemory&& other) {
-	mPageTable = std::move(other.mPageTable);
-	mPageSize = other.mPageSize;
 	mSize = other.mSize;
-	other.mPageTable.clear();
+	mOffset = other.mOffset;
+	mGFact = other.mGFact;
+	mMemoryBuffer = other.mMemoryBuffer;
 	other.mSize = 0;
-	other.mPageSize = 0;
+	other.mOffset = 0;
+	other.mGFact = DEFAULT_GROWTH_FACTOR;
+	other.mMemoryBuffer = calloc(1, other.mGFact);//could be made faster with some kinda check etc idk i cba this is a telltale lib not memlib
 	return *this;
 }
 
-DataStreamMemory::DataStreamMemory(DataStreamMemory&& other) : mPageTable(std::move(other.mPageTable)), mPageSize(other.mPageSize),
-	DataStream(DataStreamMode::eMode_Write), mSize(other.mSize){
-	other.mPageTable.clear();
+DataStreamMemory::DataStreamMemory(unsigned __int64 initial, unsigned __int64 growth) : DataStreamMemory(initial) {
+	mGFact = growth;
+}
+
+DataStreamMemory::DataStreamMemory(unsigned __int64 initial) : mOffset(0), mSize(initial) {
+	mMemoryBuffer = calloc(1, initial);
+}
+
+DataStreamMemory::DataStreamMemory(DataStreamMemory&& other) : mOffset(other.mOffset), mGFact(other.mGFact), mMemoryBuffer(other.mMemoryBuffer),
+	DataStream(other.mMode), mSize(other.mSize){
 	other.mSize = 0;
-	other.mPageSize = 0;
+	other.mOffset = 0;
+	other.mGFact = DEFAULT_GROWTH_FACTOR;
+	other.mMemoryBuffer = calloc(1, other.mGFact);
 }
 
 bool DataStreamSubStream::Serialize(void* buf, unsigned __int64 bufsize) {

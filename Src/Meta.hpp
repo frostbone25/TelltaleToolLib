@@ -176,17 +176,13 @@ public:
 
 	};
 
-	struct SubStreamInfo {
-		SectionInfo mSection[(int)SectionType::eSection_Count];
-		std::vector<MetaVersionInfo> mVersionInfo;
-		MetaStreamParams mParams;
-		int mDebugSectionDepth;
-		SectionType mCurrentSection;
-	};
+	SectionInfo mSection[(int)SectionType::eSection_Count];
+	std::vector<MetaVersionInfo> mVersionInfo;
+	MetaStreamParams mParams;
+	int mDebugSectionDepth;
+	SectionType mCurrentSection;
 
 	u32 mStreamVersion;
-	//void* mpResourceAddress;//address of this stream
-	std::vector<SubStreamInfo*> mSubStreams;
 	DataStream* mpWriteStream;
 	MetaStreamMode mMode;
 	//Blowfish* mpBlowfish;
@@ -195,9 +191,8 @@ public:
 
 	INLINE virtual const char* GetName() { return mName; }
 	INLINE virtual MetaStream::StreamType GetStreamType() { return StreamType::eStream_Binary; }
-	void Close();//TODO
+	u64 Close();//returns size of stream
 	bool Attach(DataStream*, MetaStreamMode, MetaStreamParams);
-	void CloseAndDetachStream(DataStream*);
 	//IMPORTANT: THIS CLASS TAKES *OWNERSHIP* OF THE DATASTREAM AND WILL DELETE IT WHEN DONE!
 	void Open(DataStream*, MetaStreamMode, MetaStreamParams);
 	void DisableDebugSection();
@@ -236,10 +231,10 @@ public:
 	virtual void serialie_Symbol(Symbol*);
 	virtual void serialize_bool(bool*);
 	virtual int serialize_bytes(void*, u32);
-	char _ReadHeader(SubStreamInfo*, DataStream* partial, u64, u64 *pOutBytesNeeded);
-	void _WriteHeader(SubStreamInfo*);
-	void _FinalizeStream(SubStreamInfo*);
-	char _SetSection(SubStreamInfo*, SectionType);
+	char _ReadHeader(DataStream* partial, u64, u64 *pOutBytesNeeded);
+	void _WriteHeader();
+	void _FinalizeStream();
+	char _SetSection(SectionType);
 	virtual void serialize_double(long double*);
 	virtual void serialize_float(float*);
 	virtual void serialize_uint16(short*);

@@ -12,6 +12,8 @@
 #ifndef _DATASTREAM
 #define _DATASTREAM
 
+#define DEFAULT_GROWTH_FACTOR 0x1000
+
 typedef FILE* FileHandle;
 
 //this is for windows, if on POSIX then include unistd and set the platform specific truncate function to truncate
@@ -52,6 +54,11 @@ public:
 	* Gets the size in bytes of this stream.
 	*/
 	virtual unsigned __int64 GetSize() const = 0;
+
+	/*
+	* Transfers bytes from this stream to the given stream
+	*/
+	virtual bool Transfer(DataStream* dst, unsigned __int64 off, unsigned __int64 size) = 0;
 
 	/*
 	* Gets the position (offset) of this stream.
@@ -154,22 +161,27 @@ public:
 
 };
 
-/*
-* A write only stream, which writes to pages of memory in RAM. Has no positioning implemented. Deprecated.
-*/
 class DataStreamMemory : public DataStream {
 public:
-	std::vector<char*> mPageTable;
-	unsigned __int64 mPageSize;
+	//std::vector<char*> mPageTable;
+	//unsigned __int64 mPageSize;
 	unsigned __int64 mSize;
+	unsigned __int64 mOffset;
+	unsigned __int64 mGFact = DEFAULT_GROWTH_FACTOR;
+	void* mMemoryBuffer;
 
 	bool Serialize(void*, unsigned __int64);
 	unsigned __int64 GetSize() const { return mSize; }
-	unsigned __int64 GetPosition() const { return mSize; };
-	bool SetPosition(signed __int64, DataStreamSeekType) { return true; }
-	bool Truncate(unsigned __int64) { return false; }//no need to truncate in memory
+	unsigned __int64 GetPosition() const { return mOffset; }
+	bool SetPosition(signed __int64, DataStreamSeekType);
+	bool Truncate(unsigned __int64 new_size);
 
-	DataStreamMemory(unsigned __int64 pageSize);
+	//buffer param needs to be allocated with malloc/calloc
+	DataStreamMemory(void* buffer, unsigned __int64 size) : mMemoryBuffer(buffer), mSize(size), mOffset(0) {}
+	DataStreamMemory(void* buffer, unsigned __int64 size, unsigned __int64 growthFactor)
+		: mMemoryBuffer(buffer), mSize(size), mOffset(0), mGFact(growthFactor) {};
+	DataStreamMemory(unsigned __int64 initialSize);
+	DataStreamMemory(unsigned __int64 initialSize, unsigned __int64 growthFactor);
 	DataStreamMemory(DataStreamMemory&&);
 	DataStreamMemory& operator=(DataStreamMemory&&);
 	DataStreamMemory(DataStreamMemory const&) = delete;

@@ -169,32 +169,31 @@ MetaStream::MetaStream(const char* Name) {
 	v1->mRuntimeFlags.mFlags = 0;
 	int len = strlen(Name);
 	memcpy(mName, Name, len >= 260 ? 259 : len);
-	mSubStreams.resize(4);
 }
 
 MetaStream::~MetaStream() {
+	Close();
 	if (mpWriteStream) {
 		delete mpWriteStream;
 	}
 }
 
+
 bool MetaStream::Attach(DataStream* stream, MetaStreamMode mode, MetaStreamParams params) {
 	if (mode == MetaStreamMode::eMetaStream_Closed || !stream)return false;
 	this->mMode = mode;
-	SubStreamInfo* v11 = new SubStreamInfo;
-	mSubStreams.push_back(v11);
 	if (mode != MetaStreamMode::eMetaStream_Read) {
 		this->mStreamVersion = 6;//MSV6
-		v11->mParams = params;
+		mParams = params;
 		this->mpWriteStream = stream;
-		_SetSection(v11, MetaStream::SectionType::eSection_Default);
+		_SetSection(MetaStream::SectionType::eSection_Default);
 		return true;
 	}
 	u64 completeStreamSize = stream->GetSize();
-	if (_ReadHeader(v11, stream, completeStreamSize,NULL)) {
-		u64 offset = v11->mSection[(int)SectionType::eSection_Header].mStreamSize;
+	if (_ReadHeader(stream, completeStreamSize,NULL)) {
+		u64 offset = mSection[(int)SectionType::eSection_Header].mStreamSize;
 		for (int i = 1; i <= 3; i++) {//for each section (default,async,debug)
-			SectionInfo currentSect = v11->mSection[i];
+			SectionInfo currentSect = mSection[i];
 			if (currentSect.mCompressedSize) {
 				if (currentSect.mbCompressed) {
 					throw "COMPRESSED SECTION! NEED TO LOOK AT THIS FILE AND IMPL";
@@ -205,55 +204,69 @@ bool MetaStream::Attach(DataStream* stream, MetaStreamMode mode, MetaStreamParam
 						(offset, currentSect.mCompressedSize);
 					offset += currentSect.mCompressedSize;
 					currentSect.mStreamOffset = 0;//notice this! stream offset is zero.
-					//uncompressed sects the offset is the current file offset
+					//uncompressed sects the offset is the current file offset, but has 0 here because the stream is a seperate
+					//decompressed stream
 					currentSect.mStreamSize = currentSect.mpDataStream->GetSize();
 				}
 				else {
 					currentSect.mStreamOffset = offset;
 					currentSect.mStreamSize = currentSect.mCompressedSize;
+					currentSect.mpDataStream = NULL;
 				}
 				offset += currentSect.mCompressedSize;
 			}
 		}
 		if (!METASTREAM_ENABLE_DEBUG) {
 			//delete debug stream since this version was not built in debug mode, was built in release
-			/**/DataStream* debugStream = v11->mSection
+			DataStream* debugStream = mSection
 				[(int)SectionType::eSection_Debug].mpDataStream;
 			if (debugStream)
 				delete debugStream;
-			v11->mSection[(int)SectionType::eSection_Debug].mpDataStream = NULL;
-			v11->mSection[(int)SectionType::eSection_Debug].mStreamOffset = 0;
-			v11->mSection[(int)SectionType::eSection_Debug].mStreamSize = 0;
-			v11->mSection[(int)SectionType::eSection_Debug].mCompressedSize = 0;
+			mSection[(int)SectionType::eSection_Debug].mpDataStream = NULL;
+			mSection[(int)SectionType::eSection_Debug].mStreamOffset = 0;
+			mSection[(int)SectionType::eSection_Debug].mStreamSize = 0;
+			mSection[(int)SectionType::eSection_Debug].mCompressedSize = 0;
 		}
-		v11->mCurrentSection = SectionType::eSection_Default;
+		mCurrentSection = SectionType::eSection_Default;
 	}
 	else return false;
 	return true;
 }
 
-void MetaStream::CloseAndDetachStream(DataStream* pStream) {
+
+
+u64 MetaStream::Close() {
 	if (this->mMode != MetaStreamMode::eMetaStream_Closed) {
-		_FinalizeStream(mSubStreams[0]);
-		_WriteHeader(mSubStreams[0]);
-		this->mMode = MetaStreamMode::eMetaStream_Closed;
-		if (mpWriteStream)
-			delete mpWriteStream;
-		mpWriteStream = 0;
-		for (int i = 0; i < 4; i++) {
-			SubStreamInfo* info = mSubStreams[i];
-			if (!info->mSection[0].mStreamSize)continue;
-			if (info->mSection[0].mpDataStream)
-				delete info->mSection[0].mpDataStream;
-			info->mSection[0].mpDataStream = NULL;
-			info->mSection[0].mStreamOffset = 0;
-			info->mSection[0].mStreamPosition = 0;
-			info->mSection[0].mStreamSize = 0;
-			info->mSection[0].mCompressedSize = 0;
-			info->mSection[0].mBlockInfo.clear();
-			//+40 = mbenable
+		u64 completeStreamSize = 0;
+		if (mMode == MetaStreamMode::eMetaStream_Read) {
+			completeStreamSize = mSection[0].mStreamSize + mSection[1].mStreamSize + mSection[2].mStreamSize + mSection[3].mStreamSize;
 		}
+		else if (mMode == MetaStreamMode::eMetaStream_Write) {
+			if (!mpWriteStream)return;
+			_FinalizeStream();
+			_WriteHeader();
+			for (int i = (int)SectionType::eSection_Default; i < (int)SectionType::eSection_Count; i++) {
+				if(mSection[i].mpDataStream)
+					mSection[i].mpDataStream->Transfer(mpWriteStream, 0, mSection[i].mpDataStream->GetSize());
+			}
+			completeStreamSize = mpWriteStream->GetSize();
+		}
+		for (int i = 0; i < (int)SectionType::eSection_Count; i++) {
+			if (mSection[i].mStreamSize) {
+				if (mSection[i].mpDataStream)
+					delete mSection[i].mpDataStream;
+				mSection[i].mpDataStream = NULL;
+				mSection[i].mStreamOffset = 0;
+				mSection[i].mStreamPosition = 0;
+				mSection[i].mStreamSize = 0;
+				mSection[i].mCompressedSize = 0;
+				mSection[i].mBlockInfo.clear();
+				mSection[i].mbEnable = true;
+			}
+		}
+		return completeStreamSize;
 	}
+	return 0;
 }
 
 void MetaStream::Open(DataStream* stream, MetaStreamMode mode, MetaStreamParams p) {
