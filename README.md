@@ -13,6 +13,8 @@ so that they can be read and written aswell as many other meta operations (such 
 I suggest reading the Formats.txt document written by Me (in Doc/Formats.txt). This explains a lot of the file structures, and this library implements that very similarly 
 to how the telltale engine does (at least the one they used before and including TWD: Definitive Series). 
 
+If you want to get farmiliar with the API (for C++) then there should always be some exampe code in Test/main.cpp
+
 ## IMPORTANT
 This library is designed for TWD: Definitive but games newer than Minecraft: Story Mode - Season Two (inclusive) are likely to be compatible. This means most of the functions to read and write the files should be compatible. 
 Older games may work, but its not guarunteed and I suggest you stick to the ones that should work:
