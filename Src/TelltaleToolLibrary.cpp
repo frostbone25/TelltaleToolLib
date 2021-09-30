@@ -122,7 +122,7 @@ bool TelltaleToolLib_Initialized() {
 void TelltaleToolLib_SetBlowfishKey(const char* game_id) {
     if (game_id) {
         for (int i = 0; i < KEY_COUNT; i++) {
-            if (!stricmp(sBlowfishKeys[i].game_id, game_id)) {
+            if (!_stricmp(sBlowfishKeys[i].game_id, game_id)) {
                 sSetKeyIndex = i;
                 break;
             }
@@ -143,7 +143,7 @@ bool TelltaleToolLib_Initialize(const char* game_id) {
     if (game_id) {
         const BlowfishKey* k = NULL;
         for (int i = 0; i < KEY_COUNT; i++) {
-            if (!stricmp(sBlowfishKeys[i].game_id, game_id)) {
+            if (!_stricmp(sBlowfishKeys[i].game_id, game_id)) {
                 k = &sBlowfishKeys[i];
                 sSetKeyIndex = i;
                 break;

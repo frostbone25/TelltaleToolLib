@@ -24,6 +24,8 @@
 
 struct MetaClassDescription;
 struct MetaMemberDescription;
+class SerializedVersionInfo;
+class Symbol;
 
 enum MetaOpResult {
 	eMetaOp_Fail = 0x0,
@@ -195,52 +197,52 @@ public:
 	bool Attach(DataStream*, MetaStreamMode, MetaStreamParams);
 	//IMPORTANT: THIS CLASS TAKES *OWNERSHIP* OF THE DATASTREAM AND WILL DELETE IT WHEN DONE!
 	void Open(DataStream*, MetaStreamMode, MetaStreamParams);
-	void DisableDebugSection();
-	u64 GetPartialStreamSize();
-	virtual i64 ReadData(void*, u32);
-	virtual i64 WriteData(void*, u32);
-	virtual DataStream* ReadDataStream(DataStream*, u64);
-	char BeginSubStream();
-	void EndSubStream();
-	virtual bool BeginAsyncSection();
-	virtual void EndAsyncSection();
-	virtual bool HasAsyncSection();
-	virtual char BeginDebugSection();
-	virtual void EndDebugSection();
-	virtual bool HasDebugSection();
-	virtual u64 GetSize();
-	virtual u64 GetPos();
-	virtual void SetPos(u64);
-	virtual void Advance(int numBytes);
-	virtual void BeginBlock();
-	virtual void EndBlock();
-	virtual void SkipToEndOfCurrentBlock();
-	virtual void BeginObject(Symbol*, void*);
-	virtual void EndObject(Symbol*);
-	virtual void BeginObject(const char*, void*);
-	virtual void EndObject(const char*);
-	virtual int BeginAnonObject(void*);
-	virtual void EndAnonObject(int id);
-	virtual i64 BeginObject(Symbol*, MetaClassDescription*, MetaMemberDescription*);
-	virtual void EndObject(Symbol*, MetaClassDescription*, MetaMemberDescription*);
-	virtual void SetObjectAsArrayType();
-	virtual void AddVersion(const SerializedVersionInfo*);
-	virtual MetaVersionInfo* GetStreamVersion(u64 typeSymbolCrc);
-	virtual MetaVersionInfo* GetStreamVersion(MetaClassDescription*);
-	virtual void serialize_String(String*);
-	virtual void serialie_Symbol(Symbol*);
-	virtual void serialize_bool(bool*);
-	virtual int serialize_bytes(void*, u32);
-	char _ReadHeader(DataStream* partial, u64, u64 *pOutBytesNeeded);
-	void _WriteHeader();
-	void _FinalizeStream();
-	char _SetSection(SectionType);
-	virtual void serialize_double(long double*);
-	virtual void serialize_float(float*);
-	virtual void serialize_uint16(short*);
-	virtual void serialize_uint32(u32*);
-	virtual void serialize_uint64(u64*);
-	virtual void serialize_int8(char*);
+	//void DisableDebugSection();
+	//u64 GetPartialStreamSize();
+	//virtual i64 ReadData(void*, u32);
+	//virtual i64 WriteData(void*, u32);
+	//virtual DataStream* ReadDataStream(DataStream*, u64);
+	//char BeginSubStream();
+	//void EndSubStream();
+	//virtual bool BeginAsyncSection();
+	//virtual void EndAsyncSection();
+	//virtual bool HasAsyncSection();
+	//virtual char BeginDebugSection();
+	//virtual void EndDebugSection();
+	//virtual bool HasDebugSection();
+	//virtual u64 GetSize();
+	//virtual u64 GetPos();
+	//virtual void SetPos(u64);
+	//virtual void Advance(int numBytes);
+	//virtual void BeginBlock();
+	//virtual void EndBlock();
+	//virtual void SkipToEndOfCurrentBlock();
+	//virtual void BeginObject(Symbol*, void*);
+	//virtual void EndObject(Symbol*);
+	//virtual void BeginObject(const char*, void*);
+	//virtual void EndObject(const char*);
+	//virtual int BeginAnonObject(void*);
+	//virtual void EndAnonObject(int id);
+	//virtual i64 BeginObject(Symbol*, MetaClassDescription*, MetaMemberDescription*);
+	//virtual void EndObject(Symbol*, MetaClassDescription*, MetaMemberDescription*);
+	//virtual void SetObjectAsArrayType();
+	//virtual void AddVersion(const SerializedVersionInfo*);
+	//virtual MetaVersionInfo* GetStreamVersion(u64 typeSymbolCrc);
+	//virtual MetaVersionInfo* GetStreamVersion(MetaClassDescription*);
+	//virtual void serialize_String(String*);
+	//virtual void serialie_Symbol(Symbol*);
+	//virtual void serialize_bool(bool*);
+	virtual int serialize_bytes(void*, u32) { return 0; }
+	char _ReadHeader(DataStream* partial, u64, u64* pOutBytesNeeded) { return 0; }
+	void _WriteHeader() {}
+	void _FinalizeStream() {}
+	char _SetSection(SectionType) {return 0;}
+	//virtual void serialize_double(long double*);
+	//virtual void serialize_float(float*);
+	//virtual void serialize_uint16(short*);
+	//virtual void serialize_uint32(u32*);
+	//virtual void serialize_uint64(u64*);
+	//virtual void serialize_int8(char*);
 
 	MetaStream(const char* Name);
 	~MetaStream();

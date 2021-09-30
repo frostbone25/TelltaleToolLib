@@ -5,6 +5,9 @@
 
 #include "Blowfish.h"
 
+unsigned int sSetKeyIndex = DEFAULT_BLOWFISH_GAME_KEY;
+Blowfish* spBlowfish;
+
 void Blowfish::Shutdown() {
 	if (!spBlowfish)return;
 	delete spBlowfish;
@@ -73,10 +76,6 @@ void Blowfish::Gen_Subkeys(const char* Passwd) {
 			}
 		}
 	}
-}
-
-void Blowfish::Encrypt(void* buffer, unsigned int size) {
-
 }
 
 Blowfish::Blowfish(const char* password) : Blowfish() {

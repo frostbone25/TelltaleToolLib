@@ -242,7 +242,7 @@ u64 MetaStream::Close() {
 			completeStreamSize = mSection[0].mStreamSize + mSection[1].mStreamSize + mSection[2].mStreamSize + mSection[3].mStreamSize;
 		}
 		else if (mMode == MetaStreamMode::eMetaStream_Write) {
-			if (!mpWriteStream)return;
+			if (!mpWriteStream)return 0;
 			_FinalizeStream();
 			_WriteHeader();
 			for (int i = (int)SectionType::eSection_Default; i < (int)SectionType::eSection_Count; i++) {

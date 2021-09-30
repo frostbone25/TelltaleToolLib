@@ -19,7 +19,8 @@ typedef FILE* FileHandle;
 //this is for windows, if on POSIX then include unistd and set the platform specific truncate function to truncate
 #include <io.h>
 #define PlatformSpecTrunc(handle, newsize) _chsize_s(_fileno(handle), newsize)
-#define PlatformSpecOpenFile(file_path) fopen(file_path,mode == DataStreamMode::eMode_Write ? "wb" : "rb")
+#define PlatformSpecOpenFile(file_path,mode) fopen(file_path,mode == DataStreamMode::eMode_Write ? "wb" : "rb")
+#define PlatforSpecCloseFile(handle) fclose(handle)
 
 enum class DataStreamMode : unsigned char {
 	eMode_Unset = 0,
@@ -51,6 +52,30 @@ public:
 	virtual bool Serialize(char*, unsigned __int64) = 0;
 
 	/*
+	* Serialize helper function, to write a const pointer instead.
+	* This is not the writing function, Serialize writes and reads depending
+	* on the mode.
+	*/
+	virtual bool SerializeWrite(const char* ptr, unsigned __int64 size) {
+		if (IsWrite()) {
+			return Serialize((char*)((void*)ptr), size);
+		}
+		else if (!size)return true;
+		return false;
+	}
+
+	virtual bool SerializeStringRead(char* dest, unsigned __int64 size) {
+		if (IsRead()) {
+			return Serialize(dest, size);
+		}
+		return false;
+	}
+
+	virtual bool SerializeStringWrite(const char* str) {
+		return SerializeWrite(str, strlen(str));
+	}
+
+	/*
 	* Gets the size in bytes of this stream.
 	*/
 	virtual unsigned __int64 GetSize() const = 0;
@@ -73,6 +98,7 @@ public:
 	/*
 	* Truncates this stream to the given new size. If its over the stream size, adds zeros (if this stream can do that, otherwise will
 	* return false) otherwise it will remove all excess bytes. Not available for all types of data stream.
+	* Only works in write mode (will return false if its not in write mode)
 	*/
 	virtual bool Truncate(unsigned __int64) = 0;
 
@@ -114,6 +140,8 @@ public:
 	unsigned __int64 GetPosition() const { return mStreamOffset; };
 	bool SetPosition(signed __int64, DataStreamSeekType);
 	bool Truncate(unsigned __int64);
+	//cant transfer from a file, only used for memory streams
+	bool Transfer(DataStream* dst, unsigned __int64 off, unsigned __int64 size) { return false; }
 
 	DataStreamFile_Win(FileHandle);
 	DataStreamFile_Win(FileHandle, DataStreamMode);
@@ -121,7 +149,7 @@ public:
 	DataStreamFile_Win& operator=(DataStreamFile_Win&&);
 	DataStreamFile_Win(DataStreamFile_Win const&) = delete;
 	DataStreamFile_Win& operator=(DataStreamFile_Win& const) = delete;
-	~DataStreamFile_Win() { fclose(mHandle); };
+	~DataStreamFile_Win() { PlatforSpecCloseFile(mHandle); };
 
 };
 
@@ -147,6 +175,8 @@ public:
 		}
 		return false;
 	};
+
+	bool Transfer(DataStream* dst, unsigned __int64 off, unsigned __int64 size);
 
 	virtual DataStreamSubStream* GetSubStream(unsigned __int64 off, unsigned __int64 size);
 
@@ -175,6 +205,8 @@ public:
 	unsigned __int64 GetPosition() const { return mOffset; }
 	bool SetPosition(signed __int64, DataStreamSeekType);
 	bool Truncate(unsigned __int64 new_size);
+	bool Transfer(DataStream* dst, unsigned __int64 off, unsigned __int64 size);
+
 
 	//buffer param needs to be allocated with malloc/calloc
 	DataStreamMemory(void* buffer, unsigned __int64 size) : mMemoryBuffer(buffer), mSize(size), mOffset(0) {}

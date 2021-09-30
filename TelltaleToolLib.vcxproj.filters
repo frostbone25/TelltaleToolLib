@@ -47,6 +47,9 @@
     <ClCompile Include="Src\Blowfish.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Src\Test\main.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="TelltaleToolLib.licenseheader" />

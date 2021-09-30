@@ -48,11 +48,11 @@ bool DataStreamMemory::Serialize(char* buffer, unsigned __int64 bufsize) {
 		memcpy(buffer, (char*)mMemoryBuffer + mOffset, bufsize);
 		mOffset += bufsize;
 	}
-	else {
-		int memorybufsize = mSize + (mSize % mGFact);
+	else if(IsWrite()) {
+		int memorybufsize = mSize;
+		if (mSize % mGFact)memorybufsize += mGFact - (mSize % mGFact); 
 		int numchunks = memorybufsize / mGFact;
-		if (mSize > mOffset) {//TODO AND FIXME, mSize is the size of bytes, memorybufsize is the size of the buffer
-			//fix this block with memorybufsize someway. if we exit this block then mSize and mOffset should be equal
+		if (mSize > mOffset) {
 			int rem = mSize - mOffset;
 			if (rem >= bufsize) {
 				memcpy((char*)mMemoryBuffer + mOffset, buffer, bufsize);
@@ -64,6 +64,25 @@ bool DataStreamMemory::Serialize(char* buffer, unsigned __int64 bufsize) {
 			bufsize -= rem;
 			mOffset = mSize;
 		}
+		int rem = memorybufsize - mSize;
+		if (rem >= bufsize) {
+			memcpy((char*)mMemoryBuffer + mOffset, buffer, bufsize);
+			mOffset += bufsize;
+			mSize = mOffset;
+			return true;
+		}
+		memcpy((char*)mMemoryBuffer + mOffset, buffer, rem);
+		mOffset += rem;
+		mSize = mOffset;
+		buffer += rem;
+		int appendchunkz = bufsize / mGFact;
+		if (bufsize % mGFact)appendchunkz++;
+		void* nb = realloc(mMemoryBuffer, memorybufsize + appendchunkz * mGFact);
+		if (!nb)return false;
+		mMemoryBuffer = nb;
+		memcpy((char*)mMemoryBuffer + memorybufsize, buffer, bufsize);
+		mSize += bufsize;
+		mOffset = mSize;
 	}
 	return true;
 }
@@ -87,8 +106,9 @@ bool DataStreamMemory::SetPosition(signed __int64 pos, DataStreamSeekType type) 
 }
 
 DataStreamMemory::~DataStreamMemory() {
-	if (mMemoryBuffer)
+	if (mMemoryBuffer) {
 		free(mMemoryBuffer);
+	}
 }
 
 DataStreamMemory& DataStreamMemory::operator=(DataStreamMemory&& other) {
@@ -107,8 +127,16 @@ DataStreamMemory::DataStreamMemory(unsigned __int64 initial, unsigned __int64 gr
 	mGFact = growth;
 }
 
-DataStreamMemory::DataStreamMemory(unsigned __int64 initial) : mOffset(0), mSize(initial) {
-	mMemoryBuffer = calloc(1, initial);
+DataStreamMemory::DataStreamMemory(unsigned __int64 initial) : mOffset(0), mSize(initial),
+	DataStream(DataStreamMode::eMode_Write) {
+	if (mGFact > initial) {
+		mMemoryBuffer = calloc(1, mGFact);
+	}
+	else {
+		unsigned __int64 memorybufsize = mSize;
+		if (mSize % mGFact)memorybufsize += mGFact - (mSize % mGFact);
+		mMemoryBuffer = calloc(1, memorybufsize);
+	}
 }
 
 DataStreamMemory::DataStreamMemory(DataStreamMemory&& other) : mOffset(other.mOffset), mGFact(other.mGFact), mMemoryBuffer(other.mMemoryBuffer),
@@ -130,7 +158,7 @@ bool DataStreamSubStream::Serialize(char* buf, unsigned __int64 bufsize) {
 
 DataStreamSubStream* DataStream::GetSubStream(unsigned __int64 off, unsigned __int64 size) {
 	if (!IsRead())return NULL;
-	if (GetPosition() + size > GetSize()) return NULL;
+	if (off + size > GetSize()) return NULL;
 	return new DataStreamSubStream(this, size, off);
 }
 
@@ -138,6 +166,42 @@ DataStreamSubStream* DataStreamSubStream::GetSubStream(unsigned __int64 off, uns
 	if (!IsRead())return NULL;
 	if (this->mOffset + size > mSize) return NULL;
 	return new DataStreamSubStream(this, size, off);
+}
+																
+bool DataStreamMemory::Truncate(unsigned __int64 newsize) {
+	if (!IsWrite())return false;
+	int memorybufsize = mSize;
+	if (mSize % mGFact)memorybufsize += mGFact - (mSize % mGFact);
+	if (newsize == mSize)return true;
+	if (newsize < memorybufsize) {
+		memset((char*)mMemoryBuffer + newsize, 0, memorybufsize - newsize);
+		mSize = newsize;
+		if (mOffset > mSize)mOffset = mSize;
+	}
+	else {
+		int newchunkcount = newsize / mGFact;
+		if (newsize % mGFact)newchunkcount++;
+		void* nb = realloc(mMemoryBuffer, memorybufsize = newchunkcount * mGFact);
+		if (!nb)return false;
+		mMemoryBuffer = nb;
+		mSize = newsize;
+	}
+	return true;
+}
+
+bool DataStreamMemory::Transfer(DataStream* dst, unsigned __int64 off, unsigned __int64 size) {
+	if (off + size > mSize || !dst)return false;
+	bool settoread = false;
+	if (dst->mMode == DataStreamMode::eMode_Read)settoread = true;
+	dst->mMode = DataStreamMode::eMode_Write;
+	if (!dst->Serialize((char*)mMemoryBuffer + off, size))return false;
+	if (settoread)dst->mMode = DataStreamMode::eMode_Read;
+	return true;
+}
+
+bool DataStreamSubStream::Transfer(DataStream* dst, unsigned __int64 off, unsigned __int64 size) {
+	if (off + size > mSize || !dst)return false;
+	return mpBase->Transfer(dst, mStreamOffset + off, size);
 }
 
 DataStreamSubStream::DataStreamSubStream(DataStream* base, unsigned __int64 size,
@@ -151,9 +215,9 @@ mSize(size), mStreamOffset(off), mOffset(0) {
 
 
 DataStreamSubStream::DataStreamSubStream(DataStream* base, unsigned __int64 size) : DataStream(DataStreamMode::eMode_Read), mpBase(base),
-	mSize(size), mStreamOffset(0), mOffset(0) {
+	mSize(size), mOffset(0) {
 	if (!base)throw "No base passed";
-	mOffset = base->GetPosition();
+	mStreamOffset = base->GetPosition();
 	mpBase->mSubStreams++;
 }
 
@@ -219,6 +283,7 @@ bool DataStreamFile_Win::SetPosition(signed __int64 pos, DataStreamSeekType type
 	}
 	if (final > mStreamSize)return false;
 	fseek(mHandle, final, SEEK_SET);
+	this->mStreamOffset = final;
 	return true;
 }
 
