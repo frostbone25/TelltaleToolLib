@@ -16,6 +16,14 @@
 
 typedef FILE* FileHandle;
 
+#define READ DataStreamMode::eMode_Read
+#define WRITE DataStreamMode::eMode_Write
+
+#define OpenDataStreamFromDisc(file_path, mode) new DataStreamFileDisc(\
+PlatformSpecOpenFile(file_path,\
+	mode),\
+	mode);
+
 //this is for windows, if on POSIX then include unistd and set the platform specific truncate function to truncate
 #include <io.h>
 #define PlatformSpecTrunc(handle, newsize) _chsize_s(_fileno(handle), newsize)
@@ -209,9 +217,9 @@ public:
 
 
 	//buffer param needs to be allocated with malloc/calloc
-	DataStreamMemory(void* buffer, unsigned __int64 size) : mMemoryBuffer(buffer), mSize(size), mOffset(0) {}
-	DataStreamMemory(void* buffer, unsigned __int64 size, unsigned __int64 growthFactor)
-		: mMemoryBuffer(buffer), mSize(size), mOffset(0), mGFact(growthFactor) {};
+	DataStreamMemory(void* buffer, unsigned __int64 size,DataStreamMode m) : mMemoryBuffer(buffer), mSize(size), mOffset(0), DataStream(m) {}
+	DataStreamMemory(void* buffer, unsigned __int64 size, unsigned __int64 growthFactor, DataStreamMode m)
+		: mMemoryBuffer(buffer), mSize(size), mOffset(0), mGFact(growthFactor), DataStream(m) {};
 	DataStreamMemory(unsigned __int64 initialSize);
 	DataStreamMemory(unsigned __int64 initialSize, unsigned __int64 growthFactor);
 	DataStreamMemory(DataStreamMemory&&);

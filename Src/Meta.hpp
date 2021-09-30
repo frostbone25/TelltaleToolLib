@@ -10,6 +10,7 @@
 #include <string>
 #include <typeinfo>
 #include <vector>
+#include <stack>
 #include "HashManager.h"
 
 //set to false to disallow the debug section of meta stream files to be loaded. default true
@@ -83,7 +84,7 @@ struct Meta {
 	//Containers
 	static void Initialize4();
 
-	//set the version crc in the serializedversioninfo
+	//set the version crc in the serializedversioninfo ( IS IMPLEMENTED, intellisense my ass)
 	static MetaOpResult MetaOperation_SerializedVersionInfo(void* pObj,
 		MetaClassDescription* pObjDescription, MetaMemberDescription* pContextDesc,
 		void* pUserData);
@@ -159,24 +160,26 @@ public:
 	};
 
 	struct BlockInfo {
-		int mBlockLength;
+		u32 mBlockLength;//or start pos
 	};
 
 	struct SectionInfo {
-		DataStream* mpDataStream;
+		DataStream* mpStream;//mpDataStream
 		u64 mCompressedSize;
-		std::vector<BlockInfo> mBlockInfo;
+		std::stack<BlockInfo> mBlockInfo;//LIFO
 		bool mbEnable;
 		bool mbCompressed;
 		//mReadBuffer, dont need it
 
-		u64 mStreamSize, mStreamOffset, mStreamPosition;
+		//u64 mStreamSize, mStreamOffset, mStreamPosition;
 
 		SectionInfo() {
 			mbEnable = true;
 		}
 
 	};
+
+	//normally is separated into SubStreamInfo, each one could be a metastream or just data. for simplicity just done it like this
 
 	SectionInfo mSection[(int)SectionType::eSection_Count];
 	std::vector<MetaVersionInfo> mVersionInfo;
@@ -185,11 +188,13 @@ public:
 	SectionType mCurrentSection;
 
 	u32 mStreamVersion;
-	DataStream* mpWriteStream;
+	DataStream* mpReadWriteStream;
 	MetaStreamMode mMode;
 	//Blowfish* mpBlowfish;
 	Flags mRuntimeFlags;//flag values: RuntimeFlags enum
 	char mName[260];
+
+	bool mbErrored = false;
 
 	INLINE virtual const char* GetName() { return mName; }
 	INLINE virtual MetaStream::StreamType GetStreamType() { return StreamType::eStream_Binary; }
@@ -197,52 +202,49 @@ public:
 	bool Attach(DataStream*, MetaStreamMode, MetaStreamParams);
 	//IMPORTANT: THIS CLASS TAKES *OWNERSHIP* OF THE DATASTREAM AND WILL DELETE IT WHEN DONE!
 	void Open(DataStream*, MetaStreamMode, MetaStreamParams);
-	//void DisableDebugSection();
-	//u64 GetPartialStreamSize();
-	//virtual i64 ReadData(void*, u32);
-	//virtual i64 WriteData(void*, u32);
-	//virtual DataStream* ReadDataStream(DataStream*, u64);
-	//char BeginSubStream();
-	//void EndSubStream();
-	//virtual bool BeginAsyncSection();
-	//virtual void EndAsyncSection();
-	//virtual bool HasAsyncSection();
-	//virtual char BeginDebugSection();
-	//virtual void EndDebugSection();
-	//virtual bool HasDebugSection();
-	//virtual u64 GetSize();
-	//virtual u64 GetPos();
-	//virtual void SetPos(u64);
-	//virtual void Advance(int numBytes);
-	//virtual void BeginBlock();
-	//virtual void EndBlock();
-	//virtual void SkipToEndOfCurrentBlock();
-	//virtual void BeginObject(Symbol*, void*);
-	//virtual void EndObject(Symbol*);
-	//virtual void BeginObject(const char*, void*);
-	//virtual void EndObject(const char*);
-	//virtual int BeginAnonObject(void*);
-	//virtual void EndAnonObject(int id);
-	//virtual i64 BeginObject(Symbol*, MetaClassDescription*, MetaMemberDescription*);
-	//virtual void EndObject(Symbol*, MetaClassDescription*, MetaMemberDescription*);
-	//virtual void SetObjectAsArrayType();
-	//virtual void AddVersion(const SerializedVersionInfo*);
-	//virtual MetaVersionInfo* GetStreamVersion(u64 typeSymbolCrc);
-	//virtual MetaVersionInfo* GetStreamVersion(MetaClassDescription*);
-	//virtual void serialize_String(String*);
-	//virtual void serialie_Symbol(Symbol*);
-	//virtual void serialize_bool(bool*);
-	virtual int serialize_bytes(void*, u32) { return 0; }
-	char _ReadHeader(DataStream* partial, u64, u64* pOutBytesNeeded) { return 0; }
+	void DisableDebugSection();
+	u64 GetPartialStreamSize();
+	virtual i64 ReadData(void*, u32);
+	virtual i64 WriteData(void*, u32);
+	virtual bool BeginAsyncSection();
+	virtual void EndAsyncSection();
+	virtual bool HasAsyncSection();
+	virtual bool BeginDebugSection();
+	virtual void EndDebugSection();
+	virtual bool HasDebugSection();
+	virtual u64 GetSize();
+	virtual u64 GetPos();
+	virtual void SetPos(u64);
+	virtual void Advance(int numBytes);
+	virtual void BeginBlock();
+	virtual void EndBlock();
+	virtual void SkipToEndOfCurrentBlock();
+	virtual void BeginObject(Symbol*, void*) {};
+	virtual void EndObject(Symbol*) {};
+	virtual void BeginObject(const char*, void*) {};
+	virtual void EndObject(const char*) {};
+	virtual i64 BeginAnonObject(void*);
+	virtual void EndAnonObject(int id);
+	virtual i64 BeginObject(Symbol*, MetaClassDescription*, MetaMemberDescription*);
+	virtual void EndObject(Symbol*, MetaClassDescription*, MetaMemberDescription*);
+	virtual void SetObjectAsArrayType();
+	virtual void AddVersion(const SerializedVersionInfo*);
+	virtual MetaVersionInfo* GetStreamVersion(u64 typeSymbolCrc);
+	virtual MetaVersionInfo* GetStreamVersion(MetaClassDescription* d);
+	virtual void serialize_String(String*);
+	virtual void serialize_Symbol(Symbol*);
+	virtual void serialize_bool(bool*);
+	virtual int serialize_bytes(void*, u32);
+	bool _ReadHeader(DataStream* partial, u64, u64* pOutBytesNeeded) { return 0; }//TODO implement read and write header
 	void _WriteHeader() {}
-	void _FinalizeStream() {}
-	char _SetSection(SectionType) {return 0;}
-	//virtual void serialize_double(long double*);
-	//virtual void serialize_float(float*);
-	//virtual void serialize_uint16(short*);
-	//virtual void serialize_uint32(u32*);
-	//virtual void serialize_uint64(u64*);
-	//virtual void serialize_int8(char*);
+	void _FinalizeStream();
+	bool _SetSection(SectionType);
+	virtual void serialize_double(long double*);
+	virtual void serialize_float(float*);
+	virtual void serialize_uint16(u16*);
+	virtual void serialize_uint32(u32*);
+	virtual void serialize_uint64(u64*);
+	virtual void serialize_int8(char*);
 
 	MetaStream(const char* Name);
 	~MetaStream();
@@ -289,6 +291,11 @@ public:
 		mCrc64 = CRC64_CaseInsensitive(0, tName.c_str());
 		return *this;
 	}
+
+	INLINE u64 GetCRC() {
+		return mCrc64;
+	}
+
 	//AsConcat isnt needed
 
 	INLINE operator const char* () const { return CRCAsCstr(); }
@@ -318,6 +325,12 @@ template<typename T, typename U> constexpr size_t memberOffset(U T::* member)
 
 template<typename T>
 struct MetaClassDescription_Typed {
+
+	static MetaClassDescription* GetMetaClassDescription() {
+		return GetMetaClassDescription(NULL);
+	}
+
+	static MetaClassDescription* GetMetaClassDescription(const char* type);//originally this would be specialized
 
 	static void* New(void) {
 		return operator new(sizeof(T));
@@ -440,6 +453,9 @@ struct SerializedVersionInfo {
 	u32 mSize;
 	bool mbBlocked;
 	std::vector<MemberDesc> mMembers;//DCArrayNM<MemberDesc> mMembers;
+
+	static SerializedVersionInfo* RetrieveCompiledVersionInfo(MetaClassDescription* pObjDescription);
+
 };
 
 struct MetaMemberDescription;
@@ -482,7 +498,7 @@ struct MetaOperationDescription {
 		eMetaOpEighteen = 0x12,
 		eMetaOpNineteen = 0x13,
 		eMetaOpTwenty = 0x14,
-		eMetaOpTwentyOne = 0x15,
+		eMetaOpTwentyOne = 0x15,//MetaOperation_SerializedVersionInfo
 		eMetaOpTwentyTwo = 0x16,
 		eMetaOpTwentyThree = 0x17,
 		eMetaOpTwentyFour = 0x18,

@@ -1,8 +1,18 @@
 TODO LIST:
 
-- Implement DataStream
 - Implement MetaStream
-- Meta::MetaOperation_SerializeAsync
+- Meta::MetaOperation_SerializeAsync 
+
+- Implement Compression for meta streamed files (do this with ttarch2) see MetaStream::_FinalizeStream (compr), MetaStream::Attach (uncompr)
 
 notes:
 metastream deletes the datastream passed on open
+TTCZ/TTCE are datastreamcontainers (see DataStreamContainerParams):
+mpDstStream     Ptr<DataStream>
+mpSrcStream     Ptr<DataStream> //telltale ptr type, jsut a normal ptr will do 
+mDstOffset      dq
+mWindowSize     dd
+mbCompress      db
+mbEncrypt       db
+mCompressionLibrary dd ? ; enum Compression::Library
+//db byte dd int32 dq int64 (quad)

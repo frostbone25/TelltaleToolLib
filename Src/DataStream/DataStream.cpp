@@ -50,7 +50,7 @@ bool DataStreamMemory::Serialize(char* buffer, unsigned __int64 bufsize) {
 	}
 	else if(IsWrite()) {
 		int memorybufsize = mSize;
-		if (mSize % mGFact)memorybufsize += mGFact - (mSize % mGFact); 
+		if (mSize % mGFact)memorybufsize += mGFact - (mSize % mGFact);
 		int numchunks = memorybufsize / mGFact;
 		if (mSize > mOffset) {
 			int rem = mSize - mOffset;
@@ -75,6 +75,7 @@ bool DataStreamMemory::Serialize(char* buffer, unsigned __int64 bufsize) {
 		mOffset += rem;
 		mSize = mOffset;
 		buffer += rem;
+		bufsize -= rem;
 		int appendchunkz = bufsize / mGFact;
 		if (bufsize % mGFact)appendchunkz++;
 		void* nb = realloc(mMemoryBuffer, memorybufsize + appendchunkz * mGFact);

@@ -161,20 +161,356 @@ void Meta::Initialize4() {
 
 }
 
+void MetaStream::AddVersion(const SerializedVersionInfo* version) {
+	mVersionInfo.push_back(MetaVersionInfo{ version->mTypeSymbolCrc, version->mVersionCrc });
+}
+
+void MetaStream::SetObjectAsArrayType() {
+	//this should be overriden, noramlly in JSON versions this is useful. but in binary mode its not useful so its empty
+}
+
+void MetaStream::BeginBlock() {
+	SectionInfo& sect = mSection[(int)mCurrentSection];
+	BlockInfo b{ GetPos() };
+	serialize_uint32(&b.mBlockLength);
+	if (mMode == MetaStreamMode::eMetaStream_Read)
+		b.mBlockLength += GetPos() - 4;//set block len to end of block offset
+	sect.mBlockInfo.push(b);
+}
+
+void MetaStream::EndObject(Symbol* name, MetaClassDescription* pDesc, MetaMemberDescription* pContext) {
+	if (!(pDesc->mFlags.mFlags & MetaFlag::MetaFlag_MetaSerializeBlockingDisabled)
+		&& !(pContext->mFlags & MetaFlag::MetaFlag_MetaSerializeBlockingDisabled))
+		EndBlock();
+}
+
+template<typename T> MetaClassDescription* MetaClassDescription_Typed<T>::GetMetaClassDescription(const char* type) {
+	MetaClassDescription* i = spFirstMetaClassDescription;
+	if (type == NULL) {
+		for (i; i; i = i->pNextMetaClassDescription) {
+			if (!_strcmpi(typeid(T).name(), i->mpTypeInfoName))
+				return i;
+		}
+	}
+	else {
+		for (i; i; i = i->pNextMetaClassDescription) {
+			if (!_strcmpi(typeid(T).name(), type))
+				return i;
+		}
+	}
+	return NULL;
+}
+
+SerializedVersionInfo* SerializedVersionInfo::RetrieveCompiledVersionInfo(MetaClassDescription* pObjDescription) {
+	SerializedVersionInfo* result = pObjDescription->mpCompiledVersionSerializedVersionInfo;
+	if (!result) {
+		result = new SerializedVersionInfo;
+		MetaOperation op = pObjDescription->GetOperationSpecialization(MetaOperationDescription::eMetaOpTwentyOne);
+		if (op) {
+			op(NULL, pObjDescription, NULL, result);
+		}
+		else {
+			Meta::MetaOperation_SerializedVersionInfo(NULL, pObjDescription, NULL, result);
+		}
+		pObjDescription->mpCompiledVersionSerializedVersionInfo = result;
+	}
+	return result;
+}
+
+i64 MetaStream::BeginObject(Symbol* name, MetaClassDescription* pDesc, MetaMemberDescription* pContext) {
+	if (!(pDesc->mFlags.mFlags & MetaFlag::MetaFlag_MetaSerializeBlockingDisabled) 
+		&& !(pContext->mFlags & MetaFlag::MetaFlag_MetaSerializeBlockingDisabled))
+		BeginBlock();
+	return 0;
+}
+
+//used for json
+i64 MetaStream::BeginAnonObject(void* data) {
+	return 0;
+}
+
+//used for json
+void MetaStream::EndAnonObject(int id) {
+	;
+}
+
+void MetaStream::SkipToEndOfCurrentBlock() {//used in read mode really
+	SectionInfo& sect = mSection[(int)mCurrentSection];
+	if (sect.mBlockInfo.size()) {
+		BlockInfo b = sect.mBlockInfo.top();
+		SetPos(b.mBlockLength);
+		sect.mBlockInfo.pop();
+	}
+}
+
+void MetaStream::EndBlock() {
+	SectionInfo& sect = mSection[(int)mCurrentSection];
+	BlockInfo b = sect.mBlockInfo.top();
+	if (mMode == MetaStreamMode::eMetaStream_Write) {
+		u64 currentpos = GetPos();
+		SetPos(b.mBlockLength);
+		u32 blocklen = currentpos - b.mBlockLength;
+		serialize_uint32(&blocklen);
+		SetPos(currentpos);
+	}
+	else if(GetPos() != b.mBlockLength){
+		SetPos(b.mBlockLength);
+	}
+	sect.mBlockInfo.pop();
+}
+
+u64 MetaStream::GetPos() {
+	return mSection[(int)mCurrentSection].mpStream->GetPosition();
+}
+
+MetaVersionInfo* MetaStream::GetStreamVersion(u64 typeSymbolCrc) {//could use auto
+	for (std::vector<MetaVersionInfo>::iterator it = mVersionInfo.begin(); it != mVersionInfo.end(); it++) {
+		if (it->mTypeSymbolCrc == typeSymbolCrc)return mVersionInfo.data() + std::distance(mVersionInfo.begin(), it);
+	}
+	return NULL;
+}
+
+MetaVersionInfo* MetaStream::GetStreamVersion(MetaClassDescription *d) { return GetStreamVersion(d->mHash); };
+
+void MetaStream::SetPos(u64 pos) {
+	mSection[(int)mCurrentSection].mpStream->SetPosition(pos, DataStreamSeekType::eSeekType_Begin);
+}
+
+u64 MetaStream::GetSize() {
+	return mSection[(int)mCurrentSection].mpStream->GetSize();
+}
+
+u64 MetaStream::GetPartialStreamSize() {
+	return mSection[(int)SectionType::eSection_Default].mpStream->GetSize()
+		+ mSection[(int)SectionType::eSection_Async].mpStream->GetSize()
+		+ mSection[(int)SectionType::eSection_Debug].mpStream->GetSize();
+}
+
+bool MetaStream::HasAsyncSection() {
+	return mSection[(int)SectionType::eSection_Async].mpStream->GetSize() != 0;
+}
+
+bool MetaStream::HasDebugSection() {
+	return mSection[(int)SectionType::eSection_Debug].mpStream->GetSize() != 0;
+}
+
+void MetaStream::EndAsyncSection() {
+	if (mCurrentSection == SectionType::eSection_Async) {
+		_SetSection(SectionType::eSection_Default);
+	}
+}
+
+bool MetaStream::BeginAsyncSection() {
+	return mCurrentSection == SectionType::eSection_Default ? _SetSection(SectionType::eSection_Async) : false;
+}
+
+void MetaStream::DisableDebugSection() {
+	SectionInfo& debug = mSection[(int)SectionType::eSection_Debug];
+	debug.mbEnable = false;
+	if (debug.mpStream)
+		delete debug.mpStream;
+	if (mCurrentSection == SectionType::eSection_Debug)
+		EndDebugSection();
+}
+
+void MetaStream::EndDebugSection() {
+	if (mCurrentSection == SectionType::eSection_Debug && mDebugSectionDepth > 0) {
+		mDebugSectionDepth--;
+		if (!mDebugSectionDepth)
+			_SetSection(SectionType::eSection_Default);
+	}
+}
+
+bool MetaStream::BeginDebugSection() {
+	if ((mCurrentSection == SectionType::eSection_Default && !mDebugSectionDepth && _SetSection(SectionType::eSection_Debug))
+		|| (mCurrentSection == SectionType::eSection_Debug && mDebugSectionDepth > 0)) {
+		mDebugSectionDepth++;
+		return true;
+	}
+	return false;
+}
+
+void MetaStream::Advance(int numBytes) {
+	mpReadWriteStream->SetPosition(numBytes, DataStreamSeekType::eSeekType_Current);
+}
+
+void MetaStream::serialize_Symbol(Symbol* symbol) {
+	MetaClassDescription* desc = MetaClassDescription_Typed<Symbol>::GetMetaClassDescription();
+	if (!desc)throw "Not initialized";
+	if (mMode == MetaStreamMode::eMetaStream_Write) {
+		SerializedVersionInfo* versionInfo = desc->mpCompiledVersionSerializedVersionInfo;
+		if (!versionInfo)
+			versionInfo = SerializedVersionInfo::RetrieveCompiledVersionInfo(desc);
+		AddVersion(desc->mpCompiledVersionSerializedVersionInfo);
+	}
+	u64 crc = symbol->GetCRC();
+	serialize_uint64(&crc);
+	if (mStreamVersion < 4 || BeginDebugSection()) {
+		u32 i = 0;
+		serialize_uint32(&i);//string
+		Advance(i);
+		if (mStreamVersion >= 4)
+			EndDebugSection();
+	}
+}
+
 MetaStream::MetaStream(const char* Name) {
 	MetaStream* v1;
 	v1 = this;
-	this->mpWriteStream = 0i64;
+	this->mpReadWriteStream = 0i64;
 	this->mMode = MetaStreamMode::eMetaStream_Closed;
 	v1->mRuntimeFlags.mFlags = 0;
 	int len = strlen(Name);
 	memcpy(mName, Name, len >= 260 ? 259 : len);
 }
 
+void MetaStream::serialize_uint64(u64* param) {
+	if (mMode == MetaStreamMode::eMetaStream_Read) {
+		ReadData(param, 8);
+	}
+	else {
+		WriteData(param, 8);
+	}
+}
+
+
+void MetaStream::serialize_uint32(u32* param) {
+	if (mMode == MetaStreamMode::eMetaStream_Read) {
+		ReadData(param, 4);
+	}
+	else {
+		WriteData(param, 4);
+	}
+}
+
+
+void MetaStream::serialize_uint16(u16* param) {
+	if (mMode == MetaStreamMode::eMetaStream_Read) {
+		ReadData(param, 2);
+	}
+	else {
+		WriteData(param, 2);
+	}
+}
+
+void MetaStream::serialize_int8(char* param) {
+	if (mMode == MetaStreamMode::eMetaStream_Read) {
+		ReadData(param, 1);
+	}
+	else {
+		WriteData(param, 1);
+	}
+}
+
+void MetaStream::serialize_float(float* param) {
+	if (mMode == MetaStreamMode::eMetaStream_Read) {
+		ReadData(param, 8);
+	}
+	else {
+		WriteData(param, 8);
+	}
+}
+
+void MetaStream::serialize_double(long double* param) {
+	if (mMode == MetaStreamMode::eMetaStream_Read) {
+		ReadData(param, 8);
+	}
+	else {
+		WriteData(param, 8);
+	}
+}
+
+void MetaStream::serialize_bool(bool* param) {
+	char val = (*param != 0) + 0x30;
+	serialize_bytes((void*)val, 1);
+	if ((u8)(val - 0x30) <= 1u) {
+		*param = val == 0x31;
+	}
+	else {
+		int x = 00'00'00'00;
+		serialize_bytes(&x, 3);
+		*param = val || x;
+	}
+}
+
+void MetaStream::serialize_String(String* param) {
+	static char sTempBuffer[512];
+	u32 size = param->size();
+	serialize_uint32(&size);
+	if (mMode == MetaStreamMode::eMetaStream_Read) {
+		if (512 >= size) {
+			ReadData(sTempBuffer, size);
+			param->assign(sTempBuffer, size);
+		}
+		else {
+			void* tempbuffer = malloc(size);
+			ReadData(tempbuffer, size);
+			param->assign((char*)tempbuffer, size);
+			free(tempbuffer);
+		}
+	}
+	else if(size) {
+		WriteData((void*)param->c_str(), size);
+	}
+}
+
+i64 MetaStream::WriteData(void* bytes, u32 size) {
+	if (!bytes)return NULL;
+	if (!size)return 0;
+	DataStream* stream = mSection[(int)mCurrentSection].mpStream;
+	if (!stream)return -1;
+	if (!stream->IsWrite())return -1;
+	if (!stream->Serialize((char*)bytes, size))return -1;
+	return size;
+}
+
+i64 MetaStream::ReadData(void* bytes, u32 size) {
+	if (!bytes)return NULL;
+	if (!size)return 0;
+	DataStream* stream = mSection[(int)mCurrentSection].mpStream;
+	if (!stream)return -1;
+	if (!stream->IsRead())return -1;//can convert -1 (signed) from 64 to 32bit without problem as its 0xFFFFFFFF etc
+	if (!stream->Serialize((char*)bytes, size))return -1;
+	return size;
+}
+
+int MetaStream::serialize_bytes(void* bytes, u32 size) {
+	return mMode == MetaStreamMode::eMetaStream_Read ? ReadData(bytes, size) : WriteData(bytes, size);
+}
+
+//checks if chunks need compressing and compresses
+void MetaStream::_FinalizeStream() {
+	for (int i = 1; i <= 3; i++) {
+		SectionInfo& sect = mSection[i];
+		if (mParams.mbCompress && sect.mpStream->GetSize() > 0x8000) {
+			throw "Does not support compression or compressed files yet!";
+			//TODO compress sect.mpStream into a new stream, once set then set sect.mpStream to compressed.
+			//make sure to delete sect.mpStream before its set (the old stream)
+			sect.mbCompressed = true;
+		}
+		else {
+			sect.mCompressedSize = sect.mpStream->GetSize();
+			sect.mbCompressed = false;
+		}
+	}
+}
+
+bool MetaStream::_SetSection(SectionType s) {
+	SectionInfo& sect = mSection[(int)s];
+	if (sect.mpStream) {
+		mCurrentSection = s;
+		return true;
+	}
+	if (!sect.mbEnable || mMode != MetaStreamMode::eMetaStream_Write)return false;
+	sect.mpStream = new DataStreamMemory(0ui64, 0x40000ui64);
+	mCurrentSection = s;
+	return true;
+}
+
 MetaStream::~MetaStream() {
 	Close();
-	if (mpWriteStream) {
-		delete mpWriteStream;
+	if (mpReadWriteStream) {
+		delete mpReadWriteStream;
 	}
 }
 
@@ -182,36 +518,29 @@ MetaStream::~MetaStream() {
 bool MetaStream::Attach(DataStream* stream, MetaStreamMode mode, MetaStreamParams params) {
 	if (mode == MetaStreamMode::eMetaStream_Closed || !stream)return false;
 	this->mMode = mode;
+	this->mpReadWriteStream = stream;
 	if (mode != MetaStreamMode::eMetaStream_Read) {
 		this->mStreamVersion = 6;//MSV6
 		mParams = params;
-		this->mpWriteStream = stream;
 		_SetSection(MetaStream::SectionType::eSection_Default);
 		return true;
 	}
 	u64 completeStreamSize = stream->GetSize();
 	if (_ReadHeader(stream, completeStreamSize,NULL)) {
-		u64 offset = mSection[(int)SectionType::eSection_Header].mStreamSize;
+		u64 offset = mSection[(int)SectionType::eSection_Header].mpStream->GetSize();
 		for (int i = 1; i <= 3; i++) {//for each section (default,async,debug)
-			SectionInfo currentSect = mSection[i];
+			SectionInfo& currentSect = mSection[i];
 			if (currentSect.mCompressedSize) {
+				currentSect.mpStream = stream->GetSubStream(offset, currentSect.mCompressedSize);
 				if (currentSect.mbCompressed) {
 					throw "COMPRESSED SECTION! NEED TO LOOK AT THIS FILE AND IMPL";
 					//datastreamcontainer::read is called here. I think this function
 					//does some sort of decompression? todo. this is found in most 
 					//save game files like estore epage etc
-					currentSect.mpDataStream = stream->GetSubStream
-						(offset, currentSect.mCompressedSize);
-					offset += currentSect.mCompressedSize;
-					currentSect.mStreamOffset = 0;//notice this! stream offset is zero.
+					//currentSect.mStreamOffset = 0;//notice this! stream offset is zero.
 					//uncompressed sects the offset is the current file offset, but has 0 here because the stream is a seperate
 					//decompressed stream
-					currentSect.mStreamSize = currentSect.mpDataStream->GetSize();
-				}
-				else {
-					currentSect.mStreamOffset = offset;
-					currentSect.mStreamSize = currentSect.mCompressedSize;
-					currentSect.mpDataStream = NULL;
+					//currentSect.mStreamSize = currentSect.mpStream->GetSize();
 				}
 				offset += currentSect.mCompressedSize;
 			}
@@ -219,17 +548,18 @@ bool MetaStream::Attach(DataStream* stream, MetaStreamMode mode, MetaStreamParam
 		if (!METASTREAM_ENABLE_DEBUG) {
 			//delete debug stream since this version was not built in debug mode, was built in release
 			DataStream* debugStream = mSection
-				[(int)SectionType::eSection_Debug].mpDataStream;
+				[(int)SectionType::eSection_Debug].mpStream;
 			if (debugStream)
 				delete debugStream;
-			mSection[(int)SectionType::eSection_Debug].mpDataStream = NULL;
-			mSection[(int)SectionType::eSection_Debug].mStreamOffset = 0;
-			mSection[(int)SectionType::eSection_Debug].mStreamSize = 0;
+			mSection[(int)SectionType::eSection_Debug].mpStream = NULL;
 			mSection[(int)SectionType::eSection_Debug].mCompressedSize = 0;
 		}
 		mCurrentSection = SectionType::eSection_Default;
 	}
-	else return false;
+	else {
+		mbErrored = true;
+		return false;
+	}
 	return true;
 }
 
@@ -238,29 +568,27 @@ bool MetaStream::Attach(DataStream* stream, MetaStreamMode mode, MetaStreamParam
 u64 MetaStream::Close() {
 	if (this->mMode != MetaStreamMode::eMetaStream_Closed) {
 		u64 completeStreamSize = 0;
-		if (mMode == MetaStreamMode::eMetaStream_Read) {
-			completeStreamSize = mSection[0].mStreamSize + mSection[1].mStreamSize + mSection[2].mStreamSize + mSection[3].mStreamSize;
+		if (mMode == MetaStreamMode::eMetaStream_Read && !mbErrored) {
+			completeStreamSize = mSection[0].mpStream->GetSize() + mSection[1].mpStream->GetSize() +
+				mSection[2].mpStream->GetSize() + mSection[3].mpStream->GetSize();
 		}
 		else if (mMode == MetaStreamMode::eMetaStream_Write) {
-			if (!mpWriteStream)return 0;
+			if (!mpReadWriteStream)return 0;
 			_FinalizeStream();
 			_WriteHeader();
 			for (int i = (int)SectionType::eSection_Default; i < (int)SectionType::eSection_Count; i++) {
-				if(mSection[i].mpDataStream)
-					mSection[i].mpDataStream->Transfer(mpWriteStream, 0, mSection[i].mpDataStream->GetSize());
+				if(mSection[i].mpStream)
+					mSection[i].mpStream->Transfer(mpReadWriteStream, 0, mSection[i].mpStream->GetSize());
 			}
-			completeStreamSize = mpWriteStream->GetSize();
+			completeStreamSize = mpReadWriteStream->GetSize();
 		}
 		for (int i = 0; i < (int)SectionType::eSection_Count; i++) {
-			if (mSection[i].mStreamSize) {
-				if (mSection[i].mpDataStream)
-					delete mSection[i].mpDataStream;
-				mSection[i].mpDataStream = NULL;
-				mSection[i].mStreamOffset = 0;
-				mSection[i].mStreamPosition = 0;
-				mSection[i].mStreamSize = 0;
+			if (mSection[i].mpStream && mSection[i].mpStream->GetSize()) {
+				if (mSection[i].mpStream)
+					delete mSection[i].mpStream;
+				//not needed below but why not
+				mSection[i].mpStream = NULL;
 				mSection[i].mCompressedSize = 0;
-				mSection[i].mBlockInfo.clear();
 				mSection[i].mbEnable = true;
 			}
 		}
