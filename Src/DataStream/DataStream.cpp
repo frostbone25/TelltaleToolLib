@@ -40,7 +40,7 @@ bool DataStream::SetMode(DataStreamMode mode) {
 	return true;
 }
 
-bool DataStreamMemory::Serialize(void* buffer, unsigned __int64 bufsize) {
+bool DataStreamMemory::Serialize(char* buffer, unsigned __int64 bufsize) {
 	if (!buffer && bufsize)return false;
 	if (!bufsize)return true;
 	if (IsRead()) {
@@ -49,11 +49,20 @@ bool DataStreamMemory::Serialize(void* buffer, unsigned __int64 bufsize) {
 		mOffset += bufsize;
 	}
 	else {
-		if (mOffset != mSize) {
-
-		}
-		else {
-
+		int memorybufsize = mSize + (mSize % mGFact);
+		int numchunks = memorybufsize / mGFact;
+		if (mSize > mOffset) {//TODO AND FIXME, mSize is the size of bytes, memorybufsize is the size of the buffer
+			//fix this block with memorybufsize someway. if we exit this block then mSize and mOffset should be equal
+			int rem = mSize - mOffset;
+			if (rem >= bufsize) {
+				memcpy((char*)mMemoryBuffer + mOffset, buffer, bufsize);
+				mOffset += bufsize;
+				return true;
+			}
+			memcpy((char*)mMemoryBuffer + mOffset, buffer, rem);
+			buffer += rem;
+			bufsize -= rem;
+			mOffset = mSize;
 		}
 	}
 	return true;
@@ -110,7 +119,7 @@ DataStreamMemory::DataStreamMemory(DataStreamMemory&& other) : mOffset(other.mOf
 	other.mMemoryBuffer = calloc(1, other.mGFact);
 }
 
-bool DataStreamSubStream::Serialize(void* buf, unsigned __int64 bufsize) {
+bool DataStreamSubStream::Serialize(char* buf, unsigned __int64 bufsize) {
 	if (!bufsize)return true;
 	if ((!buf && bufsize) || (mOffset + bufsize > mSize))return false;
 	if (!mpBase->SetPosition(mStreamOffset + mOffset, DataStreamSeekType::eSeekType_Begin))return false;
@@ -213,7 +222,7 @@ bool DataStreamFile_Win::SetPosition(signed __int64 pos, DataStreamSeekType type
 	return true;
 }
 
-bool DataStreamFile_Win::Serialize(void* buf, unsigned __int64 bufsize) {
+bool DataStreamFile_Win::Serialize(char* buf, unsigned __int64 bufsize) {
 	if (!bufsize)return true;
 	if (IsInvalid() || !buf && bufsize)return false;
 	fseek(mHandle, mStreamOffset, SEEK_SET);

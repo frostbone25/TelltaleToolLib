@@ -48,7 +48,7 @@ public:
 	* Serialize bytes. First is the buffer, second is the size. The mode member variable decides if its write or reading into the buffer.
 	* Returns if this function was successful. 
 	*/
-	virtual bool Serialize(void*, unsigned __int64) = 0;
+	virtual bool Serialize(char*, unsigned __int64) = 0;
 
 	/*
 	* Gets the size in bytes of this stream.
@@ -109,7 +109,7 @@ public:
 	FileHandle mHandle;
 	__int64 mStreamOffset, mStreamSize;
 
-	bool Serialize(void*, unsigned __int64);
+	bool Serialize(char*, unsigned __int64);
 	unsigned __int64 GetSize() const { return mStreamSize; }
 	unsigned __int64 GetPosition() const { return mStreamOffset; };
 	bool SetPosition(signed __int64, DataStreamSeekType);
@@ -130,7 +130,7 @@ public:
 	DataStream* mpBase;
 	unsigned __int64 mOffset, mStreamOffset, mSize;
 
-	bool Serialize(void*, unsigned __int64);
+	bool Serialize(char*, unsigned __int64);
 
 	unsigned __int64 GetSize() const { return mSize; }
 
@@ -170,7 +170,7 @@ public:
 	unsigned __int64 mGFact = DEFAULT_GROWTH_FACTOR;
 	void* mMemoryBuffer;
 
-	bool Serialize(void*, unsigned __int64);
+	bool Serialize(char*, unsigned __int64);
 	unsigned __int64 GetSize() const { return mSize; }
 	unsigned __int64 GetPosition() const { return mOffset; }
 	bool SetPosition(signed __int64, DataStreamSeekType);
