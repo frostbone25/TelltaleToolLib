@@ -29,11 +29,11 @@ class SerializedVersionInfo;
 class Symbol;
 
 constexpr const char VersionHeaders[][5] = {
-	"MBES",//version 0
-	"MBIN",//version 1
-	"MTRE",//version 2
-	"MCOM",//version 3
-	"MSV4",//version 4
+	"MBES",//version 0, meta binary encrypted stream
+	"MBIN",//version 1, meta binary
+	"MTRE",//version 2, no clue 
+	"MCOM",//version 3, meta compressed
+	"MSV4",//version 4, meta stream version 4
 	"MSV5",//version 5
 	"MSV6",//version 6
 };
