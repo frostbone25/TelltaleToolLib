@@ -28,6 +28,22 @@ struct MetaMemberDescription;
 class SerializedVersionInfo;
 class Symbol;
 
+constexpr const char VersionHeaders[][5] = {
+	"MBES",//version 0
+	"MBIN",//version 1
+	"MTRE",//version 2
+	"MCOM",//version 3
+	"MSV4",//version 4
+	"MSV5",//version 5
+	"MSV6",//version 6
+};
+
+static constexpr u32 GetMetaMagic(int version) {
+	if (version >= 0 && version <= 6)return *((u32*)VersionHeaders[version]);
+	return 0;
+}
+
+
 enum MetaOpResult {
 	eMetaOp_Fail = 0x0,
 	eMetaOp_Succeed = 0x1,
@@ -236,7 +252,7 @@ public:
 	virtual void serialize_bool(bool*);
 	virtual int serialize_bytes(void*, u32);
 	bool _ReadHeader(DataStream* partial, u64, u64* pOutBytesNeeded) { return 0; }//TODO implement read and write header
-	void _WriteHeader() {}
+	void _WriteHeader();
 	void _FinalizeStream();
 	bool _SetSection(SectionType);
 	virtual void serialize_double(long double*);

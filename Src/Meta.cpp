@@ -169,6 +169,18 @@ void MetaStream::SetObjectAsArrayType() {
 	//this should be overriden, noramlly in JSON versions this is useful. but in binary mode its not useful so its empty
 }
 
+void MetaStream::_WriteHeader() {
+	_SetSection(SectionType::eSection_Header);
+	if (mStreamVersion == 6) {
+		//TODO
+	}
+	else {
+		const char* errmsg = "Cannot write header with version %d, not supported yet.";
+		char endbuf[sizeof(errmsg)+3];
+		sprintf(endbuf, errmsg, mStreamVersion);
+	}
+}
+
 void MetaStream::BeginBlock() {
 	SectionInfo& sect = mSection[(int)mCurrentSection];
 	BlockInfo b{ GetPos() };
