@@ -26,7 +26,7 @@
 struct MetaClassDescription;
 struct MetaMemberDescription;
 class SerializedVersionInfo;
-class Symbol;
+class Symbol; 
 
 constexpr const char VersionHeaders[][5] = {
 	"MBES",//version 0, meta binary encrypted stream
