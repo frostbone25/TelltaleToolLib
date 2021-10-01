@@ -13,6 +13,7 @@ int main(int argn, char** argv) {
 		MetaStream meta("obj.prop");
 		MetaStreamParams params{ 0 };
 		meta.Open(stream, MetaStreamMode::eMetaStream_Read, params);
+		
 	}
 
 	printf("Done!");

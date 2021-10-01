@@ -6,6 +6,7 @@
 
 #include "Meta.hpp"
 #include <typeinfo>
+#include <bit>
 
 #define DEFINET(name,Ty) }++sMetaTypesCount;static MetaClassDescription meta_##name; \
 if(!(meta_##name.mFlags.mFlags & MetaFlag::Internal_MetaFlag_Initialized)){ \
@@ -170,15 +171,80 @@ void MetaStream::SetObjectAsArrayType() {
 }
 
 void MetaStream::_WriteHeader() {
+	if (!mSection[0].mpStream || !mSection[0].mpStream->IsWrite())return;
 	_SetSection(SectionType::eSection_Header);
+	u32 magic;
 	if (mStreamVersion == 6) {
-		//TODO
+		magic = GetMetaMagic(6);
+		serialize_uint32(&magic);
+		u32 default_ = mSection[(int)SectionType::
+			eSection_Default].mpStream->GetSize();
+		mSection[(int)SectionType::
+			eSection_Default].mCompressedSize = default_;
+		u32 debug_ = mSection[(int)SectionType::
+			eSection_Debug].mpStream->GetSize();
+		mSection[(int)SectionType::
+			eSection_Debug].mCompressedSize = debug_;
+		u32 async_ = mSection[(int)SectionType::
+			eSection_Async].mpStream->GetSize();
+		mSection[(int)SectionType::
+			eSection_Async].mCompressedSize = async_;
+		if (mSection[(int)SectionType::
+			eSection_Default].mbCompressed)
+			default_ |= 0x80000000;
+		if (mSection[(int)SectionType::
+			eSection_Debug].mbCompressed)
+			debug_ |= 0x80000000;
+		if (mSection[(int)SectionType::
+			eSection_Async].mbCompressed)
+			async_ |= 0x80000000;
+		serialize_uint32(&default_);
+		serialize_uint32(&debug_);
+		serialize_uint32(&async_);
+		u32 vers = mVersionInfo.size();
+		serialize_uint32(&vers);
+		for (int i = 0; i < vers; i++) {
+			MetaVersionInfo verinfo = mVersionInfo[i];
+			serialize_uint64(&verinfo.mTypeSymbolCrc);
+			serialize_uint32(&verinfo.mVersionCrc);
+		}
 	}
 	else {
 		const char* errmsg = "Cannot write header with version %d, not supported yet.";
 		char endbuf[sizeof(errmsg)+3];
 		sprintf(endbuf, errmsg, mStreamVersion);
+		throw endbuf;
 	}
+}
+
+bool MetaStream::_ReadHeader(DataStream* stream, u64 completeStreamSize,
+	u64* pOutBytesNeeded) {
+	if (!stream->IsRead())return false;
+	mCurrentSection = SectionType::eSection_Header;
+	mSection[0].mpStream = stream;
+	u32 versionmagic;
+	serialize_uint32(&versionmagic);
+	if (versionmagic == GetMetaMagic(1) ||
+		versionmagic == GetMetaMagic(2)){//MBIN, MTRE
+		mStreamVersion = versionmagic == GetMetaMagic(2) ? 3 : 0;
+
+	}
+	else if (versionmagic == GetMetaMagic(3)) {//MCOM
+		mStreamVersion = 3;
+	}
+	else if (versionmagic == GetMetaMagic(4)) {//MSV4
+		mStreamVersion = 4;
+	}
+	else if (versionmagic == GetMetaMagic(5)) {//MSV5
+		mStreamVersion = 5;
+	}
+	else if (versionmagic == GetMetaMagic(6)) {//MSV6
+		mStreamVersion = 6;
+	}
+	else {//MBES and encrypted streams
+		mStreamVersion = 0;
+	}
+	return true;
 }
 
 void MetaStream::BeginBlock() {
@@ -377,6 +443,24 @@ MetaStream::MetaStream(const char* Name) {
 }
 
 void MetaStream::serialize_uint64(u64* param) {
+	if (std::endian::native == std::endian::big) {
+		if (mMode == MetaStreamMode::eMetaStream_Read)
+			ReadData(param, 8);
+		u64 p = 0;
+		p |= ((*param & 0x00000000000000FF) << 56);
+		p |= ((*param & 0x000000000000FF00) << 40);
+		p |= ((*param & 0x0000000000FF0000) << 24);
+		p |= ((*param & 0x00000000FF000000) <<  8);
+		p |= ((*param & 0x000000FF00000000) >>  8);
+		p |= ((*param & 0x0000FF0000000000) >> 24);
+		p |= ((*param & 0x00FF000000000000) >> 40);
+		p |= ((*param & 0xFF00000000000000) >> 56);
+		if (mMode == MetaStreamMode::eMetaStream_Write)
+			WriteData(&p, 8);
+		else
+			*param = p;
+		return;
+	}
 	if (mMode == MetaStreamMode::eMetaStream_Read) {
 		ReadData(param, 8);
 	}
@@ -387,6 +471,20 @@ void MetaStream::serialize_uint64(u64* param) {
 
 
 void MetaStream::serialize_uint32(u32* param) {
+	if (std::endian::native == std::endian::big) {
+		if (mMode == MetaStreamMode::eMetaStream_Read)
+			ReadData(param, 4);
+		u32 p = 0;
+		p |= ((*param & 0xFF000000) >> 24);
+		p |= ((*param & 0xFF0000) >> 8);
+		p |= ((*param & 0xFF00) << 8);
+		p |= ((*param & 0xFF) << 24);
+		if (mMode == MetaStreamMode::eMetaStream_Write)
+			WriteData(&p, 4);
+		else
+			*param = p;
+		return;
+	}
 	if (mMode == MetaStreamMode::eMetaStream_Read) {
 		ReadData(param, 4);
 	}
@@ -397,6 +495,18 @@ void MetaStream::serialize_uint32(u32* param) {
 
 
 void MetaStream::serialize_uint16(u16* param) {
+	if (std::endian::native == std::endian::big) {
+		if (mMode == MetaStreamMode::eMetaStream_Read)
+			ReadData(param, 2);
+		u16 p = 0;
+		p |= ((*param & 0x00FF) << 8);
+		p |= ((*param & 0xFF00) >> 8);
+		if (mMode == MetaStreamMode::eMetaStream_Write)
+			WriteData(&p, 2);
+		else
+			*param = p;
+		return;
+	}
 	if (mMode == MetaStreamMode::eMetaStream_Read) {
 		ReadData(param, 2);
 	}
@@ -415,21 +525,11 @@ void MetaStream::serialize_int8(char* param) {
 }
 
 void MetaStream::serialize_float(float* param) {
-	if (mMode == MetaStreamMode::eMetaStream_Read) {
-		ReadData(param, 8);
-	}
-	else {
-		WriteData(param, 8);
-	}
+	serialize_uint32((u32*)param);
 }
 
 void MetaStream::serialize_double(long double* param) {
-	if (mMode == MetaStreamMode::eMetaStream_Read) {
-		ReadData(param, 8);
-	}
-	else {
-		WriteData(param, 8);
-	}
+	serialize_uint64((u64*)param);
 }
 
 void MetaStream::serialize_bool(bool* param) {
@@ -581,8 +681,11 @@ u64 MetaStream::Close() {
 	if (this->mMode != MetaStreamMode::eMetaStream_Closed) {
 		u64 completeStreamSize = 0;
 		if (mMode == MetaStreamMode::eMetaStream_Read && !mbErrored) {
-			completeStreamSize = mSection[0].mpStream->GetSize() + mSection[1].mpStream->GetSize() +
-				mSection[2].mpStream->GetSize() + mSection[3].mpStream->GetSize();
+			completeStreamSize = mSection[0].mpStream->GetSize();
+			for (int i = 1; i <= 3; i++) {
+				if(mSection[i].mpStream)
+					completeStreamSize += mSection[i].mpStream->GetSize();
+			}
 		}
 		else if (mMode == MetaStreamMode::eMetaStream_Write) {
 			if (!mpReadWriteStream)return 0;
@@ -594,7 +697,7 @@ u64 MetaStream::Close() {
 			}
 			completeStreamSize = mpReadWriteStream->GetSize();
 		}
-		for (int i = 0; i < (int)SectionType::eSection_Count; i++) {
+		for (int i = 1; i < (int)SectionType::eSection_Count; i++) {
 			if (mSection[i].mpStream && mSection[i].mpStream->GetSize()) {
 				if (mSection[i].mpStream)
 					delete mSection[i].mpStream;

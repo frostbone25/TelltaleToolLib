@@ -29,20 +29,19 @@ class SerializedVersionInfo;
 class Symbol;
 
 constexpr const char VersionHeaders[][5] = {
-	"MBES",//version 0, meta binary encrypted stream
-	"MBIN",//version 1, meta binary
-	"MTRE",//version 2, no clue 
-	"MCOM",//version 3, meta compressed
-	"MSV4",//version 4, meta stream version 4
-	"MSV5",//version 5
-	"MSV6",//version 6
+	"SEBM",//version 0, meta binary encrypted stream
+	"NIBM",//version 0, meta binary
+	"ERTM",//version 3, no clue
+	"MOCM",//version 3, meta compressed
+	"4VSM",//version 4, meta stream version 4
+	"5VSM",//version 5
+	"6VSM",//version 6
 };
 
-static constexpr u32 GetMetaMagic(int version) {
-	if (version >= 0 && version <= 6)return *((u32*)VersionHeaders[version]);
+static constexpr u32 GetMetaMagic(int versionID) {
+	if (versionID >= 0 && versionID <= 6)return *((u32*)VersionHeaders[versionID]);
 	return 0;
 }
-
 
 enum MetaOpResult {
 	eMetaOp_Fail = 0x0,
@@ -251,7 +250,7 @@ public:
 	virtual void serialize_Symbol(Symbol*);
 	virtual void serialize_bool(bool*);
 	virtual int serialize_bytes(void*, u32);
-	bool _ReadHeader(DataStream* partial, u64, u64* pOutBytesNeeded) { return 0; }//TODO implement read and write header
+	bool _ReadHeader(DataStream* partial, u64, u64* pOutBytesNeeded);
 	void _WriteHeader();
 	void _FinalizeStream();
 	bool _SetSection(SectionType);
