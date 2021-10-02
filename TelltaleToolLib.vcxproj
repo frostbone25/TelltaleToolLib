@@ -151,18 +151,41 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="Src\Blowfish.h" />
+    <ClInclude Include="Src\Compression.h" />
     <ClInclude Include="Src\DataStream\DataStream.h" />
     <ClInclude Include="Src\HandleObjectInfo.h" />
     <ClInclude Include="Src\HashManager.h" />
     <ClInclude Include="Src\Meta.hpp" />
     <ClInclude Include="Src\TelltaleToolLibrary.h" />
+    <ClInclude Include="Src\Zlib\crc32.h" />
+    <ClInclude Include="Src\Zlib\deflate.h" />
+    <ClInclude Include="Src\Zlib\inffast.h" />
+    <ClInclude Include="Src\Zlib\inffixed.h" />
+    <ClInclude Include="Src\Zlib\inflate.h" />
+    <ClInclude Include="Src\Zlib\inftrees.h" />
+    <ClInclude Include="Src\Zlib\trees.h" />
+    <ClInclude Include="Src\Zlib\zconf.h" />
+    <ClInclude Include="Src\Zlib\zlib.h" />
+    <ClInclude Include="Src\Zlib\zutil.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Src\Blowfish.cpp" />
+    <ClCompile Include="Src\Compression.cpp" />
     <ClCompile Include="Src\DataStream\DataStream.cpp" />
     <ClCompile Include="Src\Meta.cpp" />
     <ClCompile Include="Src\TelltaleToolLibrary.cpp" />
     <ClCompile Include="Src\Test\main.cpp" />
+    <ClCompile Include="Src\Zlib\adler32.c" />
+    <ClCompile Include="Src\Zlib\compress.c" />
+    <ClCompile Include="Src\Zlib\crc32.c" />
+    <ClCompile Include="Src\Zlib\deflate.c" />
+    <ClCompile Include="Src\Zlib\infback.c" />
+    <ClCompile Include="Src\Zlib\inffast.c" />
+    <ClCompile Include="Src\Zlib\inflate.c" />
+    <ClCompile Include="Src\Zlib\inftrees.c" />
+    <ClCompile Include="Src\Zlib\trees.c" />
+    <ClCompile Include="Src\Zlib\uncompr.c" />
+    <ClCompile Include="Src\Zlib\zutil.c" />
   </ItemGroup>
   <ItemGroup>
     <None Include=".gitattributes" />

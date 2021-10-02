@@ -4,6 +4,7 @@
 
 #include "DataStream.h"
 #include <utility>
+#include "../Blowfish.h"
 
 DataStream::DataStream(DataStream&& o)  {
 	mMode = o.mMode;
@@ -14,6 +15,109 @@ DataStream& DataStream::operator=(DataStream&& o)  {
 	this->mMode = o.mMode;
 	o.mMode = DataStreamMode::eMode_Unset;
 	return *this;
+}
+
+bool DataStreamLegacyEncrypted::Serialize(char* buffer, unsigned __int64 size) {
+	if (!mpBase->IsRead() || !buffer && size || size + mOffset > mSize)
+		return false;
+	if (!size)return true;
+	if (mSize) {
+		int blocks = mSize / mEncryptSize;
+		int sizerem = size;
+		if (mOffset >= blocks * mEncryptSize) {//end padded block
+			mpBase->Serialize(buffer, size);
+		}
+		else {
+			int startblock = mOffset / mEncryptSize;
+			int endblock = (mOffset + size) / mEncryptSize;
+			for (int i = startblock; i <= endblock; i++) {
+				if (mCurrentBlock != i) {
+					SetPosition(i * mEncryptSize, DataStreamSeekType::eSeekType_Begin);
+					if (blocks > i){
+						mpBase->Serialize(mBuf, mEncryptSize);
+						if (i % mEncryptInterval) {
+							if (i % mEncryptSkip) {
+								for (int x = 0; x < mEncryptSize; x++)
+									mBuf[x] = ~mBuf[x];
+							}
+						}
+						else {
+							LibTelltaleTool_BlowfishDecrypt((unsigned char*)mBuf, mEncryptSize, false,
+								(unsigned char*)sBlowfishKeys[sSetKeyIndex].game_key);
+						}
+					}
+					else {
+						mpBase->Serialize(mBuf, mpBase->GetSize() - mpBase->GetPosition());
+					}
+				}
+				if (i == startblock) {
+					int startblockoff = mOffset % mEncryptSize;
+					int rem = mEncryptSize - startblockoff;
+					if (rem > size) {
+						memcpy(buffer, mBuf + startblockoff, size);
+						//end
+					}
+					else {
+						memcpy(buffer, mBuf + startblockoff, rem);
+						buffer += rem;
+						size -= rem;
+					}
+				}
+				else if (i == endblock){
+					memcpy(buffer, mBuf, size);
+					//end
+				}
+				else {
+					memcpy(buffer, mBuf, mEncryptSize);
+					buffer += mEncryptSize;
+					size -= mEncryptSize;
+				}
+			}
+			mCurrentBlock = endblock;
+		}
+		mOffset += sizerem;
+	}
+	return true;
+}
+
+DataStreamLegacyEncrypted::DataStreamLegacyEncrypted(DataStream* base, int version, unsigned int header) : 
+	mHeader(header), mpBase(base),  mOffset(0), mSize(base->GetSize()-header), mCurrentBlock(-1),DataStream(DataStreamMode::eMode_Read) {
+	if (version == 1)
+	{
+		mEncryptSize = 64;
+		mEncryptInterval = 64;
+		mEncryptSkip = 100;
+	}
+	else if (version == 2)
+	{
+		mEncryptSize = 128;//0x80
+		mEncryptInterval = 32;//0x20
+		mEncryptSkip = 80;//0x50
+	}
+	else // 64AFDEAA
+	{
+		mEncryptSize = 256;
+		mEncryptInterval = 8;
+		mEncryptSkip = 24;
+	}
+}
+
+bool DataStreamLegacyEncrypted::SetPosition(signed __int64 pos, DataStreamSeekType type) {
+	unsigned __int64 final = 0;
+	switch (type) {
+	case DataStreamSeekType::eSeekType_Begin:
+		final = pos;
+		break;
+	case DataStreamSeekType::eSeekType_Current:
+		final = mOffset + pos;
+		break;
+	case DataStreamSeekType::eSeekType_End:
+		final = mSize - pos;
+		break;
+	}
+	if (final > mSize)return false;
+	mOffset = final;
+	return mpBase->SetPosition(pos + mHeader, type);
 }
 
 bool DataStreamSubStream::SetPosition(signed __int64 pos, DataStreamSeekType type) {

@@ -36,6 +36,15 @@ void TelltaleToolLib_GetNextMetaMemberDescription(MetaMemberDescription** pMembe
     if (pMemberDescPtr && *pMemberDescPtr)*pMemberDescPtr = (*pMemberDescPtr)->mpNextMember;
 }
 
+MetaClassDescription* TelltaleToolLib_FindMetaClassDescription_ByHash(u64 pHash) {
+    for (MetaClassDescription* i = TelltaleToolLib_GetFirstMetaClassDescription(); i;) {
+        if (i->mHash == pHash)
+            return i;
+        TelltaleToolLib_GetNextMetaClassDescription(&i);
+    }
+    return NULL;
+}
+
 MetaClassDescription* TelltaleToolLib_FindMetaClassDescription(const char* pStr, bool pIsName) {
     for (MetaClassDescription* i = TelltaleToolLib_GetFirstMetaClassDescription(); i;) {
         if (!i->mpExt && !pIsName) {//stfu:(cba
@@ -129,9 +138,9 @@ void TelltaleToolLib_SetBlowfishKey(const char* game_id) {
         }
     }
     else sSetKeyIndex = DEFAULT_BLOWFISH_GAME_KEY;
-    if (spBlowfish) {
-        spBlowfish->Init(sBlowfishKeys[sSetKeyIndex].game_key);
-    }
+    //if (spBlowfish) {
+    //    spBlowfish->Init(sBlowfishKeys[sSetKeyIndex].game_key);
+    //}
 }
 
 const char* TelltaleToolLib_GetBlowfishKey() {
@@ -150,14 +159,15 @@ bool TelltaleToolLib_Initialize(const char* game_id) {
             }
         }
         if (k == NULL)return false;
-        Blowfish::Initialize(k);
+       // Blowfish::Initialize(k);
     }
-    else Blowfish::Initialize(&sBlowfishKeys[sSetKeyIndex]);
+  //  else Blowfish::Initialize(&sBlowfishKeys[sSetKeyIndex]);
     Meta::Initialize();//init all types
     sInitialized = true;
     return true;
 }
 
+//I KNOW ITS BAD FOR ALLOCATIONS BUT IM SORRY I CANT BE ASKED TO CHANGE IT D:
 void TelltaleToolLib_MakeInternalTypeName(char** _StringPtr) {
     static std::string _sRepl_A = "struct ";
     static std::string _sRepl_B = "class ";
@@ -184,6 +194,9 @@ void TelltaleToolLib_MakeInternalTypeName(char** _StringPtr) {
     u32 slen = ReplStr.length();
     char* nbuf = (char*)malloc(slen+1);
     memcpy(nbuf, ReplStr.c_str(), slen);
+    //for (int i = 0; i < slen; i++) {
+    //    nbuf[i] |= 0b100000;
+    //}
     nbuf[slen] = 0i8;
     free(*_StringPtr);
     *_StringPtr = nbuf;

@@ -129,8 +129,8 @@ public:
 	DataStream& operator=(DataStream const&) = delete;
 	DataStream(DataStream& const) = delete;
 	DataStream(DataStream&&) ;
-	DataStream() : mMode(DataStreamMode::eMode_Unset) {}
-	DataStream(DataStreamMode mode) : mMode(mode) {}
+	DataStream() : mMode(DataStreamMode::eMode_Unset), mSubStreams(0) {}
+	DataStream(DataStreamMode mode) : mMode(mode), mSubStreams(0) {}
 
 };
 
@@ -227,6 +227,33 @@ public:
 	DataStreamMemory(DataStreamMemory const&) = delete;
 	DataStreamMemory& operator=(DataStreamMemory& const) = delete;
 	~DataStreamMemory();
+};
+
+//*NOT COPYABLE OR MOVABLE* A legacy encrypted stream which decrypts in chunks for old games which us MBIN, MBES.
+//NOT WRITABLE, ONLY READABLE!
+class DataStreamLegacyEncrypted : public DataStream {
+	DataStream* mpBase;
+	unsigned int mHeader;//start pos
+	unsigned int mEncryptSize, mEncryptInterval, mEncryptSkip;
+	unsigned __int64 mSize, mOffset;
+	int mCurrentBlock;
+public:
+	char mBuf[0x100];
+
+	bool Serialize(char*, unsigned __int64);
+	unsigned __int64 GetSize() const { return mSize + mHeader; }
+	unsigned __int64 GetPosition() const { return mOffset + mHeader; }
+	bool SetPosition(signed __int64, DataStreamSeekType);
+	bool Truncate(unsigned __int64 new_size) {
+		return false;
+	};
+	bool Transfer(DataStream* dst, unsigned __int64 off, unsigned __int64 size) { return false; }
+	DataStreamLegacyEncrypted(DataStream*,int version, unsigned int startPos);
+	DataStreamLegacyEncrypted(DataStreamLegacyEncrypted&&) = delete;
+	DataStreamLegacyEncrypted& operator=(DataStreamLegacyEncrypted&&) = delete;
+	DataStreamLegacyEncrypted(DataStreamLegacyEncrypted const&) = delete;
+	DataStreamLegacyEncrypted& operator=(DataStreamLegacyEncrypted& const) = delete;
+
 };
 
 /*

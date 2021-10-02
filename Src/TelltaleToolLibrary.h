@@ -117,6 +117,11 @@ _TTToolLib_Exp const char* TelltaleToolLib_GetBlowfishKey();
 _TTToolLib_Exp MetaClassDescription* TelltaleToolLib_FindMetaClassDescription(const char*, bool bByNameOrExt);
 
 /*
+* Same as TelltaleToolLib_FindMetaClassDescription, but searches by hash.
+*/
+_TTToolLib_Exp MetaClassDescription* TelltaleToolLib_FindMetaClassDescription_ByHash(u64);
+
+/*
 * Gets the name of the given meta class description
 */
 _TTToolLib_Exp const char* TelltaleToolLib_GetMetaClassDescriptionName(MetaClassDescription*);

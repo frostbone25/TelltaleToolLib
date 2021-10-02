@@ -80,7 +80,7 @@ void Meta::Initialize() {
 		meta_symbol.Initialize("Symbol");
 		meta_symbol.Insert();
 		DEFINET(flags, Flags)
-			meta_flags.Initialize(typeid(Flags).name());
+			meta_flags.Initialize(typeid(Flags));
 		DEFINEM(flags, mFlags);
 		meta_flags_mFlags.mpName = "mFlags";
 		meta_flags_mFlags.mFlags |= MetaFlag::MetaFlag_MetaSerializeBlockingDisabled;
@@ -94,7 +94,7 @@ void Meta::Initialize() {
 		meta_bool.Insert();
 		DEFINET(ztest, ZTestFunction)
 			meta_ztest.mFlags |= MetaFlag_EnumWrapperClass;
-		meta_ztest.Initialize(typeid(ZTestFunction).name());
+		meta_ztest.Initialize(typeid(ZTestFunction));
 		DEFINEM(ztest, mZTestType);
 		meta_ztest_mZTestType.mpName = "mZTestType";
 		meta_ztest_mZTestType.mpMemberDesc = &meta_long;
@@ -102,7 +102,7 @@ void Meta::Initialize() {
 		meta_ztest.mpFirstMember = &meta_ztest_mZTestType;
 		meta_ztest.Insert();
 		DEFINET(uidowner, UID::Owner)
-			meta_uidowner.Initialize(typeid(UID::Owner).name());
+			meta_uidowner.Initialize(typeid(UID::Owner));
 		DEFINEM(uidowner, miUniqueID);
 		meta_uidowner_miUniqueID.mpName = "miUniqueID";
 		meta_uidowner_miUniqueID.mpMemberDesc = &meta_long;
@@ -114,7 +114,7 @@ void Meta::Initialize() {
 		//UID::Generator
 
 		DEFINET(uidgen, UID::Generator)
-			meta_uidgen.Initialize(typeid(UID::Generator).name());
+			meta_uidgen.Initialize(typeid(UID::Generator));
 		DEFINEM(uidgen, miNextUniqueID);
 		meta_uidgen_miNextUniqueID.mpName = "miNextUniqueID";
 		meta_uidgen_miNextUniqueID.mpMemberDesc = &meta_long;
@@ -125,7 +125,7 @@ void Meta::Initialize() {
 		//T3VertexSampleDataBase
 
 		DEFINET(t3vsdb, T3VertexSampleDataBase);
-		meta_t3vsdb.Initialize(typeid(T3VertexSampleDataBase).name());
+		meta_t3vsdb.Initialize(typeid(T3VertexSampleDataBase));
 
 		DEFINEOP(t3vsdb, serialize, MetaOperationDescription::sIDs::eMetaOpSerializeAsync, NULL);
 		meta_t3vsdb.InstallSpecializedMetaOperation(&meta_t3vsdb_serialize);
@@ -174,7 +174,8 @@ void MetaStream::_WriteHeader() {
 	if (!mSection[0].mpStream || !mSection[0].mpStream->IsWrite())return;
 	_SetSection(SectionType::eSection_Header);
 	u32 magic;
-	if (mStreamVersion == 6) {
+	if (mStreamVersion == 6 || mStreamVersion == 5) {//MSV5 and MSV6 are the same in serialized form. dont know why they needed MSV6,
+		//MSV5 was the same lol, thinking its something backend. would need to look into a MSV5 game executable but dont have any pbds for 'em
 		magic = GetMetaMagic(6);
 		serialize_uint32(&magic);
 		u32 default_ = mSection[(int)SectionType::
@@ -222,27 +223,109 @@ bool MetaStream::_ReadHeader(DataStream* stream, u64 completeStreamSize,
 	if (!stream->IsRead())return false;
 	mCurrentSection = SectionType::eSection_Header;
 	mSection[0].mpStream = stream;
-	u32 versionmagic;
+	u32 versionmagic, numvers;
+	mStreamVersion = 0;
+	bool isCompiled = true, encryptstream = false;
+	mVersionInfo.clear();
 	serialize_uint32(&versionmagic);
 	if (versionmagic == GetMetaMagic(1) ||
 		versionmagic == GetMetaMagic(2)){//MBIN, MTRE
-		mStreamVersion = versionmagic == GetMetaMagic(2) ? 3 : 0;
-
+		mStreamVersion = versionmagic == GetMetaMagic(2) ? 3 : 1;
 	}
-	else if (versionmagic == GetMetaMagic(3)) {//MCOM
-		mStreamVersion = 3;
+	else if (versionmagic == GetMetaMagic(4) || versionmagic == GetMetaMagic(6) || versionmagic == GetMetaMagic(5)) {//MSV4,5,6
+		u32 default_=0, debug_, async_;
+		mStreamVersion = versionmagic == GetMetaMagic(4) ? 4 : versionmagic == GetMetaMagic(5) ? 5 : 6;
+		if (mStreamVersion >= 5) 
+			serialize_uint32(&default_);
+		serialize_uint32(&debug_);
+		serialize_uint32(&async_);
+		//u32 asyncsomething = 0;
+		if (static_cast<i32>(default_) < 0) {//same as & 0x80000000 since if 0x80000000 is set then its negative
+			mSection[1].mbCompressed = true;
+			default_ &= 0x7FFFFFFF;
+		}
+		if (debug_ & 0x80000000) {
+			mSection[2].mbCompressed = true;
+			debug_ &= 0x7FFFFFFF;
+		}
+		if (async_ & 0x80000000) {
+			mSection[2].mbCompressed = true;
+			async_ &= 0x7FFFFFFF;
+			//asyncsomething = 8 * (async_ >> 12);
+		}
+		mSection[1].mCompressedSize = default_;
+		mSection[2].mCompressedSize = debug_;
+		mSection[3].mCompressedSize = async_;
 	}
-	else if (versionmagic == GetMetaMagic(4)) {//MSV4
-		mStreamVersion = 4;
+	else {//MBES,MCOM and encrypted streams
+		mWriteParams.mbEncryptStream = true;
+		if (versionmagic == GetMetaMagic(0)) {//MBES
+			mStreamVersion = 1;
+		}
+		else if (versionmagic == GetMetaMagic(3) || versionmagic == EncrypedVersionHeaders[1]) {//MCOM
+			mStreamVersion = 3;
+			Advance(4);//some int
+			if (versionmagic == GetMetaMagic(3)) {
+				mWriteParams.mbSerializeAsCompressVersion = true;
+				goto VersionInfo;
+			}
+		}
+		else if (versionmagic == EncrypedVersionHeaders[0]) {
+			mStreamVersion = 3;
+		}
+		else if (versionmagic == EncrypedVersionHeaders[2] || 
+				versionmagic == EncrypedVersionHeaders[3] ||
+				versionmagic == EncrypedVersionHeaders[4]) {
+			mStreamVersion = 2;
+		}
+		if (!mStreamVersion)return false;
+		mWriteParams.mEncryptVersion = mStreamVersion;
+		DataStream* nstream = new DataStreamLegacyEncrypted(mSection[0].mpStream, mStreamVersion, stream->GetPosition());
+		mSection[0].mpStream = nstream;//dont delete old one, refernced still in metastream::mreadwritestream
+		encryptstream = true;
 	}
-	else if (versionmagic == GetMetaMagic(5)) {//MSV5
-		mStreamVersion = 5;
+VersionInfo:
+	serialize_uint32(&numvers);
+	if (numvers > 0 && numvers <= 0x3E8) {
+		mVersionInfo.reserve(numvers);
+		for (int i = 0; i < numvers; i++) {
+			MetaVersionInfo verinfo{ 0 };
+			if (mStreamVersion >= 3) {
+				serialize_uint64(&verinfo.mTypeSymbolCrc);
+			}
+			else {
+				String typeName;
+				serialize_String(&typeName);
+				char* buf = (char*)calloc(1, typeName.size()+1);
+				if (!buf)return false;
+				memcpy(buf, typeName.c_str(), typeName.size());
+				TelltaleToolLib_MakeInternalTypeName(&buf);
+				typeName = buf;
+				free(buf);
+				//SubsituteClassNames tf? cba
+				verinfo.mTypeSymbolCrc = CRC64_CaseInsensitive(0, typeName.c_str());
+			}
+			serialize_uint32(&verinfo.mVersionCrc);
+			MetaClassDescription* desc = TelltaleToolLib_FindMetaClassDescription_ByHash(verinfo.mTypeSymbolCrc);
+			if(desc)SerializedVersionInfo::RetrieveCompiledVersionInfo(desc);
+			if (!desc || !desc->mpCompiledVersionSerializedVersionInfo || 
+					verinfo.mVersionCrc != desc->mpCompiledVersionSerializedVersionInfo->mVersionCrc)
+				isCompiled = false;
+			mVersionInfo.push_back(verinfo);
+		}
 	}
-	else if (versionmagic == GetMetaMagic(6)) {//MSV6
-		mStreamVersion = 6;
+	mSection[0].mCompressedSize = GetPos();
+	if (mStreamVersion <= 3) {//MBIN,MBES,MTRE,MCOM (unsectioned streams)
+		if(encryptstream)mSection[0].mCompressedSize -= 4;
+		mSection[1].mCompressedSize = stream->GetSize() - mSection[0].mCompressedSize;
+		mSection[2].mCompressedSize = 0;
+		mSection[3].mCompressedSize = 0;
 	}
-	else {//MBES and encrypted streams
-		mStreamVersion = 0;
+	if (isCompiled) {
+		mRuntimeFlags |= (int)RuntimeFlags::eStreamIsCompiledVersion;
+	}
+	else {
+		mRuntimeFlags &= ~((int)RuntimeFlags::eStreamIsCompiledVersion);
 	}
 	return true;
 }
@@ -437,6 +520,7 @@ MetaStream::MetaStream(const char* Name) {
 	v1 = this;
 	this->mpReadWriteStream = 0i64;
 	this->mMode = MetaStreamMode::eMetaStream_Closed;
+	this->mStreamVersion = 0;
 	v1->mRuntimeFlags.mFlags = 0;
 	int len = strlen(Name);
 	memcpy(mName, Name, len >= 260 ? 259 : len);
@@ -598,6 +682,7 @@ void MetaStream::_FinalizeStream() {
 			throw "Does not support compression or compressed files yet!";
 			//TODO compress sect.mpStream into a new stream, once set then set sect.mpStream to compressed.
 			//make sure to delete sect.mpStream before its set (the old stream)
+			//use datastreamcontainers for the TTCZ header
 			sect.mbCompressed = true;
 		}
 		else {
@@ -611,6 +696,7 @@ bool MetaStream::_SetSection(SectionType s) {
 	SectionInfo& sect = mSection[(int)s];
 	if (sect.mpStream) {
 		mCurrentSection = s;
+		sect.mpStream->SetPosition(0, DataStreamSeekType::eSeekType_Begin);
 		return true;
 	}
 	if (!sect.mbEnable || mMode != MetaStreamMode::eMetaStream_Write)return false;
@@ -622,6 +708,8 @@ bool MetaStream::_SetSection(SectionType s) {
 MetaStream::~MetaStream() {
 	Close();
 	if (mpReadWriteStream) {
+		if (mpReadWriteStream != mSection[0].mpStream)
+			delete mSection[0].mpStream;
 		delete mpReadWriteStream;
 	}
 }
@@ -639,11 +727,12 @@ bool MetaStream::Attach(DataStream* stream, MetaStreamMode mode, MetaStreamParam
 	}
 	u64 completeStreamSize = stream->GetSize();
 	if (_ReadHeader(stream, completeStreamSize,NULL)) {
-		u64 offset = mSection[(int)SectionType::eSection_Header].mpStream->GetSize();
+		u64 offset = mSection[0].mCompressedSize;
 		for (int i = 1; i <= 3; i++) {//for each section (default,async,debug)
 			SectionInfo& currentSect = mSection[i];
 			if (currentSect.mCompressedSize) {
-				currentSect.mpStream = stream->GetSubStream(offset, currentSect.mCompressedSize);
+				//mSection[0].mpStream->SetPosition(offset, DataStreamSeekType::eSeekType_Begin);
+				currentSect.mpStream = mSection[0].mpStream->GetSubStream(offset, currentSect.mCompressedSize);
 				if (currentSect.mbCompressed) {
 					throw "COMPRESSED SECTION! NEED TO LOOK AT THIS FILE AND IMPL";
 					//datastreamcontainer::read is called here. I think this function
@@ -740,7 +829,9 @@ MetaMemberDescription::~MetaMemberDescription() {
 		while (i) {
 			if (i->mpEnumName && (i->mFlags & MetaFlag::MetaFlag_Heap)) {
 				free((void*)i->mpEnumName);
+				MetaEnumDescription* next = i->mpNext;
 				free(i);
+				i = next;
 				continue;
 			}
 			else {
@@ -866,6 +957,10 @@ bool MetaClassDescription::MatchesHash(u64 o) {
 MetaClassDescription::~MetaClassDescription() {
 	if (this->mpSerializeAccel)
 		delete[] this->mpSerializeAccel;
+	if (this->mpCompiledVersionSerializedVersionInfo)
+		delete mpCompiledVersionSerializedVersionInfo;
+	if (mbNameIsHeapAllocated)
+		free((void*)mpTypeInfoName);
 }
 
 void MetaClassDescription::Construct(void* pObj) {
@@ -1021,7 +1116,7 @@ METAOP_FUNC_IMPL(SerializedVersionInfo) {
 		ver->mVersionCrc = CRC32(ver->mVersionCrc, versionCrcBuffer, 4);
 		for (MetaMemberDescription* i = pObjDescription->mpFirstMember; i; i = i->mpNextMember) {
 			if (i->mFlags & 1)continue;//flag 1 = metaflags:: dont seralized etc
-			SerializedVersionInfo::MemberDesc member{ 0 };
+			SerializedVersionInfo::MemberDesc member;
 			member.mSize = i->mpMemberDesc->mClassSize;
 			member.mTypeNameSymbolCrc = i->mpMemberDesc->mHash;
 			member.mbBlocked = !(i->mpMemberDesc->mFlags.mFlags
@@ -1037,7 +1132,6 @@ METAOP_FUNC_IMPL(SerializedVersionInfo) {
 			ver->mVersionCrc = CRC32(ver->mVersionCrc, hashBuffer, 1);
 			ver->mMembers.push_back(member);
 		}
-
 	}
 	return MetaOpResult::eMetaOp_Succeed;
 }

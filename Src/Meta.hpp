@@ -16,6 +16,29 @@
 //set to false to disallow the debug section of meta stream files to be loaded. default true
 #define METASTREAM_ENABLE_DEBUG true
 
+#if defined(__BYTE_ORDER) && __BYTE_ORDER == __BIG_ENDIAN || \
+    defined(__BIG_ENDIAN__) || \
+    defined(__ARMEB__) || \
+    defined(__THUMBEB__) || \
+    defined(__AARCH64EB__) || \
+    defined(_MIBSEB) || defined(__MIBSEB) || defined(__MIBSEB__)
+#define LITTLE_ENDIAN 0
+#define BIG_ENDIAN 1
+#elif defined(__BYTE_ORDER) && __BYTE_ORDER == __LITTLE_ENDIAN || \
+    defined(__LITTLE_ENDIAN__) || \
+    defined(__ARMEL__) || \
+    defined(__THUMBEL__) || \
+    defined(__AARCH64EL__) || \
+    defined(_MIPSEL) || defined(__MIPSEL) || defined(__MIPSEL__)
+#define LITTLE_ENDIAN 1
+#define BIG_ENDIAN 0
+#elif defined(_MSC_VER) 
+#define LITTLE_ENDIAN 1
+#define BIG_ENDIAN 0
+#else
+#error "Could not detect endian"
+#endif
+
 #define METAOP_FUNC_DEF(_FuncName) static MetaOpResult MetaOperation_##_FuncName(void *,MetaClassDescription*,MetaMemberDescription*,void*);
 #define METAOP_FUNC_IMPL(_FuncName) MetaOpResult Meta::MetaOperation_##_FuncName(void *pObj,MetaClassDescription* pObjDescription,\
 	MetaMemberDescription *pContextDescription,void *pUserData)
@@ -28,14 +51,33 @@ struct MetaMemberDescription;
 class SerializedVersionInfo;
 class Symbol; 
 
+const u32 EncrypedVersionHeaders[] = {
+	0x64AFDEAA,//version 3
+	0x64AFDEBB,//version 3 (encrypted MCOM)
+	0xFB4A1764,//version 2
+	0xEB794091,//version 2
+	0x64AFDEFB,//version 2
+};
+
+//reason they are reversed is because in the executables these are stored as INTS and because of the endian they are reversed
 constexpr const char VersionHeaders[][5] = {
-	"SEBM",//version 0, meta binary encrypted stream
-	"NIBM",//version 0, meta binary
-	"ERTM",//version 3, no clue
-	"MOCM",//version 3, meta compressed
-	"4VSM",//version 4, meta stream version 4
+#if LITTLE_ENDIAN == 1
+	"SEBM",//version 0, Meta Binary Encrypted Stream
+	"NIBM",//version 0, Meta BINary
+	"ERTM",//version 3, Meta Type REference (I think, more like meta try reverse engineer (assholes, god im lonely)) maybe MT in MTRE is meta
+	"MOCM",//version 3, Meta COMpressed, compressed version of MTRE
+	"4VSM",//version 4, Meta Stream Version 4
 	"5VSM",//version 5
 	"6VSM",//version 6
+#else
+	"MBES",//version 0, Meta Binary Encrypted Stream
+	"MBIN",//version 0, Meta BINary
+	"MTRE",//version 3, no clue
+	"MCOM",//version 3, Meta COMpressed
+	"MSV4",//version 4, Meta Stream Version 4
+	"MSV5",//version 5
+	"MSV6",//version 6
+#endif
 };
 
 static constexpr u32 GetMetaMagic(int versionID) {
@@ -151,7 +193,9 @@ struct MetaVersionInfo {
 	u32 mVersionCrc;
 };
 
-class MetaStream {//can implement child class MetaStream_JSON
+//If you have opened and it errored on Open, then you have to reset the input stream to its offset when first passed into Open,
+//can implement child class MetaStream_JSON
+class MetaStream {
 
 public:
 
@@ -194,6 +238,15 @@ public:
 
 	};
 
+	struct WriteParams {//not in telltale tool, used for this library to write meta streams
+		bool mbEncryptStream : 1;
+		u8 mEncryptVersion : 7;//1 2 or 3
+		bool mbSerializeAsCompressVersion;//MCOM. not supported (unknown int, and no files of this type in public, must be engine private).
+		
+		WriteParams() : mbEncryptStream(false), mEncryptVersion(3), mbSerializeAsCompressVersion(false) {}
+
+	};
+
 	//normally is separated into SubStreamInfo, each one could be a metastream or just data. for simplicity just done it like this
 
 	SectionInfo mSection[(int)SectionType::eSection_Count];
@@ -201,7 +254,17 @@ public:
 	MetaStreamParams mParams;
 	int mDebugSectionDepth;
 	SectionType mCurrentSection;
+	WriteParams mWriteParams;
 
+	/*
+	* Stream Versions:
+	* 1: MBIN (and MBES if encrypted)
+	* 2: Encrypted MBIN (weird headers)
+	* 3: MTRE (if the meta stream header is not MTRE its a weird encrypted header)
+	* 4: MSV4 - No default section, just async and debug
+	* 5: MSV5 
+	* 6: MSV6
+	*/
 	u32 mStreamVersion;
 	DataStream* mpReadWriteStream;
 	MetaStreamMode mMode;
@@ -381,33 +444,62 @@ enum VTableFunction {
 };
 
 enum MetaFlag {
+	//Dont serialize this type
 	MetaFlag_MetaSerializeDisable = 1,
+	//Dont put a block size infront of this type
 	MetaFlag_MetaSerializeBlockingDisabled = 2,
+	//Place in game engine property menu
 	MetaFlag_PlaceInAddPropMenu = 4,
+	//No caption in the panel its in
 	MetaFlag_NoPanelCaption = 8,
+	//This type is a base class
 	MetaFlag_BaseClass = 0x10,
+	//Dont show this in the game engine editor
 	MetaFlag_EditorHide = 0x20,
+	//Is an enum, of type int
 	MetaFlag_EnumIntType = 0x40,
+	//Is an enum of type string
 	MetaFlag_EnumStringType = 0x80,
+	//Is a container type (eg a map, list, array)
 	MetaFlag_ContainerType = 0x100,
+	//Is a script enum type (enum used in lua scripts)
 	MetaFlag_ScriptEnum = 0x200,
+	//The name of this type (in meta member descriptions) is allocated on the heap
 	MetaFlag_Heap = 0x400,
+	//Not seen this used yet
 	MetaFlag_ScriptTransient = 0x800,
+	//Not seen this used yet
 	MetaFlag_SelectAgentType = 0x1000,
+	//Not seen this used yet, just object state is a meta operation
 	MetaFlag_SkipObjectState = 0x2000,
+	//Not seen this used yet
 	MetaFlag_NotCacheable = 0x4000,
+	//This type wraps an enum. Eg, this type is a struct EnumPlatformType{PlatformType mType}, where PlatformType is an enum
+	//Reason its like this is because the enumplatformtype struct inherits from EnumBase and that has a seperate description
 	MetaFlag_EnumWrapperClass = 0x8000,
+	//Not seen this used yet
 	MetaFlag_TempDescription = 0x10000,
+	//This type is a handle (reference to a file). If serialized this is a CRC
 	MetaFlag_Handle = 0x20000,
+	//This type has a list of flags present with it (eg FlagsT3LightEnvGroupSet)
 	MetaFlag_FlagType = 0x40000,
+	//Not seen this used yet
 	MetaFlag_SelectFolderType = 0x80000,
+	//This type has no members, so doesnt need to be serialized
 	MetaFlag_Memberless = 0x100000,
+	//This type is a renderable resource (eg a texture)
 	MetaFlag_RenderResource = 0x200000,
+	//If this type has a block around it but the size of the serialized version is not always one value
 	MetaFlag_MetaSerializeNonBlockedVariableSize = 0x400002,
+	//Not seen this used yet
 	MetaFlag_EmbeddedCacheableResource = 0x800000,
+	//Not seen this used yet
 	MetaFlag_VirtualResource = 0x1000000,
+	//Not seen this used yet
 	MetaFlag_DontAsyncLoad = 0x2000000,
+	//If this type is not a meta file
 	MetaFlag_IsNotMetaFile = 0x4000000,
+	//If this type has been initialized
 	Internal_MetaFlag_Initialized = 0x20000000,
 };
 /*
@@ -589,12 +681,13 @@ struct MetaClassDescription {
 	u64 mHash;
 	Flags mFlags;
 	u32 mClassSize;
-	SerializedVersionInfo* mpCompiledVersionSerializedVersionInfo;//atomic
+	SerializedVersionInfo* mpCompiledVersionSerializedVersionInfo;//atomic, lazily eval
 	MetaMemberDescription* mpFirstMember;
 	MetaOperationDescription* mMetaOperationsList;
 	MetaClassDescription* pNextMetaClassDescription;
 	void* mpVTable[5/*6*/];
 	MetaSerializeAccel* mpSerializeAccel;//atomic
+	bool mbNameIsHeapAllocated;//created by lib
 
 	String* GetToolDescriptionName(String* result);
 	void Delete(void* pObj);
@@ -602,6 +695,7 @@ struct MetaClassDescription {
 	void* New();
 	void Construct(void*);
 	void CopyConstruct(void*, void*);
+	MetaClassDescription() : mbNameIsHeapAllocated(false) {}
 	~MetaClassDescription();
 	bool MatchesHash(u64 hash);
 	void GetDescriptionSymbol(Symbol*);
@@ -609,9 +703,15 @@ struct MetaClassDescription {
 	INLINE MetaMemberDescription* GetMemberDescription(String* _Str) {
 		return GetMemberDescription(_Str->c_str());
 	}
-	INLINE void Initialize(std::type_info* info) {
-		Initialize(info->name());
+	INLINE void Initialize(const std::type_info& info) {
+		//i know its slow but it doesnt need to be super  fast and i cba to change this (heap allocations/deallocations)
+		char* buf = (char*)calloc(1, strlen(info.name()) + 1);
+		memcpy(buf, info.name(), strlen(info.name()));
+		TelltaleToolLib_MakeInternalTypeName(&buf);
+		mbNameIsHeapAllocated = true;
+		Initialize(buf);
 	}
+	//DO NOT USE typeid(type).name(), THIS IS NOT THE RIGHT FORMAT, use typeid(type) and use the overloaded function!!
 	void Initialize(const char*);
 	void Insert();
 	bool IsDerivedFrom(MetaClassDescription* pDesc);
