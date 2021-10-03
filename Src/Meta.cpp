@@ -205,11 +205,27 @@ void MetaStream::EndObject(Symbol* name, MetaClassDescription* pDesc, MetaMember
 		EndBlock();
 }
 
+MetaClassDescription* GetMetaClassDescription(const char* typeInfoName) {
+	if (!sInitialized)return NULL;
+	MetaClassDescription* i = spFirstMetaClassDescription;
+	if (typeInfoName == NULL) {
+		return NULL;
+	}
+	else {
+		for (i; i; i = i->pNextMetaClassDescription) {
+			if (!_strcmpi(typeInfoName, i->mpTypeInfoExternalName))
+				return i;
+		}
+	}
+	return NULL;
+}
+
 template<typename T> MetaClassDescription* MetaClassDescription_Typed<T>::GetMetaClassDescription(const char* type) {
+	if (!sInitialized)return NULL;
 	MetaClassDescription* i = spFirstMetaClassDescription;
 	if (type == NULL) {
 		for (i; i; i = i->pNextMetaClassDescription) {
-			if (!_strcmpi(typeid(T).name(), i->mpTypeInfoName))
+			if (!_strcmpi(typeid(T).name(), i->mpTypeInfoExternalName))
 				return i;
 		}
 	}

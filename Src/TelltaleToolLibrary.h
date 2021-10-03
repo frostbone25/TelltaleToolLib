@@ -15,7 +15,7 @@
 #define INLINE __inline
 #define FORCE_INLINE __forceinline
 
-#define _VERSION "1.2"
+#define _VERSION "3.5"
 
 #define _TTToolLib_Exp extern "C" __declspec(dllexport)
 

@@ -397,6 +397,8 @@ template<typename T, typename U> constexpr size_t memberOffset(U T::* member)
 	return (char*)&((T*)nullptr->*member) - (char*)nullptr;
 }
 
+MetaClassDescription* GetMetaClassDescription(const char* typeInfoName);
+
 template<typename T>
 struct MetaClassDescription_Typed {
 
@@ -417,14 +419,6 @@ struct MetaClassDescription_Typed {
 	static void Delete(void* pObj) {
 		static_cast<T*>(pObj)->~T();
 		operator delete(pObj);
-	}
-
-	static void CopyConstruct(void* pDest, void* pSrc) {
-		new (pDest) T(*static_cast<T*>(pSrc));
-	}
-
-	static void Construct(void* pObj) {
-		new (pObj) T();
 	}
 
 };
@@ -598,20 +592,20 @@ struct MetaOperationDescription {
 		eMetaOpTwelve = 0x0C,
 		eMetaOpThirteen = 0x0D,
 		eMetaOpFourteen = 0x0E,
-		eMetaOpFifteen = 0x0F,
+		eMetaOpFifteen = 0x0F,//ObjectState
 		eMetaOpSixteen = 0x10,
 		eMetaOpSeventeen = 0x11,
-		eMetaOpEighteen = 0x12,
-		eMetaOpNineteen = 0x13,
+		eMetaOpEighteen = 0x12,//ScriptLock
+		eMetaOpNineteen = 0x13,//ScriptUnlock
 		eMetaOpTwenty = 0x14,
 		eMetaOpTwentyOne = 0x15,//MetaOperation_SerializedVersionInfo
 		eMetaOpTwentyTwo = 0x16,
-		eMetaOpTwentyThree = 0x17,
+		eMetaOpTwentyThree = 0x17,//ToString
 		eMetaOpTwentyFour = 0x18,
 		eMetaOpTwentyFive = 0x19,
 		eMetaOpTwentySix = 0x1A,
 		eMetaOpTwentySeven = 0x1B,
-		eMetaOpTwentyEight = 0x1C,
+		eMetaOpTwentyEight = 0x1C,//CollectTyped
 		eMetaOpTwentyNine = 0x1D,
 		eMetaOpThirty = 0x1E,
 		eMetaOpThirtyOne = 0x1F,
@@ -637,7 +631,7 @@ struct MetaOperationDescription {
 		eMetaOpFiftyOne = 0x33,
 		eMetaOpFiftyTwo = 0x34,
 		eMetaOpFiftyThree = 0x35,
-		eMetaOpFiftyFour = 0x36,
+		eMetaOpFiftyFour = 0x36,//PreloadDependentResources
 		eMetaOpFiftyFive = 0x37,
 		eMetaOpFiftySix = 0x38,
 		eMetaOpFiftySeven = 0x39,
@@ -677,6 +671,7 @@ struct MetaOperationDescription {
 struct MetaClassDescription {
 	const char* mpExt;
 	const char* mpTypeInfoName;
+	const char* mpTypeInfoExternalName;//for lib
 	u64 mHash;
 	Flags mFlags;
 	u32 mClassSize;

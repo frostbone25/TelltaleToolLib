@@ -5,15 +5,33 @@
 
 #include "Meta.hpp"
 #include "Types/TypeIncludes.h"
+#include "TelltaleToolLibrary.h"
 
-#define DEFINET(name,Ty) }++sMetaTypesCount;static MetaClassDescription meta_##name; \
-if(!(meta_##name.mFlags.mFlags & MetaFlag::Internal_MetaFlag_Initialized)){ \
-meta_##name.mpVTable[0] = MetaClassDescription_Typed<Ty>::New;\
-meta_##name.mpVTable[1] = MetaClassDescription_Typed<Ty>::Delete;\
-meta_##name.mpVTable[2] = MetaClassDescription_Typed<Ty>::Construct;\
-meta_##name.mpVTable[3] = MetaClassDescription_Typed<Ty>::CopyConstruct;\
-meta_##name.mpVTable[4] = MetaClassDescription_Typed<Ty>::Destroy;\
-meta_##name.mClassSize = sizeof(Ty);
+#define DEFINET(name_,Ty) }++sMetaTypesCount;static MetaClassDescription meta_##name_; \
+if(!(meta_##name_.mFlags.mFlags & MetaFlag::Internal_MetaFlag_Initialized)){ \
+meta_##name_.mpVTable[0] = MetaClassDescription_Typed<Ty>::New;\
+meta_##name_.mpVTable[1] = MetaClassDescription_Typed<Ty>::Delete;\
+meta_##name_.mpVTable[2] = NULL;\
+meta_##name_.mpVTable[3] = NULL;\
+meta_##name_.mpVTable[4] = MetaClassDescription_Typed<Ty>::Destroy;\
+meta_##name_.mClassSize = sizeof(Ty);\
+meta_##name_.mpTypeInfoExternalName = typeid(Ty).name();
+
+#define DEFINESARRAY(type,count) DEFINET(sarray_##type##_##count##, SArray<type SEP count>);\
+meta_sarray_##type##_##count##.Initialize(typeid(SArray<type SEP count>));\
+METAOP_CUSTOM(sarray_##type##_##count, eMetaOpSerializeAsync, SArray<type SEP count>::MetaOperation_SerializeAsync);\
+meta_sarray_##type##_##count##.InstallSpecializedMetaOperation(&meta_sarray_##type##_##count##_eMetaOpSerializeAsync);\
+METAOP_CUSTOM(sarray_##type##_##count, eMetaOpSerializeMain, SArray<type SEP count>::MetaOperation_SerializeMain);\
+meta_sarray_##type##_##count##.InstallSpecializedMetaOperation(&meta_sarray_##type##_##count##_eMetaOpSerializeMain);\
+meta_sarray_##type##_##count##.Insert();
+
+#define DEFINEDCARRAY(type) DEFINET(DCArray_##type##, DCArray<type>);\
+meta_DCArray_##type##.Initialize(typeid(DCArray<type>));\
+METAOP_CUSTOM(DCArray_##type##, eMetaOpSerializeAsync, DCArray<type>::MetaOperation_SerializeAsync);\
+meta_DCArray_##type##.InstallSpecializedMetaOperation(&meta_DCArray_##type##_eMetaOpSerializeAsync);\
+METAOP_CUSTOM(DCArray_##type##, eMetaOpSerializeMain, DCArray<type>::MetaOperation_SerializeMain);\
+meta_DCArray_##type##.InstallSpecializedMetaOperation(&meta_DCArray_##type##_eMetaOpSerializeMain);\
+meta_DCArray_##type##.Insert();
 
 #define DEFINEOP(name, opName,fid,fun)static MetaOperationDescription meta_##name##_##opName; meta_##name##_##opName.id = fid;\
 meta_##name##_##opName.mpOpFn = fun;
@@ -23,6 +41,7 @@ meta_##name##_##opName.mpOpFn = fun;
 #define METAOP_CUSTOM(Parent,ID,Func) static MetaOperationDescription meta_##Parent##_##ID;meta_##Parent##_##ID.id = \
 MetaOperationDescription::ID; meta_##Parent##_##ID.mpOpFn = Func; meta_##Parent##_##ID.mpNext = NULL;
 
+#define SEP ,
 
 namespace MetaInit {
 
@@ -30,11 +49,13 @@ namespace MetaInit {
 	void Initialize3();
 	void Initialize4();
 
+	//ONLY TO BE CALLED BY LIBRARY, USE LIBTELLTALETOOL_INIT
 	void Initialize() {
 		{
 			DEFINET(char, char)
 				meta_char.mFlags = MetaFlag::MetaFlag_MetaSerializeBlockingDisabled;
 			meta_char.Initialize("int8");
+			meta_char.mpTypeInfoExternalName = typeid(char).name();
 			meta_char.mbIsIntrinsic = true;
 			METAOP_CUSTOM(char, eMetaOpSerializeAsync, MetaOperation_SerializeIntrinsicAsyncint8);
 			meta_char.InstallSpecializedMetaOperation(&meta_char_eMetaOpSerializeAsync);
@@ -200,15 +221,162 @@ namespace MetaInit {
 
 			//ContainerInterface
 			DEFINET(cinterface, ContainerInterface);
-			meta_cinterface.Initialize("Baseclass_ContainerInterface");
-
+			meta_cinterface.Initialize("ContainerInterface");
+			//Override operatoins: collecttyped, objectstate, scriptunlock, scriptlock,
+			meta_cinterface.mFlags.mFlags |= (int)MetaFlag_MetaSerializeBlockingDisabled | (int)MetaFlag_BaseClass;
 			meta_cinterface.Insert();
+
+			//Vector2
+			DEFINET(vec2, Vector2);
+			meta_vec2.Initialize(typeid(Vector2));
+			meta_vec2.mFlags.mFlags |= (int)MetaFlag_MetaSerializeBlockingDisabled | (int)MetaFlag_PlaceInAddPropMenu;
+			DEFINEM(vec2, y);
+			meta_vec2_y.mpName = "y";
+			meta_vec2_y.mOffset = 4;
+			meta_vec2_y.mpMemberDesc = &meta_float;
+			DEFINEM(vec2, x);
+			meta_vec2.mpFirstMember = &meta_vec2_x;
+			meta_vec2_x.mpName = "x";
+			meta_vec2_x.mOffset = 0;
+			meta_vec2_x.mpMemberDesc = &meta_float;
+			meta_vec2_x.mpNextMember = &meta_vec2_y;
+			meta_vec2.Insert();
+
+			//Vector3
+			DEFINET(vec3, Vector3);
+			meta_vec3.Initialize(typeid(Vector3));
+			meta_vec3.mFlags.mFlags |= (int)MetaFlag_MetaSerializeBlockingDisabled | (int)MetaFlag_PlaceInAddPropMenu;
+			DEFINEM(vec3, z);
+			meta_vec3_z.mpName = "z";
+			meta_vec3_z.mpMemberDesc = &meta_float;
+			meta_vec3_z.mOffset = 8;
+			DEFINEM(vec3, y);
+			meta_vec3_y.mpName = "y";
+			meta_vec3_y.mpMemberDesc = &meta_float;
+			meta_vec3_y.mOffset = 4;
+			meta_vec3_y.mpNextMember = &meta_vec3_z;
+			DEFINEM(vec3, x);
+			meta_vec3.mpFirstMember = &meta_vec3_x;
+			meta_vec3_x.mpName = "x";
+			meta_vec3_x.mpMemberDesc = &meta_float;
+			meta_vec3_x.mOffset = 0;
+			meta_vec3_x.mpNextMember = &meta_vec3_y;
+			meta_vec3.Insert();
+			METAOP_CUSTOM(vec3, eMetaOpSerializeAsync, Vector3::MetaOperation_SerializeAsync);
+			meta_vec3.InstallSpecializedMetaOperation(&meta_vec3_eMetaOpSerializeAsync);
+
+			//Vector4
+			DEFINET(vec4, Vector4);
+			meta_vec4.Initialize(typeid(Vector4));
+			meta_vec4.mFlags.mFlags |= (int)MetaFlag_MetaSerializeBlockingDisabled;
+			DEFINEM(vec4, w);
+			meta_vec4_w.mpName = "w";
+			meta_vec4_w.mpMemberDesc = &meta_float;
+			meta_vec4_w.mOffset = 12;
+			DEFINEM(vec4, z);
+			meta_vec4_z.mpName = "z";
+			meta_vec4_z.mpMemberDesc = &meta_float;
+			meta_vec4_z.mOffset = 8;
+			meta_vec4_z.mpNextMember = &meta_vec4_w;
+			DEFINEM(vec4, y);
+			meta_vec4_y.mpName = "y";
+			meta_vec4_y.mpMemberDesc = &meta_float;
+			meta_vec4_y.mOffset = 4;
+			meta_vec4_y.mpNextMember = &meta_vec4_z;
+			DEFINEM(vec4, x);
+			meta_vec4.mpFirstMember = &meta_vec4_x;
+			meta_vec4_x.mpName = "x";
+			meta_vec4_x.mpMemberDesc = &meta_float;
+			meta_vec4_x.mOffset = 0;
+			meta_vec4_x.mpNextMember = &meta_vec4_y;
+			meta_vec4.Insert();
+			METAOP_CUSTOM(vec4, eMetaOpSerializeAsync, Vector4::MetaOperation_SerializeAsync);
+			meta_vec4.InstallSpecializedMetaOperation(&meta_vec4_eMetaOpSerializeAsync);
+
+			//Quaternion
+			DEFINET(quat, Quaternion);
+			meta_quat.Initialize(typeid(Quaternion));
+			meta_quat.mFlags.mFlags |= (int)MetaFlag_MetaSerializeBlockingDisabled | (int)MetaFlag_PlaceInAddPropMenu;
+			DEFINEM(quat, w);
+			meta_quat_w.mpName = "w";
+			meta_quat_w.mpMemberDesc = &meta_float;
+			meta_quat_w.mOffset = 12;
+			DEFINEM(quat, z);
+			meta_quat_z.mpName = "z";
+			meta_quat_z.mpMemberDesc = &meta_float;
+			meta_quat_z.mOffset = 8;
+			meta_quat_z.mpNextMember = &meta_quat_w;
+			DEFINEM(quat, y);
+			meta_quat_y.mpName = "y";
+			meta_quat_y.mpMemberDesc = &meta_float;
+			meta_quat_y.mOffset = 4;
+			meta_quat_y.mpNextMember = &meta_quat_z;
+			DEFINEM(quat, x);
+			meta_quat.mpFirstMember = &meta_quat_x;
+			meta_quat_x.mpName = "x";
+			meta_quat_x.mpMemberDesc = &meta_float;
+			meta_quat_x.mOffset = 0;
+			meta_quat_x.mpNextMember = &meta_quat_y;
+			meta_quat.Insert();
+			METAOP_CUSTOM(quat, eMetaOpSerializeAsync, Quaternion::MetaOperation_SerializeAsync);
+			meta_quat.InstallSpecializedMetaOperation(&meta_quat_eMetaOpSerializeAsync);
+
+			DEFINET(transform, Transform);
+			meta_transform.Initialize(typeid(Transform));
+			DEFINEM(transform, trans);
+			meta_transform_trans.mpName = "mTrans";
+			meta_transform_trans.mpMemberDesc = &meta_vec3;
+			meta_transform_trans.mOffset = memberOffset(&Transform::mTrans);
+			DEFINEM(transform, rot);
+			meta_transform_rot.mpName = "mRot";
+			meta_transform_rot.mpMemberDesc = &meta_quat;
+			meta_transform_rot.mOffset = memberOffset(&Transform::mRot);
+			meta_transform_rot.mpNextMember = &meta_transform_trans;
+			meta_transform.mpFirstMember = &meta_transform_rot;
+			meta_transform.Insert();
+				
+			DEFINET(sphere, Sphere);
+			meta_sphere.Initialize(typeid(Sphere));
+			DEFINEM(sphere, radius);
+			meta_sphere_radius.mOffset = memberOffset(&Sphere::mRadius);
+			meta_sphere_radius.mpName = "mRadius";
+			meta_sphere_radius.mpMemberDesc = &meta_float;
+			DEFINEM(sphere, center);
+			meta_sphere_center.mOffset = memberOffset(&Sphere::mCenter);
+			meta_sphere_center.mpName = "mCenter";
+			meta_sphere_center.mpMemberDesc = &meta_vec3;
+			meta_sphere_center.mpNextMember = &meta_sphere_radius;
+			meta_sphere.mpFirstMember = &meta_sphere_center;
+			meta_sphere.Insert();
+
+			// STATIC ARRAYS
+
+			DEFINESARRAY(u32, 3);
+			DEFINESARRAY(u8, 32);
+			DEFINESARRAY(i32, 4);
+			DEFINESARRAY(i32, 3);
+			DEFINESARRAY(float, 9);
+			DEFINESARRAY(float, 3);
+
+			// DYNAMIC ARRAYS
+
+			DEFINEDCARRAY(i32);
+			DEFINEDCARRAY(u16);
+			DEFINEDCARRAY(u64);
+			DEFINEDCARRAY(u32);
+			DEFINEDCARRAY(u8);
+			DEFINEDCARRAY(float);
+			DEFINEDCARRAY(bool);
+			DEFINEDCARRAY(u16);
+			DEFINEDCARRAY(u16);
 
 		}
 		Initialize2();
 		Initialize3();
 		Initialize4();
 	}
+
+	//The rest of the initialize functions would be for that they say but it would take long to search each member up so its in initialize()
 
 	void Initialize2() {
 

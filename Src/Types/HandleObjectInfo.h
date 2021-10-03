@@ -13,4 +13,16 @@ struct HandleObjectInfo {
 	Flags mFlags;
 };
 
+struct HandleBase {
+	HandleObjectInfo* mpHandleObjectInfo;
+};
+
+template<typename T> struct Handle : public HandleBase {
+
+};
+
+template<typename T> struct HandleLock : public Handle<T> {
+
+};
+
 #endif

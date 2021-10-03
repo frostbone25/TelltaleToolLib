@@ -8,3 +8,6 @@
 #include "Container.h"
 #include "DCArray.h"
 #include "HandleObjectInfo.h"
+#include "SArray.h"
+#include "DCArray.h"
+#include "ObjectSpaceIntrinsics.h"

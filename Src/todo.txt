@@ -1,5 +1,7 @@
 TODO LIST:
 
+- Rest of container types (just copy from dcarray): Set, List, Deque, Map (Dont copy this one! redo it)
+
 notes:
 metastream deletes the datastream passed on open
 can only write MSV6, implement more in future (maybe check EXEs)

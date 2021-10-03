@@ -160,6 +160,8 @@
     <ClInclude Include="Src\HashManager.h" />
     <ClInclude Include="Src\Meta.hpp" />
     <ClInclude Include="Src\TelltaleToolLibrary.h" />
+    <ClInclude Include="Src\Types\ObjectSpaceIntrinsics.h" />
+    <ClInclude Include="Src\Types\SArray.h" />
     <ClInclude Include="Src\Types\TypeIncludes.h" />
     <ClInclude Include="Src\Zlib\crc32.h" />
     <ClInclude Include="Src\Zlib\deflate.h" />
