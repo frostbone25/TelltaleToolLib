@@ -161,6 +161,11 @@ extern bool sInitialized;
 
 struct Flags {
 	u32 mFlags;
+
+	Flags(u32 i) : mFlags(i) {}
+
+	Flags() {}
+
 	INLINE Flags& operator=(u32 i) {
 		mFlags = i;
 		return *this;

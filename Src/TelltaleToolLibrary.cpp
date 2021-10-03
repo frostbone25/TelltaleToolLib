@@ -3,6 +3,7 @@
 
 #include "TelltaleToolLibrary.h"
 #include "Meta.hpp"
+#include "MetaInitialize.h"
 
 bool sInitialized = false;
 
@@ -162,7 +163,7 @@ bool TelltaleToolLib_Initialize(const char* game_id) {
        // Blowfish::Initialize(k);
     }
   //  else Blowfish::Initialize(&sBlowfishKeys[sSetKeyIndex]);
-    Meta::Initialize();//init all types
+    MetaInit::Initialize();//init all types
     sInitialized = true;
     return true;
 }

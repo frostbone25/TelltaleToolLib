@@ -39,11 +39,14 @@
 #error "Could not detect endian"
 #endif
 
-#define METAOP_FUNC_DEF(_FuncName) static MetaOpResult MetaOperation_##_FuncName(void *,MetaClassDescription*,MetaMemberDescription*,void*);
+#define METAOP_FUNC_DEF(_FuncName) MetaOpResult MetaOperation_##_FuncName(void *,MetaClassDescription*,MetaMemberDescription*,void*);
 #define METAOP_FUNC_IMPL(_FuncName) MetaOpResult Meta::MetaOperation_##_FuncName(void *pObj,MetaClassDescription* pObjDescription,\
 	MetaMemberDescription *pContextDescription,void *pUserData)
 
 #define METAOP_FUNC_IMPL_(NS,_FuncName) MetaOpResult NS::MetaOperation_##_FuncName(void *pObj,MetaClassDescription* pObjDescription,\
+	MetaMemberDescription *pContextDescription,void *pUserData)
+
+#define METAOP_FUNC_IMPL__(_FuncName) MetaOpResult MetaOperation_##_FuncName(void *pObj,MetaClassDescription* pObjDescription,\
 	MetaMemberDescription *pContextDescription,void *pUserData)
 
 struct MetaClassDescription;
@@ -65,7 +68,8 @@ constexpr const char VersionHeaders[][5] = {
 	"SEBM",//version 0, Meta Binary Encrypted Stream
 	"NIBM",//version 0, Meta BINary
 	"ERTM",//version 3, Meta Type REference (I think, more like meta try reverse engineer (assholes, god im lonely)) maybe MT in MTRE is meta
-	"MOCM",//version 3, Meta COMpressed, compressed version of MTRE
+	"MOCM",//version 3, Meta COMpressed, compressed version of MTRE. this might be wrong, im thinking its more meta communication?
+	//maybe for example transporting stuff in the engine?
 	"4VSM",//version 4, Meta Stream Version 4
 	"5VSM",//version 5
 	"6VSM",//version 6
@@ -119,7 +123,7 @@ struct T3VertexSampleDataBase {
 			free(mpData);
 	}
 
-	METAOP_FUNC_DEF(SerializeAsync);
+	static METAOP_FUNC_DEF(SerializeAsync);
 
 };
 
@@ -131,15 +135,6 @@ struct ZTestFunction {
 };
 
 struct Meta {
-
-	//Types
-	static void Initialize();
-	//Handle<T>
-	static void Initialize2();
-	//AnimatedValueInterfaceBases
-	static void Initialize3();
-	//Containers
-	static void Initialize4();
 
 	//set the version crc in the serializedversioninfo ( IS IMPLEMENTED, intellisense my ass)
 	static MetaOpResult MetaOperation_SerializedVersionInfo(void* pObj,
@@ -163,20 +158,19 @@ struct Meta {
 		MetaClassDescription* mpFromObjDescription;
 	};
 
-	METAOP_FUNC_DEF(GetObjectName)
+	static METAOP_FUNC_DEF(GetObjectName)
 
-	METAOP_FUNC_DEF(EnumerateMembers)
+	static METAOP_FUNC_DEF(EnumerateMembers)
 
-	METAOP_FUNC_DEF(Destroy)
+	static METAOP_FUNC_DEF(Destroy)
 
-	METAOP_FUNC_DEF(SerializeAsync)
+	static METAOP_FUNC_DEF(SerializeAsync)
 
-	METAOP_FUNC_DEF(SerializeMain)
+	static METAOP_FUNC_DEF(SerializeMain)
 
-	METAOP_FUNC_DEF(Equivalence)
+	static METAOP_FUNC_DEF(Equivalence)
 
-	//the goto function!
-	METAOP_FUNC_DEF(AsyncSave)
+	static METAOP_FUNC_DEF(AsyncSave)
 
 };
 
@@ -300,6 +294,8 @@ public:
 	virtual void BeginObject(Symbol*, void*) {};
 	virtual void EndObject(Symbol*) {};
 	virtual void BeginObject(const char*, void*) {};
+	virtual void BeginObject(void*) {}
+	virtual void EndObject(void*) {}
 	virtual void EndObject(const char*) {};
 	virtual i64 BeginAnonObject(void*);
 	virtual void EndAnonObject(int id);
@@ -388,7 +384,7 @@ public:
 
 	static MetaOpResult MetaOperation_SerializeAsync(void* pObj, MetaClassDescription* pClassDescription,
 		MetaMemberDescription* pContextDescription, void* pUserData) {
-		//static_cast<MetaStream*>(pUserData)->serialize_Symbol(static_cast<Symbol*>(pObj));---------------------------------------
+		static_cast<MetaStream*>(pUserData)->serialize_Symbol(static_cast<Symbol*>(pObj));
 		return eMetaOp_Succeed;
 	}
 
@@ -569,6 +565,9 @@ struct MetaMemberDescription;
 struct MetaClassDescription;
 
 struct MetaSerializeAccel {
+
+	MetaSerializeAccel() : mpFunctionMain(NULL), mpFunctionAsync(NULL), mpMemberDesc(NULL) {}
+
 	MetaOpResult(__cdecl* mpFunctionAsync)(void*, MetaClassDescription*,
 		MetaMemberDescription*, void*);
 	MetaOpResult(__cdecl* mpFunctionMain)(void*, MetaClassDescription*,
@@ -688,6 +687,9 @@ struct MetaClassDescription {
 	void* mpVTable[5/*6*/];
 	MetaSerializeAccel* mpSerializeAccel;//atomic
 	bool mbNameIsHeapAllocated;//created by lib
+	bool mbIsIntrinsic;//created by lib, intrinsics arent added to header. where does this filter?? no clue, so i have to add this
+	//oh wait for the value above, nevermind just realised metaoperation_serializeasync is not ever called on intrinsics.
+	//its only called other objects. since we check for the overloaded specialization function for serialize which is set.
 
 	String* GetToolDescriptionName(String* result);
 	void Delete(void* pObj);
@@ -695,7 +697,7 @@ struct MetaClassDescription {
 	void* New();
 	void Construct(void*);
 	void CopyConstruct(void*, void*);
-	MetaClassDescription() : mbNameIsHeapAllocated(false) {}
+	MetaClassDescription() : mbNameIsHeapAllocated(false), mbIsIntrinsic(false) {}
 	~MetaClassDescription();
 	bool MatchesHash(u64 hash);
 	void GetDescriptionSymbol(Symbol*);
@@ -752,5 +754,44 @@ struct MetaMemberDescription {
 	MetaClassDescription* mpMemberDesc;
 	~MetaMemberDescription();
 };
+
+METAOP_FUNC_DEF(SerializeIntrinsicAsyncuint8)
+METAOP_FUNC_DEF(SerializeIntrinsicAsyncuint16)
+METAOP_FUNC_DEF(SerializeIntrinsicAsyncuint32)
+METAOP_FUNC_DEF(SerializeIntrinsicAsyncuint64)
+METAOP_FUNC_DEF(SerializeIntrinsicAsyncint8)
+METAOP_FUNC_DEF(SerializeIntrinsicAsyncint16)
+METAOP_FUNC_DEF(SerializeIntrinsicAsyncint32)
+METAOP_FUNC_DEF(SerializeIntrinsicAsyncint64)
+METAOP_FUNC_DEF(SerializeIntrinsicAsyncfloat)
+METAOP_FUNC_DEF(SerializeIntrinsicAsyncdouble)
+METAOP_FUNC_DEF(SerializeIntrinsicAsyncbool)
+METAOP_FUNC_DEF(SerializeIntrinsicAsyncString)
+
+//Object state meta operations are like minecrafts 'getmetaint' or whatever from block classes, gets info as an int (defults to CRC32)
+METAOP_FUNC_DEF(ObjectStateIntrinsic1);
+METAOP_FUNC_DEF(ObjectStateIntrinsic2);
+METAOP_FUNC_DEF(ObjectStateIntrinsic4);
+METAOP_FUNC_DEF(ObjectStateIntrinsic8);
+METAOP_FUNC_DEF(ObjectStateIntrinsicString);
+
+METAOP_FUNC_DEF(EquivalenceIntrinsic1);
+METAOP_FUNC_DEF(EquivalenceIntrinsic2);
+METAOP_FUNC_DEF(EquivalenceIntrinsic4);
+METAOP_FUNC_DEF(EquivalenceIntrinsic8);
+METAOP_FUNC_DEF(EquivalenceIntrinsicString);
+
+//There are more like Arithmetic, Comparison, Interpolate, but this library doesnt need them until needed.
+
+MetaOpResult PerformMetaSerializeFull(MetaStream* pStream, void* pObj, MetaClassDescription* pDesc);
+
+//Doesnt work on string!
+template<typename T> MetaOpResult PerformMetaSerializeAsync(MetaStream* pStream, T* pObj) {
+	MetaClassDescription* pDesc = MetaClassDescription_Typed<T>::GetMetaClassDescription();
+	if (!pDesc)return eMetaOp_Fail;
+	MetaOperation async = pDesc->GetOperationSpecialization(74);
+	if (!async)async = Meta::MetaOperation_SerializeAsync;
+	return async(pObj, pDesc, NULL, pStream);
+}
 
 #endif

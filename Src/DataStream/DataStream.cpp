@@ -397,7 +397,7 @@ bool DataStreamFile_Win::Serialize(char* buf, unsigned __int64 bufsize) {
 	if (IsInvalid() || !buf && bufsize)return false;
 	fseek(mHandle, mStreamOffset, SEEK_SET);
 	if (IsWrite()) {
-		if (bufsize != fwrite(buf, bufsize, 1, mHandle)) return false;
+		if (1 != fwrite(buf, bufsize, 1, mHandle)) return false;//if we couldnt write 1 element
 		mStreamSize += bufsize;
 		mStreamOffset += bufsize;
 	}

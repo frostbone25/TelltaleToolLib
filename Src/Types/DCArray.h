@@ -3,11 +3,11 @@
 // the engine and require that if you use this code or library, you give credit to me and
 // the amazing Telltale Games.
 
-#ifndef _HOI
-#define _HOI
+#pragma once
+#include "../Meta.hpp"
+#include "Container.h"
 
-class HandleObjectInfo {
+template<typename T> class DCArray {
+public:
 
 };
-
-#endif

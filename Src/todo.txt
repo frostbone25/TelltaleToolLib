@@ -1,10 +1,5 @@
 TODO LIST:
 
-- Implement MetaStream
-- Meta::MetaOperation_SerializeAsync 
-
-- Implement Compression for meta streamed files (do this with ttarch2) see MetaStream::_FinalizeStream (compr), MetaStream::Attach (uncompr)
-
 notes:
 metastream deletes the datastream passed on open
 can only write MSV6, implement more in future (maybe check EXEs)
