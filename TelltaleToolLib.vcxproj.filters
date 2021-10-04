@@ -146,6 +146,8 @@
     <None Include=".gitignore" />
     <None Include=".gitattributes" />
     <None Include="README.md" />
+    <None Include="Src\Test\in.prop" />
+    <None Include="Src\Test\testing.prop" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="Doc\Formats.txt" />

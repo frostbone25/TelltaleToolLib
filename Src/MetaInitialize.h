@@ -33,6 +33,12 @@ METAOP_CUSTOM(DCArray_##type##, eMetaOpSerializeMain, DCArray<type>::MetaOperati
 meta_DCArray_##type##.InstallSpecializedMetaOperation(&meta_DCArray_##type##_eMetaOpSerializeMain);\
 meta_DCArray_##type##.Insert();
 
+#define DEFINESET(type) DEFINET(Set_##type##, Set<type>);\
+meta_Set_##type##.Initialize(typeid(Set<type>));\
+METAOP_CUSTOM(Set_##type##, eMetaOpSerializeAsync, Set<type>::MetaOperation_SerializeAsync);\
+meta_Set_##type##.InstallSpecializedMetaOperation(&meta_Set_##type##_eMetaOpSerializeAsync);\
+meta_Set_##type##.Insert();
+
 #define DEFINEOP(name, opName,fid,fun)static MetaOperationDescription meta_##name##_##opName; meta_##name##_##opName.id = fid;\
 meta_##name##_##opName.mpOpFn = fun;
 
@@ -349,6 +355,16 @@ namespace MetaInit {
 			meta_sphere.mpFirstMember = &meta_sphere_center;
 			meta_sphere.Insert();
 
+			DEFINET(color, Color);
+			meta_color.Initialize(typeid(Color));
+			DEFINEM(color, alpha);
+			meta_color_alpha.mpName = "a";
+			meta_color_alpha.mOffset = memberOffset(&Color::a);
+			meta_color_alpha.mpMemberDesc = &meta_float;
+			//TODO RGB descriptions
+
+			meta_color.Insert();
+
 			// STATIC ARRAYS
 
 			DEFINESARRAY(u32, 3);
@@ -367,6 +383,17 @@ namespace MetaInit {
 			DEFINEDCARRAY(u8);
 			DEFINEDCARRAY(float);
 			DEFINEDCARRAY(bool);
+			DEFINEDCARRAY(String);
+
+			// SETS
+
+			DEFINESET(i32);
+			DEFINESET(String);
+			DEFINESET(u32);
+			DEFINESET(u64);
+			
+
+
 
 		}
 		Initialize2();

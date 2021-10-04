@@ -1,5 +1,10 @@
 #ifndef _WINDLL
 
+#ifdef _DEBUG
+#define _CRTDBG_MAP_ALLOC
+#include <crtdbg.h>
+#endif
+
 #include "../Meta.hpp"
 #include "../Types/DCArray.h"
 #include "../Types/Set.h"
@@ -10,14 +15,11 @@ void dmp(const char* p, char* b, int s) {
 	fclose(t);
 }
 
-int main(int argn, char** argv) {
-
-	TelltaleToolLib_Initialize("MCSM");
-
-	DataStream* stream = OpenDataStreamFromDisc("c:/users/lucas/desktop/testing.prop", READ);//TODO make path relative to test folder
+void run() {
+	DataStream* stream = OpenDataStreamFromDisc("Src/Test/testing.prop", READ);
 
 	{
-		MetaStream meta("flag.bin");
+		MetaStream meta("aprop.prop");
 		MetaStreamParams params{ 0 };
 		meta.Open(stream, MetaStreamMode::eMetaStream_Read, params);
 
@@ -27,17 +29,23 @@ int main(int argn, char** argv) {
 				printf("Found type in file: %s\n", desc->mpTypeInfoName);
 		}
 
-		DCArray<i32> array;
-		Set<i32> set;
-		MetaOpResult r = PerformMetaSerializeFull(&meta, &array, GetMetaClassDescription(typeid(DCArray<i32>).name()));
+		Set<i32> array;
+		MetaOpResult r = PerformMetaSerializeFull(&meta, &array, 
+			GetMetaClassDescription(typeid(Set<i32>).name()));
 		printf("%d\n", r);
 		for (int i = 0; i < array.GetSize(); i++) {
 			printf("Found %d\n", array[i]);
 		}
 
 	}
+}
+
+int main(int argn, char** argv) {
+	TelltaleToolLib_Initialize("MCSM");
+	run();
 
 	printf("Done!");
+	//_CrtDumpMemoryLeaks();
 	return 0;
 }
 

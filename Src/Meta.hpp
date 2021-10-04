@@ -134,6 +134,14 @@ struct ZTestFunction {
 	zFuncTypes mZTestType;
 };
 
+struct Color {
+	float r, g, b, a;
+};
+
+struct ColorHDR {
+	float r, g, b, intensity;
+};
+
 struct Meta {
 
 	//set the version crc in the serializedversioninfo ( IS IMPLEMENTED, intellisense my ass)
