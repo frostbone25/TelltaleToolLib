@@ -348,6 +348,12 @@ private:
 	u64 mCrc64;
 public:
 
+	struct CompareCRC {
+		constexpr bool operator()(const Symbol& _Left, const Symbol& _Right) const {
+			return _Left.mCrc64 < _Right.mCrc64;
+		}
+	};
+
 	Symbol(void) : mCrc64(0) {}
 	Symbol(char const* pString) {
 		mCrc64 = pString ? CRC64_CaseInsensitive(0, pString) : 0;

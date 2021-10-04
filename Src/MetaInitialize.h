@@ -23,6 +23,12 @@ METAOP_CUSTOM(sarray_##type##_##count, eMetaOpSerializeAsync, SArray<type SEP co
 meta_sarray_##type##_##count##.InstallSpecializedMetaOperation(&meta_sarray_##type##_##count##_eMetaOpSerializeAsync);\
 METAOP_CUSTOM(sarray_##type##_##count, eMetaOpSerializeMain, SArray<type SEP count>::MetaOperation_SerializeMain);\
 meta_sarray_##type##_##count##.InstallSpecializedMetaOperation(&meta_sarray_##type##_##count##_eMetaOpSerializeMain);\
+DEFINEM(sarray_##type##_##count##,baseclass);\
+meta_sarray_##type##_##count##.mpFirstMember = &meta_sarray_##type##_##count##_baseclass;\
+meta_sarray_##type##_##count##_baseclass.mpName = "Baseclass_ContainerInterface";\
+meta_sarray_##type##_##count##_baseclass.mOffset = 0;\
+meta_sarray_##type##_##count##_baseclass.mpMemberDesc = &meta_cinterface;\
+meta_sarray_##type##_##count##_baseclass.mFlags |= (int)MetaFlag::MetaFlag_BaseClass;\
 meta_sarray_##type##_##count##.Insert();
 
 #define DEFINEDCARRAY(type) DEFINET(DCArray_##type##, DCArray<type>);\
@@ -31,13 +37,74 @@ METAOP_CUSTOM(DCArray_##type##, eMetaOpSerializeAsync, DCArray<type>::MetaOperat
 meta_DCArray_##type##.InstallSpecializedMetaOperation(&meta_DCArray_##type##_eMetaOpSerializeAsync);\
 METAOP_CUSTOM(DCArray_##type##, eMetaOpSerializeMain, DCArray<type>::MetaOperation_SerializeMain);\
 meta_DCArray_##type##.InstallSpecializedMetaOperation(&meta_DCArray_##type##_eMetaOpSerializeMain);\
+DEFINEM(DCArray_##type##,baseclass);\
+meta_DCArray_##type##.mpFirstMember = &meta_DCArray_##type##_baseclass;\
+meta_DCArray_##type##_baseclass.mpName = "Baseclass_ContainerInterface";\
+meta_DCArray_##type##_baseclass.mOffset = 0;\
+meta_DCArray_##type##_baseclass.mpMemberDesc = &meta_cinterface;\
+meta_DCArray_##type##_baseclass.mFlags |= (int)MetaFlag::MetaFlag_BaseClass;\
 meta_DCArray_##type##.Insert();
 
 #define DEFINESET(type) DEFINET(Set_##type##, Set<type>);\
 meta_Set_##type##.Initialize(typeid(Set<type>));\
 METAOP_CUSTOM(Set_##type##, eMetaOpSerializeAsync, Set<type>::MetaOperation_SerializeAsync);\
+DEFINEM(Set_##type##,baseclass);\
+meta_Set_##type##.mpFirstMember = &meta_Set_##type##_baseclass;\
+meta_Set_##type##_baseclass.mpName = "Baseclass_ContainerInterface";\
+meta_Set_##type##_baseclass.mOffset = 0;\
+meta_Set_##type##_baseclass.mpMemberDesc = &meta_cinterface;\
+meta_Set_##type##_baseclass.mFlags |= (int)MetaFlag::MetaFlag_BaseClass;\
 meta_Set_##type##.InstallSpecializedMetaOperation(&meta_Set_##type##_eMetaOpSerializeAsync);\
 meta_Set_##type##.Insert();
+
+#define DEFINELIST(type) DEFINET(List_##type##, List<type>);\
+meta_List_##type##.Initialize(typeid(List<type>));\
+METAOP_CUSTOM(List_##type##, eMetaOpSerializeAsync, List<type>::MetaOperation_SerializeAsync);\
+DEFINEM(List_##type##,baseclass);\
+meta_List_##type##.mpFirstMember = &meta_List_##type##_baseclass;\
+meta_List_##type##_baseclass.mpName = "Baseclass_ContainerInterface";\
+meta_List_##type##_baseclass.mOffset = 0;\
+meta_List_##type##_baseclass.mpMemberDesc = &meta_cinterface;\
+meta_List_##type##_baseclass.mFlags |= (int)MetaFlag::MetaFlag_BaseClass;\
+meta_List_##type##.InstallSpecializedMetaOperation(&meta_List_##type##_eMetaOpSerializeAsync);\
+meta_List_##type##.Insert();
+
+#define DEFINEDEQUE(type) DEFINET(Deque_##type##, Deque<type>);\
+meta_Deque_##type##.Initialize(typeid(Deque<type>));\
+METAOP_CUSTOM(Deque_##type##, eMetaOpSerializeAsync, Deque<type>::MetaOperation_SerializeAsync);\
+DEFINEM(Deque_##type##,baseclass);\
+meta_Deque_##type##.mpFirstMember = &meta_Deque_##type##_baseclass;\
+meta_Deque_##type##_baseclass.mpName = "Baseclass_ContainerInterface";\
+meta_Deque_##type##_baseclass.mOffset = 0;\
+meta_Deque_##type##_baseclass.mpMemberDesc = &meta_cinterface;\
+meta_Deque_##type##_baseclass.mFlags |= (int)MetaFlag::MetaFlag_BaseClass;\
+meta_Deque_##type##.InstallSpecializedMetaOperation(&meta_Deque_##type##_eMetaOpSerializeAsync);\
+meta_Deque_##type##.Insert();
+
+#define DEFINEMAP(key,value,less) DEFINET(Map_##key##_##value##, Map<key SEP value SEP less>);\
+meta_Map_##key##_##value##.Initialize(typeid(Map<key SEP value SEP less>));\
+METAOP_CUSTOM(Map_##key##_##value##, eMetaOpSerializeAsync, Map<key SEP value SEP less>::MetaOperation_SerializeAsync);\
+DEFINEM(Map_##key##_##value##,baseclass);\
+meta_Map_##key##_##value##.mpFirstMember = &meta_Map_##key##_##value##_baseclass;\
+meta_Map_##key##_##value##_baseclass.mpName = "Baseclass_ContainerInterface";\
+meta_Map_##key##_##value##_baseclass.mOffset = 0;\
+meta_Map_##key##_##value##_baseclass.mpMemberDesc = &meta_cinterface;\
+meta_Map_##key##_##value##_baseclass.mFlags |= (int)MetaFlag::MetaFlag_BaseClass;\
+meta_Map_##key##_##value##.InstallSpecializedMetaOperation(&meta_Map_##key##_##value##_eMetaOpSerializeAsync);\
+meta_Map_##key##_##value##.Insert();
+
+#define DEFINEMAP2(key,value,key_var_name, value_var_name,less) DEFINET(Map_##key_var_name##_##value_var_name##, Map<key SEP value SEP less>);\
+meta_Map_##key_var_name##_##value_var_name##.Initialize(typeid(Map<key SEP value SEP less>));\
+METAOP_CUSTOM(Map_##key_var_name##_##value_var_name##, eMetaOpSerializeAsync, Map<key SEP value SEP less>::MetaOperation_SerializeAsync);\
+DEFINEM(Map_##key_var_name##_##value_var_name##,baseclass);\
+meta_Map_##key_var_name##_##value_var_name##.mpFirstMember = &meta_Map_##key_var_name##_##value_var_name##_baseclass;\
+meta_Map_##key_var_name##_##value_var_name##_baseclass.mpName = "Baseclass_ContainerInterface";\
+meta_Map_##key_var_name##_##value_var_name##_baseclass.mOffset = 0;\
+meta_Map_##key_var_name##_##value_var_name##_baseclass.mpMemberDesc = &meta_cinterface;\
+meta_Map_##key_var_name##_##value_var_name##_baseclass.mFlags |= (int)MetaFlag::MetaFlag_BaseClass;\
+meta_Map_##key_var_name##_##value_var_name##.InstallSpecializedMetaOperation(&meta_Map_##key_var_name##_##value_var_name##_eMetaOpSerializeAsync);\
+meta_Map_##key_var_name##_##value_var_name##.Insert();
+
 
 #define DEFINEOP(name, opName,fid,fun)static MetaOperationDescription meta_##name##_##opName; meta_##name##_##opName.id = fid;\
 meta_##name##_##opName.mpOpFn = fun;
@@ -361,8 +428,22 @@ namespace MetaInit {
 			meta_color_alpha.mpName = "a";
 			meta_color_alpha.mOffset = memberOffset(&Color::a);
 			meta_color_alpha.mpMemberDesc = &meta_float;
-			//TODO RGB descriptions
-
+			DEFINEM(color, b);
+			meta_color_b.mpName = "b";
+			meta_color_b.mOffset = memberOffset(&Color::b);
+			meta_color_b.mpMemberDesc = &meta_float;
+			meta_color_b.mpNextMember = &meta_color_alpha;
+			DEFINEM(color, g);
+			meta_color_g.mpName = "g";
+			meta_color_g.mOffset = memberOffset(&Color::g);
+			meta_color_g.mpMemberDesc = &meta_float;
+			meta_color_g.mpNextMember = &meta_color_b;
+			DEFINEM(color, r);
+			meta_color_r.mpName = "r";
+			meta_color_r.mOffset = memberOffset(&Color::r);
+			meta_color_r.mpMemberDesc = &meta_float;
+			meta_color_r.mpNextMember = &meta_color_g;
+			meta_color.mpFirstMember = &meta_color_r;
 			meta_color.Insert();
 
 			// STATIC ARRAYS
@@ -392,7 +473,27 @@ namespace MetaInit {
 			DEFINESET(u32);
 			DEFINESET(u64);
 			
+			// LISTS
 
+			DEFINELIST(Symbol);
+			DEFINELIST(i32);
+			DEFINELIST(String);
+
+			// DEQUES
+
+			DEFINEDEQUE(i32);
+			DEFINEDEQUE(String);
+
+			// MAPS
+
+			DEFINEMAP(Symbol, String, Symbol::CompareCRC);
+			DEFINEMAP(Symbol, float, Symbol::CompareCRC);
+			DEFINEMAP(String, int, std::less<String>);
+			DEFINEMAP(int, Symbol, std::less<int>);
+			DEFINEMAP(int, int, std::less<int>);
+			DEFINEMAP(int, float, std::less<int>);
+			DEFINEMAP2(Symbol, Set<Symbol>, Symbol, setsymbol, std::less<Symbol>);
+			DEFINEMAP2(String, DCArray<String>, String, dcarraystring, std::less<Symbol>);
 
 
 		}

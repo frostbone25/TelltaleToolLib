@@ -5,9 +5,8 @@
 #include <crtdbg.h>
 #endif
 
+#include "../Types/Map.h"
 #include "../Meta.hpp"
-#include "../Types/DCArray.h"
-#include "../Types/Set.h"
 
 void dmp(const char* p, char* b, int s) {
 	FILE* t = fopen(p, "wb");
@@ -29,12 +28,13 @@ void run() {
 				printf("Found type in file: %s\n", desc->mpTypeInfoName);
 		}
 
-		Set<i32> array;
-		MetaOpResult r = PerformMetaSerializeFull(&meta, &array, 
-			GetMetaClassDescription(typeid(Set<i32>).name()));
+		
+		Map<Symbol,String,Symbol::CompareCRC> map;
+		MetaOpResult r = PerformMetaSerializeFull(&meta, &map, 
+			GetMetaClassDescription(typeid(Map<Symbol,String, Symbol::CompareCRC>).name()));
 		printf("%d\n", r);
-		for (int i = 0; i < array.GetSize(); i++) {
-			printf("Found %d\n", array[i]);
+		for (int i = 0; i < map.GetSize(); i++) {
+			printf("Found %s => %s\n", map[i].first.CRCAsCstr(), map[i].second.c_str());
 		}
 
 	}

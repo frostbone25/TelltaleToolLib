@@ -10,7 +10,7 @@
 
 i32 sMetaTypesCount = 0;
 MetaClassDescription* spFirstMetaClassDescription = NULL;
-
+char Symbol::smSymbolBuffer[sizeof(u64) * 2 + 1];//1byte= 2 hex chars
 
 void MetaStream::AddVersion(const SerializedVersionInfo* version) {
 	for (int i = 0; i < mVersionInfo.size(); i++) {
@@ -372,7 +372,7 @@ void MetaStream::Advance(int numBytes) {
 }
 
 void MetaStream::serialize_Symbol(Symbol* symbol) {
-	MetaClassDescription* desc = MetaClassDescription_Typed<Symbol>::GetMetaClassDescription();
+	MetaClassDescription* desc = GetMetaClassDescription(typeid(Symbol).name());
 	if (!desc)throw "Not initialized";
 	if (mMode == MetaStreamMode::eMetaStream_Write) {
 		SerializedVersionInfo* versionInfo = desc->mpCompiledVersionSerializedVersionInfo;
@@ -382,6 +382,7 @@ void MetaStream::serialize_Symbol(Symbol* symbol) {
 	}
 	u64 crc = symbol->GetCRC();
 	serialize_uint64(&crc);
+	symbol->SetCRC(crc);
 	if (mStreamVersion < 4 || BeginDebugSection()) {
 		u32 i = 0;
 		serialize_uint32(&i);//string

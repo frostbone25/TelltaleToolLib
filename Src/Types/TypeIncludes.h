@@ -12,3 +12,6 @@
 #include "DCArray.h"
 #include "ObjectSpaceIntrinsics.h"
 #include "Set.h"
+#include "List.h"
+#include "Deque.h"
+#include "Map.h"

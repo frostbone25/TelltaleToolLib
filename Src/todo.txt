@@ -1,8 +1,5 @@
 TODO LIST:
 
-- SET REMOVE ELEMENT FIX ITERATOR FROM BEING CONST
-- impl set meta class desc
-- Rest of container types (just copy from dcarray): Set, List, Deque, Map (Dont copy this one! redo it)
 - PropertySet
 - Check is the calculated version CRC is correct (do this after PropertySet)
 
