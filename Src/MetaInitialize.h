@@ -367,8 +367,6 @@ namespace MetaInit {
 			DEFINEDCARRAY(u8);
 			DEFINEDCARRAY(float);
 			DEFINEDCARRAY(bool);
-			DEFINEDCARRAY(u16);
-			DEFINEDCARRAY(u16);
 
 		}
 		Initialize2();

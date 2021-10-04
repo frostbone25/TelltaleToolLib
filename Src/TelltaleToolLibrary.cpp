@@ -74,6 +74,9 @@ void TelltaleToolLib_GetMetaMemberDescriptionInfo(MetaMemberDescription* pMember
     case MetaMemberDescriptionParam::eMMDP_MemberClassDesc:
         *static_cast<MetaClassDescription**>(pDest) = pMemberDesc->mpMemberDesc;
         break;
+    case MetaMemberDescriptionParam::eMMDP_NextMember:
+        *static_cast<MetaMemberDescription**>(pDest) = pMemberDesc->mpNextMember;
+        break;
     default:
         return;
     }

@@ -2,6 +2,7 @@
 
 #include "../Meta.hpp"
 #include "../Types/DCArray.h"
+#include "../Types/Set.h"
 
 void dmp(const char* p, char* b, int s) {
 	FILE* t = fopen(p, "wb");
@@ -13,7 +14,7 @@ int main(int argn, char** argv) {
 
 	TelltaleToolLib_Initialize("MCSM");
 
-	DataStream* stream = OpenDataStreamFromDisc("c:/users/lucas/desktop/testing.prop", READ);
+	DataStream* stream = OpenDataStreamFromDisc("c:/users/lucas/desktop/testing.prop", READ);//TODO make path relative to test folder
 
 	{
 		MetaStream meta("flag.bin");
@@ -27,6 +28,7 @@ int main(int argn, char** argv) {
 		}
 
 		DCArray<i32> array;
+		Set<i32> set;
 		MetaOpResult r = PerformMetaSerializeFull(&meta, &array, GetMetaClassDescription(typeid(DCArray<i32>).name()));
 		printf("%d\n", r);
 		for (int i = 0; i < array.GetSize(); i++) {

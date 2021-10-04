@@ -11,3 +11,4 @@
 #include "SArray.h"
 #include "DCArray.h"
 #include "ObjectSpaceIntrinsics.h"
+#include "Set.h"

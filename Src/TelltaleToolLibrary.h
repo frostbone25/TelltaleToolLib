@@ -38,7 +38,8 @@ enum MetaMemberDescriptionParam {
 	eMMDP_Offset = 2,//stores 8 bytes
 	eMMDP_Flags = 3,//stores 4 bytes
 	eMMDP_HostClass = 4,//stores 8 bytes (ptr)
-	eMMDP_MemberClassDesc = 5//stores 8 bytes (ptr)
+	eMMDP_MemberClassDesc = 5,//stores 8 bytes (ptr)
+	eMMDP_NextMember = 6,//stores 8 bytes (ptr)
 };
 
 enum MetaClassDescriptionParam {
