@@ -3,6 +3,9 @@
 // the engine and require that if you use this code or library, you give credit to me and
 // the amazing Telltale Games.
 
+#ifndef _MAP
+#define _MAP
+
 #include "Container.h"
 #include <map>
 
@@ -112,3 +115,5 @@ public:
 		return NULL;
 	}
 };
+
+#endif

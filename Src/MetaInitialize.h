@@ -57,9 +57,33 @@ meta_Set_##type##_baseclass.mFlags |= (int)MetaFlag::MetaFlag_BaseClass;\
 meta_Set_##type##.InstallSpecializedMetaOperation(&meta_Set_##type##_eMetaOpSerializeAsync);\
 meta_Set_##type##.Insert();
 
+#define DEFINESET_(_Ty,type) DEFINET(Set_##type##, Set<_Ty>);\
+meta_Set_##type##.Initialize(typeid(Set<_Ty>));\
+METAOP_CUSTOM(Set_##type##, eMetaOpSerializeAsync, Set<_Ty>::MetaOperation_SerializeAsync);\
+DEFINEM(Set_##type##,baseclass);\
+meta_Set_##type##.mpFirstMember = &meta_Set_##type##_baseclass;\
+meta_Set_##type##_baseclass.mpName = "Baseclass_ContainerInterface";\
+meta_Set_##type##_baseclass.mOffset = 0;\
+meta_Set_##type##_baseclass.mpMemberDesc = &meta_cinterface;\
+meta_Set_##type##_baseclass.mFlags |= (int)MetaFlag::MetaFlag_BaseClass;\
+meta_Set_##type##.InstallSpecializedMetaOperation(&meta_Set_##type##_eMetaOpSerializeAsync);\
+meta_Set_##type##.Insert();
+
 #define DEFINELIST(type) DEFINET(List_##type##, List<type>);\
 meta_List_##type##.Initialize(typeid(List<type>));\
 METAOP_CUSTOM(List_##type##, eMetaOpSerializeAsync, List<type>::MetaOperation_SerializeAsync);\
+DEFINEM(List_##type##,baseclass);\
+meta_List_##type##.mpFirstMember = &meta_List_##type##_baseclass;\
+meta_List_##type##_baseclass.mpName = "Baseclass_ContainerInterface";\
+meta_List_##type##_baseclass.mOffset = 0;\
+meta_List_##type##_baseclass.mpMemberDesc = &meta_cinterface;\
+meta_List_##type##_baseclass.mFlags |= (int)MetaFlag::MetaFlag_BaseClass;\
+meta_List_##type##.InstallSpecializedMetaOperation(&meta_List_##type##_eMetaOpSerializeAsync);\
+meta_List_##type##.Insert();
+
+#define DEFINELIST_(_Ty,type) DEFINET(List_##type##, List<_Ty>);\
+meta_List_##type##.Initialize(typeid(List<_Ty>));\
+METAOP_CUSTOM(List_##type##, eMetaOpSerializeAsync, List<_Ty>::MetaOperation_SerializeAsync);\
 DEFINEM(List_##type##,baseclass);\
 meta_List_##type##.mpFirstMember = &meta_List_##type##_baseclass;\
 meta_List_##type##_baseclass.mpName = "Baseclass_ContainerInterface";\
@@ -445,18 +469,39 @@ namespace MetaInit {
 			meta_color_r.mpNextMember = &meta_color_g;
 			meta_color.mpFirstMember = &meta_color_r;
 			meta_color.Insert();
-
-			// STATIC ARRAYS
-
+			DEFINET(propparentinfo, PropertySet::ParentInfo);
+			meta_propparentinfo.Initialize(typeid(PropertySet::ParentInfo));
+			meta_propparentinfo.Insert();
+			DEFINET(propvalue, PropertyValue);
+			meta_propvalue.Initialize(typeid(PropertyValue));
+			meta_propvalue.Insert();
+			DEFINET(propkeyinfo, PropertySet::KeyInfo);
+			meta_propkeyinfo.Initialize(typeid(PropertySet::KeyInfo));
+			DEFINEM(propkeyinfo, value);
+			meta_propkeyinfo_value.mpName = "mValue";
+			meta_propkeyinfo_value.mOffset = memberOffset(&PropertySet::KeyInfo::mValue);
+			meta_propkeyinfo_value.mFlags |= (int)MetaFlag::MetaFlag_EditorHide | (int)MetaFlag::MetaFlag_NoPanelCaption;
+			meta_propkeyinfo_value.mpMemberDesc = &meta_propvalue;
+			DEFINEM(propkeyinfo, flags);
+			meta_propkeyinfo_flags.mFlags |= (int)MetaFlag::MetaFlag_MetaSerializeDisable;
+			meta_propkeyinfo_flags.mpName = "mFlags";
+			meta_propkeyinfo_flags.mpMemberDesc = &meta_flags;
+			meta_propkeyinfo_flags.mpNextMember = &meta_propkeyinfo_value;
+			meta_propkeyinfo_flags.mOffset = memberOffset(&PropertySet::KeyInfo::mFlags);
+			DEFINEM(propkeyinfo, keyname);
+			meta_propkeyinfo_keyname.mFlags |= (int)MetaFlag::MetaFlag_EditorHide;
+			meta_propkeyinfo_keyname.mpName = "mKeyName";
+			meta_propkeyinfo_keyname.mOffset = memberOffset(&PropertySet::KeyInfo::mFlags);
+			meta_propkeyinfo_keyname.mpNextMember = &meta_propkeyinfo_flags;
+			meta_propkeyinfo_keyname.mpMemberDesc = &meta_symbol;
+			meta_propkeyinfo.mpFirstMember = &meta_propkeyinfo_keyname;
+			meta_propkeyinfo.Insert();
 			DEFINESARRAY(u32, 3);
 			DEFINESARRAY(u8, 32);
 			DEFINESARRAY(i32, 4);
 			DEFINESARRAY(i32, 3);
 			DEFINESARRAY(float, 9);
 			DEFINESARRAY(float, 3);
-
-			// DYNAMIC ARRAYS
-
 			DEFINEDCARRAY(i32);
 			DEFINEDCARRAY(u16);
 			DEFINEDCARRAY(u64);
@@ -465,27 +510,16 @@ namespace MetaInit {
 			DEFINEDCARRAY(float);
 			DEFINEDCARRAY(bool);
 			DEFINEDCARRAY(String);
-
-			// SETS
-
 			DEFINESET(i32);
 			DEFINESET(String);
 			DEFINESET(u32);
 			DEFINESET(u64);
-			
-			// LISTS
-
 			DEFINELIST(Symbol);
 			DEFINELIST(i32);
 			DEFINELIST(String);
-
-			// DEQUES
-
+			DEFINELIST_(PropertySet::ParentInfo, propparentinfo);
 			DEFINEDEQUE(i32);
 			DEFINEDEQUE(String);
-
-			// MAPS
-
 			DEFINEMAP(Symbol, String, Symbol::CompareCRC);
 			DEFINEMAP(Symbol, float, Symbol::CompareCRC);
 			DEFINEMAP(String, int, std::less<String>);
@@ -494,7 +528,33 @@ namespace MetaInit {
 			DEFINEMAP(int, float, std::less<int>);
 			DEFINEMAP2(Symbol, Set<Symbol>, Symbol, setsymbol, std::less<Symbol>);
 			DEFINEMAP2(String, DCArray<String>, String, dcarraystring, std::less<Symbol>);
-
+			DEFINEMAP2(int, Map<int SEP Map<Symbol SEP float SEP Symbol::CompareCRC>>, int, mapintmapsymbolfloat, std::less<int>);
+			DEFINEMAP2(int, Map<int SEP int SEP std::less<int>>, int, mapintint, std::less<int>);
+			DEFINEMAP(String, String, std::less<String>);
+			DEFINEMAP(int, bool, std::less<int>);
+			DEFINESET_(PropertySet::KeyInfo,keyinfo);
+			DEFINET(prop, PropertySet);
+			meta_prop.Initialize(typeid(PropertySet));
+			meta_prop.mpExt = "prop";
+			METAOP_CUSTOM(prop, eMetaOpSerializeAsync, PropertySet::MetaOperation_SerializeAsync);
+			meta_prop.InstallSpecializedMetaOperation(&meta_prop_eMetaOpSerializeAsync);
+			DEFINEM(prop, version);
+			meta_prop_version.mpName = "mPropVersion";
+			meta_prop_version.mOffset = memberOffset(&PropertySet::mPropVersion);
+			meta_prop_version.mpMemberDesc = &meta_long;
+			meta_prop.mpFirstMember = &meta_prop_version;
+			DEFINEM(prop, flags);
+			meta_prop_flags.mpName = "mPropertyFlags";
+			meta_prop_flags.mpMemberDesc = &meta_flags;
+			meta_prop_flags.mOffset = memberOffset(&PropertySet::mPropertyFlags);
+			meta_prop_version.mpNextMember = &meta_prop_flags;
+			DEFINEM(prop, keymap);
+			meta_prop_keymap.mpName = "mKeyMap";
+			meta_prop_keymap.mpMemberDesc = &meta_Set_keyinfo;
+			meta_prop_keymap.mFlags |= (int)MetaFlag::MetaFlag_MetaSerializeDisable;
+			meta_prop_keymap.mOffset = memberOffset(&PropertySet::mKeyMap);
+			meta_prop_flags.mpNextMember = &meta_prop_keymap;
+			meta_prop.Insert();
 
 		}
 		Initialize2();

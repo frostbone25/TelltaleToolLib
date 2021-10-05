@@ -15,3 +15,4 @@
 #include "List.h"
 #include "Deque.h"
 #include "Map.h"
+#include "PropertySet.h"

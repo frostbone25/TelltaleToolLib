@@ -794,6 +794,13 @@ METAOP_FUNC_DEF(EquivalenceIntrinsicString);
 
 MetaOpResult PerformMetaSerializeFull(MetaStream* pStream, void* pObj, MetaClassDescription* pDesc);
 
+template<typename T> MetaOpResult PerformMetaSerializeFull(MetaStream* pStream, T* pObj) {
+	MetaClassDescription* desc = GetMetaClassDescription(typeid(T).name());
+	if (!desc || !pStream)return eMetaOp_Fail;
+	return PerformMetaSerializeFull(pStream, pObj, desc);
+}
+
+
 //Doesnt work on string!
 template<typename T> MetaOpResult PerformMetaSerializeAsync(MetaStream* pStream, T* pObj) {
 	MetaClassDescription* pDesc = MetaClassDescription_Typed<T>::GetMetaClassDescription();

@@ -164,6 +164,7 @@
     <ClInclude Include="Src\Types\List.h" />
     <ClInclude Include="Src\Types\Map.h" />
     <ClInclude Include="Src\Types\ObjectSpaceIntrinsics.h" />
+    <ClInclude Include="Src\Types\PropertySet.h" />
     <ClInclude Include="Src\Types\SArray.h" />
     <ClInclude Include="Src\Types\Set.h" />
     <ClInclude Include="Src\Types\TypeIncludes.h" />

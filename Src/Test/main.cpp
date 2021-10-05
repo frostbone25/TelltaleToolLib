@@ -15,7 +15,7 @@ void dmp(const char* p, char* b, int s) {
 }
 
 void run() {
-	DataStream* stream = OpenDataStreamFromDisc("Src/Test/testing.prop", READ);
+	DataStream* stream = OpenDataStreamFromDisc("Src/Test/in.prop", READ);
 
 	{
 		MetaStream meta("aprop.prop");
@@ -29,13 +29,7 @@ void run() {
 		}
 
 		
-		Map<Symbol,String,Symbol::CompareCRC> map;
-		MetaOpResult r = PerformMetaSerializeFull(&meta, &map, 
-			GetMetaClassDescription(typeid(Map<Symbol,String, Symbol::CompareCRC>).name()));
-		printf("%d\n", r);
-		for (int i = 0; i < map.GetSize(); i++) {
-			printf("Found %s => %s\n", map[i].first.CRCAsCstr(), map[i].second.c_str());
-		}
+		
 
 	}
 }
