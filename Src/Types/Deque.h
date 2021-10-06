@@ -7,6 +7,9 @@
 #include "../Meta.hpp"
 #include <deque>
 
+#ifndef _DEQUE
+#define _DEQUE
+
 template<typename T> class Deque : public ContainerInterface, public std::deque<T> {
 public:
 	virtual int GetSize() {
@@ -97,3 +100,5 @@ public:
 		return NULL;
 	}
 };
+
+#endif

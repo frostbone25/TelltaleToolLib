@@ -9,9 +9,12 @@
 #include "Map.h"
 #include "HandleObjectInfo.h"
 
+#ifndef _PROP
+#define _PROP
+
 struct PropertyValue {
 	MetaClassDescription* mpDataDescription;
-	void* pValue;
+	void* mpValue;
 	//union {
 	//	char mStaticBuf[40];
 	//	char* mpBuf;
@@ -66,6 +69,11 @@ public:
 		Flags mFlags;
 		Symbol mKeyName;
 		PropertyValue mValue;
+
+		inline bool operator<(const KeyInfo& other) const {
+			return mKeyName.GetCRC() < other.mKeyName.GetCRC();
+		}
+
 	};
 
 	struct ParentInfo {
@@ -90,7 +98,7 @@ public:
 		bool flag1 = (prop->mPropertyFlags.mFlags >> 12) & 1;
 		bool flag2 = (prop->mPropertyFlags.mFlags >> 13) & 1;
 		bool flag3 = ((prop->mPropertyFlags.mFlags & 0xFFFFCFFF) >> 15) & 1;
-		if ((result = Meta::MetaOperation_SerializeAsync(pObj, pDesc, pCtx, pUserData)) != eMetaOp_Succeed)return result;
+		if ((result = ::Meta::MetaOperation_SerializeAsync(pObj, pDesc, pCtx, pUserData)) != eMetaOp_Succeed)return result;
 		if (prop->mPropVersion > 2)
 			prop->mPropVersion = 1;
 		if (stream->mMode == MetaStreamMode::eMetaStream_Read)
@@ -104,9 +112,14 @@ public:
 		else
 			prop->mPropertyFlags |= 0xFFFFDFFF;
 		stream->BeginBlock();
-		PerformMetaSerializeAsync<List<ParentInfo>>(stream, &prop->mParentList);
+		u32 parents = prop->mParentList.GetSize();
+		stream->serialize_uint32(&parents);
 		if (stream->mMode == MetaStreamMode::eMetaStream_Write) {
-				//TODO make list of types from mKeyMap, then write the values
+			for (int i = 0; i < parents; i++) {
+				Symbol sym = prop->mParentList[i].
+					mhParent.mHandleObjectInfo.mObjectName;
+				stream->serialize_Symbol(&sym);
+			}
 			Map<Symbol, List<KeyInfo>> typeMap;
 			for (int i = 0; i < prop->mKeyMap.size(); i++) {
 				KeyInfo mapping = prop->mKeyMap[i];
@@ -121,10 +134,54 @@ public:
 					it->second.AddElement(0, NULL, &mapping);
 				}
 			}
-			//TODO write type map (size, then each value)
+			u32 size = typeMap.GetSize();
+			stream->serialize_uint32(&size);
+			for (auto it = typeMap.begin(); it != typeMap.end(); it++) {
+				Symbol type = it->first;
+				stream->serialize_Symbol(&type);
+				List<KeyInfo> list = it->second;
+				size = list.GetSize();
+				stream->serialize_uint32(&size);
+				for (int i = 0; i < size; i++) {
+					KeyInfo keyInfo = list[i];
+					stream->serialize_Symbol(&keyInfo.mKeyName);
+					PerformMetaSerializeFull(stream, keyInfo.mValue.mpValue,
+						keyInfo.mValue.mpDataDescription); 
+				}
+			}
 		}
 		else if (stream->mMode == MetaStreamMode::eMetaStream_Read) {
-			//read, first is num types
+			for (int i = 0; i < parents; i++) {
+				Symbol sym;
+				stream->serialize_Symbol(&sym);
+				prop->mParentList.AddElement(0, NULL, &sym);
+			}
+			u32 numtypes = 0;
+			u32 numvalues = 0;
+			stream->serialize_uint32(&numtypes);
+			for (int i = 0; i < numtypes; i++) {
+				Symbol typeSymbol;
+				stream->serialize_Symbol(&typeSymbol);
+				MetaClassDescription* typeDesc = 
+					TelltaleToolLib_FindMetaClassDescription_ByHash
+						(typeSymbol.GetCRC());
+				if (!typeDesc)return eMetaOp_Fail;
+				stream->serialize_uint32(&numvalues);
+				MetaOpResult opres = eMetaOp_Succeed;
+				void* (*metaTypedNew)(void);
+				for (int i = 0; i < numvalues; i++) {
+					KeyInfo property;
+					stream->serialize_Symbol(&property.mKeyName);
+					property.mValue.mpDataDescription = typeDesc;
+					metaTypedNew = (void*(*)(void))typeDesc->mpVTable[0];
+					if (!metaTypedNew)return eMetaOp_Fail;//ABSTRACT! no
+					property.mValue.mpValue = metaTypedNew();
+					if((opres=PerformMetaSerializeFull(stream, 
+						property.mValue.mpValue,typeDesc)) 
+						!= eMetaOp_Succeed) return opres;
+					prop->mKeyMap.AddElement(0, NULL, &property);
+				}
+			}
 		}
 		stream->EndBlock();
 		if (stream->mMode == MetaStreamMode::eMetaStream_Read) {
@@ -137,3 +194,5 @@ public:
 	}
 
 };
+
+#endif

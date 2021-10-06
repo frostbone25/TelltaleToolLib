@@ -380,7 +380,7 @@ public:
 		return *this;
 	}
 
-	INLINE u64 GetCRC() {
+	INLINE u64 GetCRC() const {
 		return mCrc64;
 	}
 
@@ -420,10 +420,13 @@ struct MetaClassDescription_Typed {
 		return GetMetaClassDescription(NULL);
 	}
 
-	static MetaClassDescription* GetMetaClassDescription(const char* type);//originally this would be specialized
+	static MetaClassDescription* GetMetaClassDescription
+	(const char* type);//originally this would be specialized
 
 	static void* New(void) {
-		return operator new(sizeof(T));
+		void* ptr = operator new(sizeof(T));
+		new (ptr) T();
+		return ptr;
 	}
 
 	static void Destroy(void* pObj) {

@@ -5,6 +5,9 @@
 
 #include "../Meta.hpp"
 
+#ifndef _STATIC_ARRAY
+#define _STATIC_ARRAY
+
 template<typename T, int N> class SArray {
 public:
 	T mData[N];
@@ -42,3 +45,5 @@ public:
 	}
 
 };
+
+#endif

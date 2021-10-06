@@ -14,7 +14,9 @@ struct HandleObjectInfo {
 };
 
 struct HandleBase {
-	HandleObjectInfo* mpHandleObjectInfo;
+	//HandleObjectInfo* mpHandleObjectInfo; //normally a pointer in the engine
+	//maybe to do with a buffer of them? but anyway
+	HandleObjectInfo mHandleObjectInfo;
 };
 
 template<typename T> struct Handle : public HandleBase {

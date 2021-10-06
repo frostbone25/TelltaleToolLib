@@ -17,6 +17,11 @@ meta_##name_.mpVTable[4] = MetaClassDescription_Typed<Ty>::Destroy;\
 meta_##name_.mClassSize = sizeof(Ty);\
 meta_##name_.mpTypeInfoExternalName = typeid(Ty).name();
 
+#define DEFINETABS(name_,Ty) }++sMetaTypesCount;static MetaClassDescription meta_##name_; \
+if(!(meta_##name_.mFlags.mFlags & MetaFlag::Internal_MetaFlag_Initialized)){ \
+meta_##name_.mClassSize = sizeof(Ty);\
+meta_##name_.mpTypeInfoExternalName = typeid(Ty).name();
+
 #define DEFINESARRAY(type,count) DEFINET(sarray_##type##_##count##, SArray<type SEP count>);\
 meta_sarray_##type##_##count##.Initialize(typeid(SArray<type SEP count>));\
 METAOP_CUSTOM(sarray_##type##_##count, eMetaOpSerializeAsync, SArray<type SEP count>::MetaOperation_SerializeAsync);\
@@ -317,7 +322,7 @@ namespace MetaInit {
 			meta_string.mbIsIntrinsic = true;
 
 			//ContainerInterface
-			DEFINET(cinterface, ContainerInterface);
+			DEFINETABS(cinterface, ContainerInterface);
 			meta_cinterface.Initialize("ContainerInterface");
 			//Override operatoins: collecttyped, objectstate, scriptunlock, scriptlock,
 			meta_cinterface.mFlags.mFlags |= (int)MetaFlag_MetaSerializeBlockingDisabled | (int)MetaFlag_BaseClass;
@@ -469,9 +474,6 @@ namespace MetaInit {
 			meta_color_r.mpNextMember = &meta_color_g;
 			meta_color.mpFirstMember = &meta_color_r;
 			meta_color.Insert();
-			DEFINET(propparentinfo, PropertySet::ParentInfo);
-			meta_propparentinfo.Initialize(typeid(PropertySet::ParentInfo));
-			meta_propparentinfo.Insert();
 			DEFINET(propvalue, PropertyValue);
 			meta_propvalue.Initialize(typeid(PropertyValue));
 			meta_propvalue.Insert();
@@ -517,7 +519,6 @@ namespace MetaInit {
 			DEFINELIST(Symbol);
 			DEFINELIST(i32);
 			DEFINELIST(String);
-			DEFINELIST_(PropertySet::ParentInfo, propparentinfo);
 			DEFINEDEQUE(i32);
 			DEFINEDEQUE(String);
 			DEFINEMAP(Symbol, String, Symbol::CompareCRC);
@@ -526,8 +527,8 @@ namespace MetaInit {
 			DEFINEMAP(int, Symbol, std::less<int>);
 			DEFINEMAP(int, int, std::less<int>);
 			DEFINEMAP(int, float, std::less<int>);
-			DEFINEMAP2(Symbol, Set<Symbol>, Symbol, setsymbol, std::less<Symbol>);
-			DEFINEMAP2(String, DCArray<String>, String, dcarraystring, std::less<Symbol>);
+			DEFINEMAP2(Symbol, Set<Symbol>, Symbol, setsymbol, Symbol::CompareCRC);
+			DEFINEMAP2(String, DCArray<String>, String, dcarraystring, Symbol::CompareCRC);
 			DEFINEMAP2(int, Map<int SEP Map<Symbol SEP float SEP Symbol::CompareCRC>>, int, mapintmapsymbolfloat, std::less<int>);
 			DEFINEMAP2(int, Map<int SEP int SEP std::less<int>>, int, mapintint, std::less<int>);
 			DEFINEMAP(String, String, std::less<String>);

@@ -7,6 +7,9 @@
 #include "Container.h"
 #include <set>
 
+#ifndef _SET
+#define _SET
+
 template<typename T> class Set : public ContainerInterface, public std::set<T,std::less<T>> {
 public:
 	virtual int GetSize() {
@@ -98,3 +101,5 @@ public:
 	}
 
 };
+
+#endif

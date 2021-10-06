@@ -12,6 +12,16 @@
 #include "DataStream/DataStream.h"
 #include "Blowfish.h"
 
+#ifdef _MSC_VER
+#ifdef _DEBUG
+#define DEBUGMODE
+#else
+#define RELEASEMODE
+#endif
+#else
+#error "Please implement debug macro check for this compiler!"
+#endif
+
 #define INLINE __inline
 #define FORCE_INLINE __forceinline
 

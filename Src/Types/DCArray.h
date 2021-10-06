@@ -7,6 +7,9 @@
 #include "../Meta.hpp"
 #include "Container.h"
 
+#ifndef _DYNAMIC_ARRAY
+#define _DYNAMIC_ARRAY
+
 template<typename T> class DCArray : public ContainerInterface {
 public:
 	int mSize;
@@ -234,3 +237,5 @@ public:
 
 //DCArrayNoMeta (not serialized)
 template<typename T> using DCArrayNM = DCArray<T>;
+
+#endif

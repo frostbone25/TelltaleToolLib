@@ -5,6 +5,9 @@
 
 #include "../Meta.hpp"
 
+#ifndef _OBJ_INTRINS
+#define _OBJ_INTRINS
+
 template<typename T> struct Curve {//not serialized
 	T cf0, cf1, cf2, cf3;
 };
@@ -76,3 +79,5 @@ struct Transform {
 	Vector3 mTrans;
 	float mPaddingAlign;//to align it since vec3 is 12 bytes and rot is 16, 16 + 16 = 32, a nice one unlike 28
 };
+
+#endif

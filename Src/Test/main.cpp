@@ -5,8 +5,8 @@
 #include <crtdbg.h>
 #endif
 
-#include "../Types/Map.h"
 #include "../Meta.hpp"
+#include "../Types/PropertySet.h"
 
 void dmp(const char* p, char* b, int s) {
 	FILE* t = fopen(p, "wb");
@@ -28,8 +28,8 @@ void run() {
 				printf("Found type in file: %s\n", desc->mpTypeInfoName);
 		}
 
-		
-		
+		PropertySet prop;
+		//TODO test
 
 	}
 }
