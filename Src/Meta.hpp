@@ -710,6 +710,7 @@ struct MetaClassDescription {
 	~MetaClassDescription();
 	bool MatchesHash(u64 hash);
 	void GetDescriptionSymbol(Symbol*);
+	Symbol GetDescriptionSymbol();
 	MetaMemberDescription* GetMemberDescription(const char* memberName);
 	INLINE MetaMemberDescription* GetMemberDescription(String* _Str) {
 		return GetMemberDescription(_Str->c_str());

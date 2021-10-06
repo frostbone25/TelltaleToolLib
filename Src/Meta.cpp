@@ -371,6 +371,13 @@ void MetaStream::Advance(int numBytes) {
 	mpReadWriteStream->SetPosition(numBytes, DataStreamSeekType::eSeekType_Current);
 }
 
+Symbol MetaClassDescription::GetDescriptionSymbol() {
+	String result;
+	GetToolDescriptionName(&result);
+	Symbol nsym(result.c_str());
+	return nsym;
+}
+
 void MetaStream::serialize_Symbol(Symbol* symbol) {
 	MetaClassDescription* desc = GetMetaClassDescription(typeid(Symbol).name());
 	if (!desc)throw "Not initialized";

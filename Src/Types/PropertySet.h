@@ -6,6 +6,7 @@
 #include "../Meta.hpp"
 #include "Set.h"
 #include "List.h"
+#include "Map.h"
 #include "HandleObjectInfo.h"
 
 struct PropertyValue {
@@ -106,9 +107,24 @@ public:
 		PerformMetaSerializeAsync<List<ParentInfo>>(stream, &prop->mParentList);
 		if (stream->mMode == MetaStreamMode::eMetaStream_Write) {
 				//TODO make list of types from mKeyMap, then write the values
+			Map<Symbol, List<KeyInfo>> typeMap;
+			for (int i = 0; i < prop->mKeyMap.size(); i++) {
+				KeyInfo mapping = prop->mKeyMap[i];
+				Symbol typeSymbol = mapping.mValue.mpDataDescription->GetDescriptionSymbol();
+				auto it = typeMap.find(typeSymbol);
+				if (it == typeMap.end()) {
+					List<KeyInfo> l;
+					l.AddElement(0, NULL, &mapping);
+					typeMap.AddElement(0, &typeSymbol, &l);//copies
+				}
+				else {
+					it->second.AddElement(0, NULL, &mapping);
+				}
+			}
+			//TODO write type map (size, then each value)
 		}
 		else if (stream->mMode == MetaStreamMode::eMetaStream_Read) {
-
+			//read, first is num types
 		}
 		stream->EndBlock();
 		if (stream->mMode == MetaStreamMode::eMetaStream_Read) {
