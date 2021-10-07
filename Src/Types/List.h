@@ -10,7 +10,7 @@
 #include "../Meta.hpp"
 #include <list>
 
-template<typename T> class List : public ContainerInterface, std::list<T> {
+template<typename T> class List : public ContainerInterface, public std::list<T> {
 public:
 	virtual int GetSize() {
 		return this->size();

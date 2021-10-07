@@ -166,11 +166,54 @@ const unsigned __int64 crc_tab[] = {
 };
 
 unsigned __int32 INLINE CRC32(unsigned __int32 crc, const char* const buffer, unsigned int count) {
-	for(int i = 0; i < count; i++)
-	{
+	/*for(int i = 0; i < count; i++)
 		crc = (crc << 8) ^ CRCTable[((crc >> 24) ^  buffer[i]) & 255];
+	return crc;*/
+	unsigned __int64 v3; // r10@1
+	const char* v4; // r9@1
+	__int64 result; // rax@2
+	unsigned int v6; // ecx@3
+	unsigned __int64 v7; // r8@4
+	unsigned int v8; // edx@5
+	unsigned int v9; // edx@5
+	__int64 v10; // rcx@5
+	char v11; // al@5
+	unsigned int v12; // edx@5
+	char v13; // dl@7
+
+	v3 = count;
+	v4 = buffer;
+	if (buffer)
+	{
+		v6 = ~crc;
+		if (count >= 4)
+		{
+			v7 = count >> 2;
+			v3 += -4i64 * v7;
+			do
+			{
+				v8 = (v6 >> 8) ^ CRCTable[(unsigned __int8)(v6 ^ *v4)];
+				v9 = CRCTable[(unsigned __int8)(v8 ^ v4[1])] ^ (v8 >> 8);
+				v10 = (unsigned __int8)(v9 ^ v4[2]);
+				v11 = v4[3];
+				v4 += 4;
+				v12 = CRCTable[v10] ^ (v9 >> 8);
+				v6 = (v12 >> 8) ^ CRCTable[(unsigned __int8)(v12 ^ v11)];
+				--v7;
+			} while (v7);
+		}
+		for (; v3; --v3)
+		{
+			v13 = *v4++;
+			v6 = (v6 >> 8) ^ CRCTable[(unsigned __int8)(v6 ^ v13)];
+		}
+		result = ~v6;
 	}
-	return crc;
+	else
+	{
+		result = 0i64;
+	}
+	return result;
 }
 
 unsigned __int64 INLINE CRC64(unsigned __int64 crc, const char* buf) {

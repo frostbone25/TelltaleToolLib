@@ -15,6 +15,9 @@
 
 //set to false to disallow the debug section of meta stream files to be loaded. default true
 #define METASTREAM_ENABLE_DEBUG true
+//Default to false, if true then data will be written to the debug section. The debug section is never read in the release
+//mode of games (so all telltale games) so this does not really affect anything.
+#define METASTREAM_ENABLE_DEBUGSECTION_WRITE false
 
 #if defined(__BYTE_ORDER) && __BYTE_ORDER == __BIG_ENDIAN || \
     defined(__BIG_ENDIAN__) || \
@@ -126,6 +129,8 @@ struct T3VertexSampleDataBase {
 	static METAOP_FUNC_DEF(SerializeAsync);
 
 };
+
+constexpr const char* spVersNameFormat = "%s(%s).vers";
 
 struct ZTestFunction {
 	enum zFuncTypes {
@@ -273,6 +278,8 @@ public:
 	//Blowfish* mpBlowfish;
 	Flags mRuntimeFlags;//flag values: RuntimeFlags enum
 	char mName[260];
+
+	bool mbDontDeleteStream = false;//by lib
 
 	bool mbErrored = false;
 
@@ -433,6 +440,15 @@ struct MetaClassDescription_Typed {
 		static_cast<T*>(pObj)->~T();
 	}
 
+	static void Construct(void* pObj) {
+		new(pObj) T();
+	}
+
+	static void CopyConstruct(void* pDest, void* pSrc) {
+		Construct(pDest);
+		*static_cast<T*>(pDest) = *static_cast<T*>(pSrc);
+	}
+
 	static void Delete(void* pObj) {
 		static_cast<T*>(pObj)->~T();
 		operator delete(pObj);
@@ -569,6 +585,16 @@ struct SerializedVersionInfo {
 	std::vector<MemberDesc> mMembers;//DCArrayNM<MemberDesc> mMembers;
 
 	static SerializedVersionInfo* RetrieveCompiledVersionInfo(MetaClassDescription* pObjDescription);
+
+	//Originally would save to <Tool>/Meta/<file> This saves in .vers format. This writes everything (including header).
+	//Vers file (serialized versions) names are in the format %s1(%s2).vers , where %s1 is the type name, 
+	//and %s2 is the base 36 of the version CRC. Returns a datastream pointer, which you need to delete
+	DataStream* Save(const char* versName);
+
+	//TAKES OWNERSHIP OF STREAM PARAM, IT WILL BE DELETED AFTER USE
+	//Loads this version information from a .vers.
+	//There should be three parameters (type name crc, version crc) and the engine would load the .vers from that
+	void RetrieveVersionInfo(/*u64 typeNameCrc, u32 typeVersionCrc, */ const char* versFileName, DataStream* stream);
 
 };
 

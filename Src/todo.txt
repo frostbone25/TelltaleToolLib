@@ -1,7 +1,8 @@
 TODO LIST:
 
-- PropertySet
-- Check is the calculated version CRC is correct (do this after PropertySet)
+- Add TTARCH2 support
+- Add HashDB support
+- Add version 0 to .prop using HashDB support
 
 notes:
 metastream deletes the datastream passed on open
@@ -15,3 +16,6 @@ mbCompress      db
 mbEncrypt       db
 mCompressionLibrary dd ? ; enum Compression::Library
 //db byte dd int32 dq int64 (quad)
+
+THINGS THAT DONT WORK WITH THE LIB
+- VERSION CRCS! HOW THE FUCK? DO? YOU? CALCULATE THEM?!

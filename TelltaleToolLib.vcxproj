@@ -203,6 +203,7 @@
     <None Include=".gitignore" />
     <None Include="README.md" />
     <None Include="Src\Test\in.prop" />
+    <None Include="Src\Test\out.prop" />
     <None Include="Src\Test\testing.prop" />
     <None Include="TelltaleToolLib.licenseheader" />
   </ItemGroup>

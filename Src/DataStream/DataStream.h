@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include "../Compression.h"
 #include <cstdio>
 #include <memory>
 #include <vector>
@@ -151,7 +152,6 @@ public:
 	//cant transfer from a file, only used for memory streams
 	bool Transfer(DataStream* dst, unsigned __int64 off, unsigned __int64 size) { return false; }
 
-	DataStreamFile_Win(FileHandle);
 	DataStreamFile_Win(FileHandle, DataStreamMode);
 	DataStreamFile_Win(DataStreamFile_Win&&);
 	DataStreamFile_Win& operator=(DataStreamFile_Win&&);
@@ -253,6 +253,78 @@ public:
 	DataStreamLegacyEncrypted& operator=(DataStreamLegacyEncrypted&&) = delete;
 	DataStreamLegacyEncrypted(DataStreamLegacyEncrypted const&) = delete;
 	DataStreamLegacyEncrypted& operator=(DataStreamLegacyEncrypted& const) = delete;
+
+};
+
+struct DataStreamContainerParams {
+	DataStream* mpSrcStream;
+	DataStream* mpDstStream;
+	unsigned __int64 mDstOffset;
+	unsigned __int32 mWindowSize;
+	bool mbCompress;
+	bool mbEncrypt;
+	Compression::Library mCompressionLibrary;
+
+	DataStreamContainerParams() : mWindowSize(0x10000) {}
+
+};
+
+//A compressed/encrypted data stream container used for READING data. To write use Create. This is where TTNC,TTCZ,TTCE,TTCe,TTCz is.
+class DataStreamContainer : public DataStream {
+
+	//page and chunk are synonymous
+
+	void GetChunk(unsigned __int64 index);
+
+	inline unsigned __int64 GetCompressedPageSize(unsigned __int32 index);
+
+public:
+	unsigned __int64 mStreamOffset, mStreamPosition, mStreamSize;
+	DataStreamContainerParams mParams;
+	char* mpCachedPage;//0x32
+	char* mpReadTransitionBuf;
+	signed __int32 mStartPageIndex;// , mCacheablePages;
+	unsigned __int64* mPageOffsets;
+	unsigned __int64 mNumPages;
+
+	//init from src stream
+	void Read(unsigned __int64 offset, unsigned __int64* pContainerSize);
+
+	//Creates a TT data stream container with the parameters.
+	static void Create(DataStreamContainerParams, unsigned __int64 size) {}
+	bool SetPosition(signed __int64, DataStreamSeekType);
+	bool Serialize(char*, unsigned __int64);
+
+	unsigned __int64 GetSize() const { return mStreamSize; }
+	unsigned __int64 GetPosition() const { return mStreamPosition; }
+
+	bool Truncate(unsigned __int64 new_size) {
+		return false;
+	};
+
+	bool Transfer(DataStream* dst, unsigned __int64 off, unsigned __int64 size) { return false; }
+
+	DataStreamContainer(DataStreamContainerParams params) : mParams(params), mStreamOffset(0), /*mCacheablePages(-1),*/ mpReadTransitionBuf(NULL),
+			mStreamSize(0), mStartPageIndex(-1), mStreamPosition(0), mNumPages(0), mPageOffsets(NULL), mpCachedPage(NULL)
+		, DataStream(DataStreamMode::eMode_Read) {
+	}//Create
+
+	~DataStreamContainer();
+
+	inline Compression::Library GetCompressionLibrary() { return mParams.mCompressionLibrary; }
+
+	inline bool IsCompressed() {
+		return mParams.mbEncrypt;
+	};
+
+	inline bool IsEncrypted() {
+		return mParams.mbCompress;
+	}
+
+	DataStreamContainer(DataStreamContainer&&) = delete;
+	DataStreamContainer& operator=(DataStreamContainer&&) = delete;
+	DataStreamContainer(DataStreamContainer const&) = delete;
+	DataStreamContainer& operator=(DataStreamContainer& const) = delete;
 
 };
 

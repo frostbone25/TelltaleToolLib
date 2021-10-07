@@ -3,6 +3,7 @@
 // the engine and require that if you use this code or library, you give credit to me and
 // the amazing Telltale Games.
 
+#include "../TelltaleToolLibrary.h"
 #include "../Meta.hpp"
 #include "Set.h"
 #include "List.h"
@@ -16,12 +17,68 @@ struct PropertyValue {
 	MetaClassDescription* mpDataDescription;
 	void* mpValue;
 	//union {
-	//	char mStaticBuf[40];
+	//	char mStaticBuf[40]; //cool way of saving memory allocations by telltale! (like small string optimization!)
 	//	char* mpBuf;
 	//};
+
+	void ClearData() {
+		if (mpDataDescription && mpValue)
+			mpDataDescription->Delete(mpValue);
+	}
+
+	template<typename T> T* CastValue() const {
+		if (mpDataDescription && (mpDataDescription == GetMetaClassDescription(typeid(T).name()) ||
+			(GetMetaClassDescription(typeid(T).name())->mFlags.mFlags & 0x200) && (mpDataDescription->mFlags.mFlags & 0x200))) {
+			//if descriptions are the same or they are both script enums
+			return (T*)mpValue;
+		}
+		else return NULL;
+	}
+
+	void SetData(void* pSrcObj, MetaClassDescription* pDescription) {
+		if (!pDescription)return;
+		ClearData();
+		mpDataDescription = pDescription;
+		mpValue = operator new(pDescription->mClassSize);
+		if (pSrcObj) {
+			pDescription->CopyConstruct(mpValue, pSrcObj);
+		}
+		else {
+			pDescription->Construct(mpValue);
+		}
+	}
+
+	PropertyValue(PropertyValue&& other) {
+		mpDataDescription = other.mpDataDescription;
+		mpValue = other.mpValue;
+		other.mpValue = NULL;
+		other.mpDataDescription = NULL;
+	}
+
+	PropertyValue& operator=(const PropertyValue& other) {
+		SetData(other.mpValue, other.mpDataDescription);
+		return *this;
+	}
+
+	PropertyValue(const PropertyValue& other) {
+		mpDataDescription = other.mpDataDescription;
+		if (other.mpValue && mpDataDescription) {
+			mpValue = operator new(mpDataDescription->mClassSize);
+			mpDataDescription->CopyConstruct(mpValue, other.mpValue);
+		}
+		else mpValue = NULL;
+	}
+
+	PropertyValue() : mpValue(NULL), mpDataDescription(NULL) {}
+
+	~PropertyValue() {
+		if(mpDataDescription && mpValue)
+			mpDataDescription->Delete(mpValue);
+	}
+
 };
 
-//.PROP FILES
+//.PROP FILES (Versions 1 & 2 Supported) | Cant write prop version 1 if it has parents!
 class PropertySet {
 public:
 
@@ -74,6 +131,13 @@ public:
 			return mKeyName.GetCRC() < other.mKeyName.GetCRC();
 		}
 
+		KeyInfo& operator=(const KeyInfo& other) {
+			mFlags = other.mFlags;
+			mKeyName = other.mKeyName;
+			mValue = other.mValue;
+			return *this;
+		}
+
 	};
 
 	struct ParentInfo {
@@ -84,7 +148,9 @@ public:
 	Flags mPropertyFlags;
 	//Flags mModifiedFlags; //NOT SERIALIZED! could be useful?
 	Set<PropertySet::KeyInfo> mKeyMap;//type=>value
-	List<ParentInfo> mParentList;
+	List<ParentInfo> mParentList;//list of parent property set handle file references. in the engine these could be files (eTTArch) or just
+	//memory references (eMemory). not implemented in this lib but useful to know for loaded .props 
+	HandleObjectInfo mHOI;
 
 	static MetaOpResult MetaOperation_SerializeAsync(void* pObj, MetaClassDescription* pDesc, MetaMemberDescription* pCtx, void* pUserData) {
 		if (!pUserData || !pDesc || !pObj)return eMetaOp_Fail;
@@ -116,11 +182,22 @@ public:
 		stream->serialize_uint32(&parents);
 		if (stream->mMode == MetaStreamMode::eMetaStream_Write) {
 			for (int i = 0; i < parents; i++) {
-				Symbol sym = prop->mParentList[i].
-					mhParent.mHandleObjectInfo.mObjectName;
-				stream->serialize_Symbol(&sym);
+				if (prop->mPropVersion == 1) {
+					//String str("");
+					return eMetaOp_Fail;//cannot get string from symbol, YET!
+					//stream->serialize_String(&str);
+				}
+				else if (prop->mPropVersion == 2) {
+					Symbol sym = prop->mParentList[i].
+						mhParent.mHandleObjectInfo.mObjectName;
+					stream->serialize_Symbol(&sym);
+				}
 			}
-			Map<Symbol, List<KeyInfo>> typeMap;
+			if (prop->mPropVersion == 1) {
+				stream->EndBlock();
+				stream->BeginBlock();
+			}
+			Map<Symbol, List<KeyInfo>, Symbol::CompareCRC> typeMap;
 			for (int i = 0; i < prop->mKeyMap.size(); i++) {
 				KeyInfo mapping = prop->mKeyMap[i];
 				Symbol typeSymbol = mapping.mValue.mpDataDescription->GetDescriptionSymbol();
@@ -152,9 +229,17 @@ public:
 		}
 		else if (stream->mMode == MetaStreamMode::eMetaStream_Read) {
 			for (int i = 0; i < parents; i++) {
-				Symbol sym;
-				stream->serialize_Symbol(&sym);
-				prop->mParentList.AddElement(0, NULL, &sym);
+				if (prop->mPropVersion == 1) {
+					String str;
+					stream->serialize_String(&str);
+					Symbol sym(str.c_str());
+					prop->mParentList.AddElement(0, NULL, &sym);
+				}
+				else if (prop->mPropVersion == 2) {
+					Symbol sym;
+					stream->serialize_Symbol(&sym);
+					prop->mParentList.AddElement(0, NULL, &sym);
+				}
 			}
 			u32 numtypes = 0;
 			u32 numvalues = 0;
@@ -165,7 +250,12 @@ public:
 				MetaClassDescription* typeDesc = 
 					TelltaleToolLib_FindMetaClassDescription_ByHash
 						(typeSymbol.GetCRC());
-				if (!typeDesc)return eMetaOp_Fail;
+				if (!typeDesc) {
+#ifdef DEBUGMODE
+					printf("COULD NOT FIND PROPERTY TYPE OF CRC %llx!\n", typeSymbol.GetCRC());
+#endif
+					return eMetaOp_Fail;
+				}
 				stream->serialize_uint32(&numvalues);
 				MetaOpResult opres = eMetaOp_Succeed;
 				void* (*metaTypedNew)(void);
@@ -191,6 +281,119 @@ public:
 				prop->mPropertyFlags.mFlags &= 0xFFFF7FFF;
 		}
 		return result;
+	}
+
+	void ClearKeys() {
+		mKeyMap.clear();
+	}
+
+	void ClearParents() {
+		mParentList.ClearElements();
+	}
+
+	void RemoveParent(Handle<PropertySet> handle) {
+		for (auto it = mParentList.begin(); it != mParentList.end(); it++) {
+			if (it->mhParent.mHandleObjectInfo.mObjectName == handle.mHandleObjectInfo.mObjectName) {
+				mParentList.erase(it);
+				return;
+			}
+		}
+	}
+
+	void AddParent(Handle<PropertySet> handle) {
+		ParentInfo info;
+		info.mhParent = handle;
+		mParentList.AddElement(0, NULL, &info);
+	}
+
+	bool HasProperty(const char* keyName) {
+		u64 crc = CRC64_CaseInsensitive(0, keyName);
+		for (auto it = mKeyMap.begin(); it != mKeyMap.end(); it++) {
+			if (it->mKeyName.GetCRC() == crc)return true;
+		}
+		return false;
+	}
+
+	void* GetProperty(const char* keyName) {
+		u64 crc = CRC64_CaseInsensitive(0, keyName);
+		for (auto it = mKeyMap.begin(); it != mKeyMap.end(); it++) {
+			if (it->mKeyName.GetCRC() == crc)
+				return it->mValue.mpValue;
+		}
+		return NULL;
+	}
+
+	template<typename T> T* GetProperty(const char* keyName) {
+		u64 crc = CRC64_CaseInsensitive(0, keyName);
+		for (auto it = mKeyMap.begin(); it != mKeyMap.end(); it++) {
+			if (it->mKeyName.GetCRC() == crc)
+				return it->mValue.CastValue<T>();
+		}
+		return NULL;
+	}
+
+	u32 GetNumKeys() {
+		return mKeyMap.size();
+	}
+
+	u32 GetNumPropertiesOfType(MetaClassDescription* type) {
+		u32 ret = 0;
+		for (auto it = mKeyMap.begin(); it != mKeyMap.end(); it++) {
+			if (it->mValue.mpDataDescription && it->mValue.mpDataDescription == type)
+				ret++;
+		}
+		return ret;
+	}
+
+
+	template<typename T> u32 GetNumPropertiesOfTypeT() {
+		MetaClassDescription* desc = GetMetaClassDescription(typeid(T).name());
+		if (!desc)return 0;
+		return GetNumPropertiesOfType(desc);
+	}
+
+	void AddProperty(const char* keyName, MetaClassDescription* desc, void* value) {
+		if (!keyName || !desc)return;
+		KeyInfo k;
+		k.mKeyName = CRC64_CaseInsensitive(0, keyName);
+		k.mValue.SetData(value, desc);
+		mKeyMap.AddElement(0, NULL, &k);
+	}
+
+	template<typename T> void AddProperty(const char* keyName, T* value) {
+		MetaClassDescription* desc = GetMetaClassDescription(typeid(T).name());
+		if (!desc) {
+#ifdef DEBUGMODE
+			printf("Could not find meta class description for type '%s'\n", typeid(T).name());
+#endif
+			return;
+		}
+		AddProperty(keyName, desc, value);
+	}
+
+	bool RemoveProperty(const char* keyName) {
+		u64 crc = CRC64_CaseInsensitive(0, keyName);
+		for (auto it = mKeyMap.begin(); it != mKeyMap.end(); it++) {
+			if (it->mKeyName.GetCRC() == crc) {
+				mKeyMap.erase(it);
+				return true;
+			}
+		}
+		return false;
+	}
+
+	List<KeyInfo> GetPropertiesOfType(MetaClassDescription* pObjDesc) {
+		if (!pObjDesc)return List<KeyInfo>();
+		List<KeyInfo> keyInfo;
+		for (auto it = mKeyMap.begin(); it != mKeyMap.end(); it++) {
+			if (it->mValue.mpDataDescription && it->mValue.mpDataDescription == pObjDesc)
+				keyInfo.push_back(*it);
+		}
+		return keyInfo;
+	}
+
+	template<typename T> List<KeyInfo> GetPropertiesOfTypeT() {
+		return GetPropertiesOfType(GetMetaClassDescription(typeid(T).name()));
 	}
 
 };

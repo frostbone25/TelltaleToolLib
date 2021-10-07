@@ -5,6 +5,60 @@
 
 #include "Compression.h"
 
+bool Compression::ZlibDecompress(void* dest, unsigned int* destLen, const void* source, unsigned int sourceLen) {
+	z_stream stream;
+	int err;
+	const uInt max = (uInt)-1;
+	uLong len, left;
+	unsigned char buf[1];
+
+	len = sourceLen;
+	if (*destLen) {
+		left = *destLen;
+		*destLen = 0;
+	}
+	else {
+		left = 1;
+		dest = buf;
+	}
+
+	stream.next_in = (z_const Bytef*)source;
+	stream.avail_in = 0;
+	stream.zalloc = (alloc_func)0;
+	stream.zfree = (free_func)0;
+	stream.opaque = (voidpf)0;
+
+	err = inflateInit2(&stream, -15);
+	if (err != Z_OK) return err;
+
+	stream.next_out = (Bytef*)dest;
+	stream.avail_out = 0;
+
+	do {
+		if (stream.avail_out == 0) {
+			stream.avail_out = left > (uLong)max ? max : (uInt)left;
+			left -= stream.avail_out;
+		}
+		if (stream.avail_in == 0) {
+			stream.avail_in = len > (uLong)max ? max : (uInt)len;
+			len -= stream.avail_in;
+		}
+		err = inflate(&stream, Z_NO_FLUSH);
+	} while (err == Z_OK);
+
+	sourceLen -= len + stream.avail_in;
+	if (dest != buf)
+		*destLen = stream.total_out;
+	else if (stream.total_out && err == Z_BUF_ERROR)
+		left = 1;
+
+	inflateEnd(&stream);
+	return  err == Z_STREAM_END ? true /*Z_OK*/ :
+		err == Z_NEED_DICT ? false /*Z_DATA_ERROR*/ :
+		err == Z_BUF_ERROR && left + stream.avail_out ? false /*Z_DATA_ERROR*/ :
+		false /*err*/;
+}
+
 bool Compression::ZlibCompress(void* pDst, unsigned int* pDstLength, const void* pSrc, unsigned int srcLength) {
 	z_stream_s stream;
 	stream.next_in = (Bytef*)pSrc;

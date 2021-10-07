@@ -6,7 +6,6 @@
 #ifndef _COMPRESSION
 #define _COMPRESSION
 
-#include "TelltaleToolLibrary.h"
 #include "Zlib/zlib.h"
 
 
@@ -20,7 +19,7 @@ namespace Compression {
 		ZLIB = 0, OODLE = 1, END_LIBRARY = 2
 	};
 
-	//bool ZlibDecompress(void* pDst, unsigned int* pDstLength, const void* pSrc, unsigned int srcLength);
+	bool ZlibDecompress(void* pDst, unsigned int* pDstLength, const void* pSrc, unsigned int srcLength);
 
 	bool ZlibCompress(void* pDst, unsigned int* pDstLength, const void* pSrc, unsigned int srcLength);
 

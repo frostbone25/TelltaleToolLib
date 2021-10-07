@@ -12,6 +12,84 @@ i32 sMetaTypesCount = 0;
 MetaClassDescription* spFirstMetaClassDescription = NULL;
 char Symbol::smSymbolBuffer[sizeof(u64) * 2 + 1];//1byte= 2 hex chars
 
+void SerializedVersionInfo::RetrieveVersionInfo(const char* versFileName, DataStream* stream) {
+	MetaStream meta(versFileName);
+	meta.Open(stream, MetaStreamMode::eMetaStream_Read, { 0 });
+	u32 i;
+	meta.serialize_uint32(&i);
+	if (i == -1) {//reason we have this -1 (0xFFFFFFFF) header is because old .vers used to start with the .vers file name 
+		//and the first int would therefore be the size of it. no string is 0xFFFFFFFF bytes long, so thats how we can distinguish
+		mMembers.clear();
+		meta.serialize_uint32(&i);
+		if (i == 0) {//.vers version 0, never seen it!
+			String str;
+			meta.serialize_String(&str);
+			MetaClassDescription* mcd = GetMetaClassDescription(str.c_str());
+			if (mcd)
+				mTypeSymbolCrc = mcd->mHash;
+		}
+		else if (i == 1) {//version 1, normal
+			meta.serialize_uint64(&mTypeSymbolCrc);
+		}
+		meta.serialize_uint32(&mVersionCrc);
+		meta.serialize_uint32(&mSize);
+		meta.serialize_bool(&mbBlocked);
+		u32 members;
+		meta.serialize_uint32(&members);
+		mMembers.reserve(members);
+		for (int x = 0; x < members; x++) {
+			SerializedVersionInfo::MemberDesc desc;
+			meta.serialize_String(&desc.mName);
+			if(i == 1)
+				meta.serialize_uint64(&desc.mTypeNameSymbolCrc);
+			else {
+				String str;
+				meta.serialize_String(&str);
+				MetaClassDescription* mcd = GetMetaClassDescription(str.c_str());
+				if (mcd)
+					desc.mTypeNameSymbolCrc = mcd->mHash;
+			}
+			meta.serialize_uint32(&desc.mSize);
+			meta.serialize_bool(&desc.mbBlocked);
+			meta.serialize_uint32(&desc.mVersionCrc);
+			mMembers.push_back(desc);
+		}
+		for (int x = 0; x < members; x++) {
+			meta.serialize_String(&mMembers[x].mTypeName);
+		}
+	}
+}
+
+DataStream* SerializedVersionInfo::Save(const char* name) {
+	DataStream* stream = new DataStreamMemory(0, 0x100);
+	MetaStream meta(name);
+	meta.mbDontDeleteStream = true;
+	meta.Open(stream, MetaStreamMode::eMetaStream_Write, { 0 });
+	u32 i = -1;
+	meta.serialize_uint32(&i);
+	i = 1;
+	meta.serialize_uint32(&i);
+	meta.serialize_uint64(&mTypeSymbolCrc);
+	meta.serialize_uint32(&mVersionCrc);
+	meta.serialize_uint32(&mSize);
+	meta.serialize_bool(&mbBlocked);
+	i = mMembers.size();
+	meta.serialize_uint32(&i);
+	for (int x = 0; x < mMembers.size(); x++) {
+		SerializedVersionInfo::MemberDesc* desc = mMembers.data() + x;
+		meta.serialize_String(&desc->mName);
+		meta.serialize_uint64(&desc->mTypeNameSymbolCrc);
+		meta.serialize_uint32(&desc->mSize);
+		meta.serialize_bool(&desc->mbBlocked);
+		meta.serialize_uint32(&desc->mVersionCrc);
+	}
+	for (int x = 0; x < mMembers.size(); x++) {
+		SerializedVersionInfo::MemberDesc* desc = mMembers.data() + x;
+		meta.serialize_String(&desc->mTypeName);
+	}
+	return stream;
+}
+
 void MetaStream::AddVersion(const SerializedVersionInfo* version) {
 	for (int i = 0; i < mVersionInfo.size(); i++) {
 		if (mVersionInfo[i].mTypeSymbolCrc == version->mTypeSymbolCrc)return;
@@ -359,11 +437,13 @@ void MetaStream::EndDebugSection() {
 }
 
 bool MetaStream::BeginDebugSection() {
+#if METASTREAM_ENABLE_DEBUGSECTION_WRITE == true
 	if ((mCurrentSection == SectionType::eSection_Default && !mDebugSectionDepth && _SetSection(SectionType::eSection_Debug))
 		|| (mCurrentSection == SectionType::eSection_Debug && mDebugSectionDepth > 0)) {
 		mDebugSectionDepth++;
 		return true;
 	}
+#endif
 	return false;
 }
 
@@ -502,7 +582,7 @@ void MetaStream::serialize_double(long double* param) {
 
 void MetaStream::serialize_bool(bool* param) {
 	char val = (*param != 0) + 0x30;
-	serialize_bytes((void*)val, 1);
+	serialize_bytes((void*)&val, 1);
 	if ((u8)(val - 0x30) <= 1u) {
 		*param = val == 0x31;
 	}
@@ -594,7 +674,8 @@ MetaStream::~MetaStream() {
 	if (mpReadWriteStream) {
 		if (mpReadWriteStream != mSection[0].mpStream)
 			delete mSection[0].mpStream;
-		delete mpReadWriteStream;
+		if(!mbDontDeleteStream)
+			delete mpReadWriteStream;
 	}
 }
 
@@ -871,9 +952,9 @@ void MetaClassDescription::Delete(void* pObj) {
 }
 
 String* MetaClassDescription::GetToolDescriptionName(String* result) {
-	int size = strlen(this->mpTypeInfoName);
+	int size = strlen(mpTypeInfoName);
 	char* tmp = (char*)calloc(1, size + 1);
-	memcpy(tmp, this->mpTypeInfoName, size);
+	memcpy(tmp, mpTypeInfoName, size);
 	TelltaleToolLib_MakeInternalTypeName(&tmp);
 	new (result) String(tmp);
 	free(tmp);
@@ -1111,36 +1192,36 @@ METAOP_FUNC_IMPL(SerializeAsync) {
 		SerializedVersionInfo* ver = SerializedVersionInfo::RetrieveCompiledVersionInfo(pObjDescription);
 		if(ver&&!pObjDescription->mbIsIntrinsic)stream->AddVersion(ver);
 		MetaSerializeAccel* accel = pObjDescription->mpSerializeAccel;
-		if(!accel)accel=MetaSerialize_GenerateAccel(pObjDescription);
-		if (accel && accel->mpFunctionAsync) {
-			int i = 0; 
-			bool blocked = false;
-			while (true) {
-				if (!accel[i].mpFunctionAsync)break;
-				MetaSerializeAccel a = accel[i];
-				if (a.mpMemberDesc->mFlags & (int)MetaFlag::MetaFlag_MetaSerializeBlockingDisabled
-					|| a.mpMemberDesc->mpMemberDesc->mFlags.mFlags & (int)MetaFlag::MetaFlag_MetaSerializeBlockingDisabled) {
-					blocked = false;
-				}
-				else {
-					stream->BeginBlock();
-					blocked = true;
-				}
-				stream->BeginObject(a.mpMemberDesc->mpName, NULL);
-				MetaOpResult result = a.mpFunctionAsync(((char*)pObj) + a.mpMemberDesc->mOffset, 
-					a.mpMemberDesc->mpMemberDesc, a.mpMemberDesc, pUserData);
-				stream->EndObject(a.mpMemberDesc->mpName);
-				if (blocked)
-					stream->EndBlock();
-				if (result != MetaOpResult::eMetaOp_Succeed)break;
-				i++;
-			}
+if (!accel)accel = MetaSerialize_GenerateAccel(pObjDescription);
+if (accel && accel->mpFunctionAsync) {
+	int i = 0;
+	bool blocked = false;
+	while (true) {
+		if (!accel[i].mpFunctionAsync)break;
+		MetaSerializeAccel a = accel[i];
+		if (a.mpMemberDesc->mFlags & (int)MetaFlag::MetaFlag_MetaSerializeBlockingDisabled
+			|| a.mpMemberDesc->mpMemberDesc->mFlags.mFlags & (int)MetaFlag::MetaFlag_MetaSerializeBlockingDisabled) {
+			blocked = false;
 		}
-		if (pContextDescription && pContextDescription->mpName) {
-			stream->EndObject(pContextDescription->mpName);
+		else {
+			stream->BeginBlock();
+			blocked = true;
 		}
-		else stream->EndAnonObject(NULL);
-		return eMetaOp_Succeed;
+		stream->BeginObject(a.mpMemberDesc->mpName, NULL);
+		MetaOpResult result = a.mpFunctionAsync(((char*)pObj) + a.mpMemberDesc->mOffset,
+			a.mpMemberDesc->mpMemberDesc, a.mpMemberDesc, pUserData);
+		stream->EndObject(a.mpMemberDesc->mpName);
+		if (blocked)
+			stream->EndBlock();
+		if (result != MetaOpResult::eMetaOp_Succeed)break;
+		i++;
+	}
+}
+if (pContextDescription && pContextDescription->mpName) {
+	stream->EndObject(pContextDescription->mpName);
+}
+else stream->EndAnonObject(NULL);
+return eMetaOp_Succeed;
 	}
 	//if (!(stream->mRuntimeFlags.mFlags & (int)MetaStream::RuntimeFlags::eStreamIsCompiledVersion)) {}
 	SerializedVersionInfo* ver = SerializedVersionInfo::RetrieveCompiledVersionInfo(pObjDescription);
@@ -1197,20 +1278,23 @@ METAOP_FUNC_IMPL(SerializedVersionInfo) {
 			return MetaOpResult::eMetaOp_Invalid;//if its not serialized no need for this
 		ver->mTypeSymbolCrc = pObjDescription->mHash;
 		ver->mSize = pObjDescription->mClassSize;
-		char versionCrcBuffer[4], hashBuffer[8];
-		u8 crcFlags = ~(unsigned __int8)((unsigned int)pObjDescription->mFlags.
-			mFlags >> 1) & MetaFlag::MetaFlag_MetaSerializeDisable;
-		ver->mbBlocked = crcFlags;
-		versionCrcBuffer[0] = (crcFlags ^ 1) - 1;
-		ver->mVersionCrc = CRC32(ver->mVersionCrc, versionCrcBuffer, 4);
+		char hashBuffer[8];
+		ver->mbBlocked = (pObjDescription->mFlags.mFlags & (int)MetaFlag_MetaSerializeBlockingDisabled) == 0;
+		u32 blockedv = ver->mbBlocked;
+		ver->mVersionCrc = CRC32(ver->mVersionCrc, (const char*)&blockedv, 4);
 		for (MetaMemberDescription* i = pObjDescription->mpFirstMember; i; i = i->mpNextMember) {
 			if (i->mFlags & 1)continue;//flag 1 = metaflags:: dont seralized etc
 			SerializedVersionInfo::MemberDesc member;
 			member.mSize = i->mpMemberDesc->mClassSize;
 			member.mTypeNameSymbolCrc = i->mpMemberDesc->mHash;
-			member.mbBlocked = !(i->mpMemberDesc->mFlags.mFlags
-				& MetaFlag::MetaFlag_MetaSerializeBlockingDisabled)
-				&& !(i->mFlags & MetaFlag::MetaFlag_MetaSerializeBlockingDisabled);
+			member.mVersionCrc = SerializedVersionInfo::RetrieveCompiledVersionInfo(i->mpMemberDesc)->mVersionCrc;
+			member.mbBlocked = !i->mpMemberDesc->mbIsIntrinsic;
+			if (((bool)(i->mpMemberDesc->mFlags.mFlags & (int)MetaFlag_MetaSerializeBlockingDisabled))){
+				member.mbBlocked = false;
+			}
+			if (((bool)(i->mFlags & (int)MetaFlag_MetaSerializeBlockingDisabled))) {
+				member.mbBlocked = false;
+			}
 			member.mName = String(i->mpName);
 			member.mTypeName = String(i->mpMemberDesc->mpTypeInfoName);
 			ver->mVersionCrc = CRC32(ver->mVersionCrc, member.mName.c_str(),

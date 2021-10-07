@@ -3,6 +3,7 @@
 // the amazing Telltale Games.
 
 #include "DataStream.h"
+#include <vector>
 #include <utility>
 #include "../Blowfish.h"
 
@@ -100,6 +101,167 @@ DataStreamLegacyEncrypted::DataStreamLegacyEncrypted(DataStream* base, int versi
 		mEncryptInterval = 8;
 		mEncryptSkip = 24;
 	}
+}
+
+bool DataStreamContainer::Serialize(char* dest, unsigned __int64 size) {
+	if (mStreamPosition + size > mStreamSize)return false;
+	if (mParams.mbCompress) {
+		//pos = 255, window = 100, size = 50
+		int chunkoff = mStreamPosition % mParams.mWindowSize;//55
+		int rem = mParams.mWindowSize - chunkoff;//45
+		if (rem >= size) {
+			memcpy(dest, mpCachedPage + chunkoff, size);
+			return true;
+		}
+		if (rem) {
+			memcpy(dest, mpCachedPage + chunkoff, rem);
+			dest += rem;
+			size -= rem;
+		}
+		mStreamPosition += rem;
+		//size = 5, pos = 300, windows = 100
+		//int blocks = size / mStrea
+	}
+	else {
+		bool r = mParams.mpSrcStream->Serialize(dest, size);
+		if (!r)return r;
+		mStreamPosition += size;
+		return true;
+	}
+	return true;
+}
+
+void DataStreamContainer::Read(unsigned __int64 offset, unsigned __int64* pContainerSize) {
+	mParams.mpSrcStream->SetPosition(offset, DataStreamSeekType::eSeekType_Begin);
+	unsigned __int32 type = 0;
+	mParams.mpSrcStream->Serialize((char*)&type, 4);
+	if (type == 0x5454434E) {//TTNC telltale not compressed
+		mParams.mbCompress = false;
+		mParams.mbEncrypt = false;
+		mParams.mpSrcStream->Serialize((char*)pContainerSize, 8);//total size
+		mStreamSize = *pContainerSize;
+		mStreamOffset = mParams.mpSrcStream->GetPosition();
+		mStreamPosition = 0;
+		return;
+	}
+	else {
+		mParams.mbCompress = true;
+		switch (type) {
+		case 1414808389: //TTCE
+			mParams.mbEncrypt = true;
+			mParams.mCompressionLibrary = Compression::Library::ZLIB;
+			break;
+		case 1414808410: //TTCZ
+			mParams.mbEncrypt = false;
+			mParams.mCompressionLibrary = Compression::Library::ZLIB;
+			break;
+		case 1414808421: //TTCe
+		case 1414808442: //TTCz
+			mParams.mbEncrypt = type == 1414808421;
+			unsigned __int32 libtype;
+			mParams.mpSrcStream->Serialize((char*)&libtype, 4);
+			if (libtype > 1)return;
+			mParams.mCompressionLibrary = (Compression::Library)libtype;
+			break;
+		default:
+			return;
+		}
+	}
+	mParams.mpSrcStream->Serialize((char*)&mParams.mWindowSize, 4);
+	mParams.mpSrcStream->Serialize((char*)&mNumPages, 4);
+	mNumPages++;
+	mPageOffsets = (unsigned __int64*)calloc(1, mNumPages * 8);
+	mParams.mpSrcStream->Serialize((char*)mPageOffsets, mNumPages * 8);
+	*pContainerSize = (--mNumPages) * mParams.mWindowSize;
+	mStreamSize = *pContainerSize;
+	mStreamOffset = mParams.mpSrcStream->GetPosition();
+	mStreamPosition = 0;
+	//mCacheablePages = 0x10 > mNumPages ? mNumPages : 0x10;
+	mpCachedPage= (char*)malloc(mParams.mWindowSize);
+	mpReadTransitionBuf = (char*)calloc(1, mParams.mWindowSize + 0x50);//add 80 bytes in case it goes over (bad compression!)
+}
+
+DataStreamContainer::~DataStreamContainer() {
+	if (mPageOffsets)
+		free(mPageOffsets);
+	if (mpCachedPage)
+		free(mpCachedPage);
+	if (mpReadTransitionBuf)
+		free(mpReadTransitionBuf);
+}
+
+void DataStreamContainer::GetChunk(unsigned __int64 index) {
+	unsigned __int64 offset = mPageOffsets[index];
+	unsigned __int64 size = GetCompressedPageSize(index);
+	mParams.mpSrcStream->SetPosition(mStreamOffset + offset, DataStreamSeekType::eSeekType_Begin);
+	mParams.mpSrcStream->Serialize(mpReadTransitionBuf, size);
+	if (mParams.mbEncrypt) {
+		LibTelltaleTool_BlowfishDecrypt((unsigned char*)mpReadTransitionBuf, size, true, (unsigned char*)sBlowfishKeys[sSetKeyIndex].game_key);
+	}
+	if (mParams.mCompressionLibrary == Compression::Library::ZLIB) {
+		unsigned int destl = mParams.mWindowSize;
+		bool r = Compression::ZlibDecompress(mpCachedPage, &destl, mpReadTransitionBuf, size);
+#if defined(_MSC_VER) && defined(_DEBUG)
+		if (destl != mParams.mWindowSize || !r)
+			printf("Decompression failed: %s", destl != mParams.mWindowSize ? "Dest len not equal" : "ZDecompress returned false.");
+#endif
+	}else if (mParams.mCompressionLibrary == Compression::Library::OODLE) {
+		throw "OODLE NOT IMPLEMENTED YET!";
+	}
+}
+
+/*struct _range {
+	unsigned int mMin;
+	unsigned int mMax;
+
+	inline bool contains(int value) {
+		return value >= mMin && mMax >= value;
+	}
+
+	_range common(const _range& o) {
+		_range ret;
+		ret.mMin = o.mMin >= mMin ? o,mMin : mMin;
+		ret.mMax = o.mMax <= mMax ? o.mMax : mMax;
+		return ret;
+	}
+
+	int diff() {
+		return mMax - mMin;
+	}
+
+};*/
+
+
+inline unsigned __int64 DataStreamContainer::GetCompressedPageSize(unsigned __int32 index) {
+	return mPageOffsets[index + 1] - mPageOffsets[index];
+}
+
+bool DataStreamContainer::SetPosition(signed __int64 pos, DataStreamSeekType type) {
+	unsigned __int64 final = 0;
+	switch (type) {
+	case DataStreamSeekType::eSeekType_Begin:
+		final = pos;
+		break;
+	case DataStreamSeekType::eSeekType_Current:
+		final = mStreamPosition + pos;
+		break;
+	case DataStreamSeekType::eSeekType_End:
+		final = mStreamSize - pos;
+		break;
+	}
+	if (final > mStreamSize)return false;
+	if (mParams.mbCompress) {
+		unsigned __int64 tot = 0;
+		int blocks = pos / mParams.mWindowSize;
+		if (blocks != (mStreamPosition / mParams.mWindowSize)) {
+			GetChunk(blocks);
+		}
+	}
+	else {
+		mParams.mpSrcStream->SetPosition(mStreamOffset + final, DataStreamSeekType::eSeekType_Begin);
+	}
+	mStreamPosition = final;
+	return true;
 }
 
 bool DataStreamLegacyEncrypted::SetPosition(signed __int64 pos, DataStreamSeekType type) {
@@ -410,13 +572,6 @@ bool DataStreamFile_Win::Serialize(char* buf, unsigned __int64 bufsize) {
 }
 
 DataStreamFile_Win::DataStreamFile_Win(FileHandle handle,DataStreamMode m) : mHandle{ handle }, DataStream(m) {
-	mStreamOffset = ftell(handle);
-	fseek(handle, 0, SEEK_END);
-	mStreamSize = ftell(handle);
-	fseek(handle, mStreamOffset, SEEK_SET);
-}
-
-DataStreamFile_Win::DataStreamFile_Win(FileHandle handle) : mHandle{ handle }, DataStream() {
 	mStreamOffset = ftell(handle);
 	fseek(handle, 0, SEEK_END);
 	mStreamSize = ftell(handle);

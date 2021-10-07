@@ -11,8 +11,8 @@
 if(!(meta_##name_.mFlags.mFlags & MetaFlag::Internal_MetaFlag_Initialized)){ \
 meta_##name_.mpVTable[0] = MetaClassDescription_Typed<Ty>::New;\
 meta_##name_.mpVTable[1] = MetaClassDescription_Typed<Ty>::Delete;\
-meta_##name_.mpVTable[2] = NULL;\
-meta_##name_.mpVTable[3] = NULL;\
+meta_##name_.mpVTable[2] = MetaClassDescription_Typed<Ty>::Construct;\
+meta_##name_.mpVTable[3] = MetaClassDescription_Typed<Ty>::CopyConstruct;\
 meta_##name_.mpVTable[4] = MetaClassDescription_Typed<Ty>::Destroy;\
 meta_##name_.mClassSize = sizeof(Ty);\
 meta_##name_.mpTypeInfoExternalName = typeid(Ty).name();
@@ -134,6 +134,19 @@ meta_Map_##key_var_name##_##value_var_name##_baseclass.mFlags |= (int)MetaFlag::
 meta_Map_##key_var_name##_##value_var_name##.InstallSpecializedMetaOperation(&meta_Map_##key_var_name##_##value_var_name##_eMetaOpSerializeAsync);\
 meta_Map_##key_var_name##_##value_var_name##.Insert();
 
+#define DEFINEHANDLE(name_,Ty) DEFINET(Handle##name_, Handle<Ty>) \
+meta_Handle##name_##.Initialize(typeid(Handle<Ty>));\
+meta_Handle##name_##.mFlags |= 0x20004;\
+DEFINEM(Handle##name_, handlebase);\
+meta_Handle##name_##_handlebase.mpName = "Baseclass_HandleBase";\
+meta_Handle##name_##_handlebase.mOffset = 0;\
+meta_Handle##name_##_handlebase.mpMemberDesc = &meta_handlebase;\
+meta_Handle##name_##_handlebase.mFlags |= 0x10;\
+meta_Handle##name_##.mpFirstMember = &meta_Handle##name_##_handlebase;\
+METAOP_CUSTOM(Handle##name_,eMetaOpSerializeAsync, Handle<Ty>::MetaOperation_SerializeAsync);\
+meta_Handle##name_##.InstallSpecializedMetaOperation(&meta_Handle##name_##_eMetaOpSerializeAsync);\
+meta_Handle##name_##.Insert();\
+
 
 #define DEFINEOP(name, opName,fid,fun)static MetaOperationDescription meta_##name##_##opName; meta_##name##_##opName.id = fid;\
 meta_##name##_##opName.mpOpFn = fun;
@@ -183,7 +196,7 @@ namespace MetaInit {
 			meta_int.InstallSpecializedMetaOperation(&meta_int_eMetaOpSerializeAsync);
 			meta_int.Insert();
 			meta_int.mbIsIntrinsic = true;
-			DEFINET(long, i32)
+			DEFINET(long, long)
 				meta_long.mFlags = MetaFlag::MetaFlag_MetaSerializeBlockingDisabled | MetaFlag::MetaFlag_PlaceInAddPropMenu;
 			meta_long.Initialize("long");
 			METAOP_CUSTOM(long, eMetaOpSerializeAsync, MetaOperation_SerializeIntrinsicAsyncint32);
@@ -253,6 +266,7 @@ namespace MetaInit {
 			meta_flags_mFlags.mpMemberDesc = &meta_long;
 			meta_flags_mFlags.mOffset = memberOffset(&Flags::mFlags);
 			meta_flags.mpFirstMember = &meta_flags_mFlags;
+			meta_flags.mFlags.mFlags |= MetaFlag::MetaFlag_MetaSerializeBlockingDisabled;
 			meta_flags.Insert();
 			DEFINET(bool, bool)
 				meta_bool.mFlags = MetaFlag::MetaFlag_MetaSerializeBlockingDisabled;
@@ -343,6 +357,12 @@ namespace MetaInit {
 			meta_vec2_x.mpMemberDesc = &meta_float;
 			meta_vec2_x.mpNextMember = &meta_vec2_y;
 			meta_vec2.Insert();
+
+			DEFINETABS(handlebase, HandleBase);
+			meta_handlebase.Initialize(typeid(HandleBase));
+			METAOP_CUSTOM(handlebase, eMetaOpSerializeAsync, HandleBase::MetaOperation_SerializeAsync);
+			meta_handlebase.InstallSpecializedMetaOperation(&meta_handlebase_eMetaOpSerializeAsync);
+			meta_handlebase.Insert();
 
 			//Vector3
 			DEFINET(vec3, Vector3);
@@ -498,6 +518,7 @@ namespace MetaInit {
 			meta_propkeyinfo_keyname.mpMemberDesc = &meta_symbol;
 			meta_propkeyinfo.mpFirstMember = &meta_propkeyinfo_keyname;
 			meta_propkeyinfo.Insert();
+			DEFINEHANDLE(propset, PropertySet);
 			DEFINESARRAY(u32, 3);
 			DEFINESARRAY(u8, 32);
 			DEFINESARRAY(i32, 4);

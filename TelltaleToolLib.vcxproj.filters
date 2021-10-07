@@ -160,6 +160,7 @@
     <None Include="README.md" />
     <None Include="Src\Test\in.prop" />
     <None Include="Src\Test\testing.prop" />
+    <None Include="Src\Test\out.prop" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="Doc\Formats.txt" />
