@@ -19,3 +19,5 @@ Minecraft Story Mode: Season Two
 Batman: The Enemy Within
 The Walking Dead: Collection
 The Walking Dead: The Final Season
+
+Please also note this is a windows library! You could toggle values to make it for another platform however. But note that a lot of the code expects that the machine is in little endian! Reading .ttarch2 archives will fail unless in little endian. However, you can read normal telltale files (MetaStream ones) if its in big endian.
