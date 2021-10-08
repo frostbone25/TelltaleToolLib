@@ -1,10 +1,10 @@
 #ifndef _WINDLL
 
 #ifdef _DEBUG
-#define _CRTDBG_MAP_ALLOC
 #include <crtdbg.h>
 #endif
 
+#include "../TTArchive2.hpp"
 #include "../Meta.hpp"
 #include "../Types/PropertySet.h"
 
@@ -57,33 +57,36 @@ void run() {
 }
 
 void run_ttarch2() {
-	DataStream* src = OpenDataStreamFromDisc("d:/games/minecraft - story mode/archives/"
-		"MCSM_pc_Minecraft101_voice.ttarch2", DataStreamMode::eMode_Read);
 
-	u64 size;
+	const char* home_pc = "d:/games/minecraft - story mode/archives/"
+		"MCSM_pc_Minecraft101_voice.ttarch2";
+	const char* laptop = "c:/users/lucas/desktop/TTArch/"
+		"MC2_pc_Menu_anichore.ttarch2";
+
+	DataStream* src = OpenDataStreamFromDisc(laptop, DataStreamMode::eMode_Read);
+
+	TTArchive2 archive;
+	archive.Activate(src);
+	DataStreamSubStream&& stream = archive.GetResourceStream(
+		archive.mResources.data());
 	char header[5];
-	memset(header, 0, 5);
-	DataStreamContainerParams params;
-	params.mpSrcStream = src;
+	header[4] = 0;
+	stream.Serialize(header, 4);
 
-	DataStreamContainer container(params);
-	container.Read(0, &size);
+	printf("Header %s\n", header);
 
-	container.SetPosition(0, DataStreamSeekType::eSeekType_Begin);
-	container.Serialize(header, 4);
+	printf("Resource count: %llu, version %d\n", archive.mResources.size(),
+		archive.mVersion);
 
-	printf("Total size: %llu, Header: %s\n", size,header);
-
-	delete src;
 }
 
 int main(int argn, char** argv) {
-	TelltaleToolLib_Initialize("MCSM");
+	TelltaleToolLib_Initialize("MC2");
 
 	run_ttarch2();
 
 	printf("Done!");
-	//_CrtDumpMemoryLeaks();
+	_CrtDumpMemoryLeaks();
 	return 0;
 }
 

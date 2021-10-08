@@ -120,7 +120,7 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions);_CRT_SECURE_NO_WARNINGS</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_DEBUG;_CONSOLE;_CRTDBG_MAP_ALLOC;%(PreprocessorDefinitions);_CRT_SECURE_NO_WARNINGS</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpplatest</LanguageStandard>
     </ClCompile>
@@ -154,6 +154,7 @@
     <ClInclude Include="Src\Compression.h" />
     <ClInclude Include="Src\DataStream\DataStream.h" />
     <ClInclude Include="Src\MetaInitialize.h" />
+    <ClInclude Include="Src\TTArchive2.hpp" />
     <ClInclude Include="Src\Types\Container.h" />
     <ClInclude Include="Src\Types\DCArray.h" />
     <ClInclude Include="Src\Types\Deque.h" />
@@ -186,6 +187,7 @@
     <ClCompile Include="Src\Meta.cpp" />
     <ClCompile Include="Src\TelltaleToolLibrary.cpp" />
     <ClCompile Include="Src\Test\main.cpp" />
+    <ClCompile Include="Src\TTArchive2.cpp" />
     <ClCompile Include="Src\Zlib\adler32.c" />
     <ClCompile Include="Src\Zlib\compress.c" />
     <ClCompile Include="Src\Zlib\crc32.c" />

@@ -106,11 +106,14 @@ DataStreamLegacyEncrypted::DataStreamLegacyEncrypted(DataStream* base, int versi
 bool DataStreamContainer::Serialize(char* dest, unsigned __int64 size) {
 	if (mStreamPosition + size > mStreamSize)return false;
 	if (mParams.mbCompress) {
+		if (mCurrentIndex == -1)
+			GetChunk(0);
 		//pos = 255, window = 100, size = 50
 		int chunkoff = mStreamPosition % mParams.mWindowSize;//55
 		int rem = mParams.mWindowSize - chunkoff;//45
 		if (rem >= size) {
 			memcpy(dest, mpCachedPage + chunkoff, size);
+			mStreamPosition += size;
 			return true;
 		}
 		if (rem) {
@@ -119,8 +122,22 @@ bool DataStreamContainer::Serialize(char* dest, unsigned __int64 size) {
 			size -= rem;
 		}
 		mStreamPosition += rem;
-		//size = 5, pos = 300, windows = 100
-		//int blocks = size / mStrea
+		if (mParams.mWindowSize >= size) {
+			GetChunk(mCurrentIndex + 1);
+			memcpy(dest, mpCachedPage, size);
+		}
+		else {
+			int blocks = size / mParams.mWindowSize;
+			for (int i = 0; i < blocks; i++) {
+				GetChunk(mCurrentIndex + 1);
+				memcpy(dest + i * mParams.mWindowSize, mpCachedPage,
+					mParams.mWindowSize);
+			}
+			rem = size % mParams.mWindowSize;
+			GetChunk(mCurrentIndex + 1);
+			memcpy(dest + blocks * mParams.mWindowSize, mpCachedPage, rem);
+		}
+		mStreamPosition += size;
 	}
 	else {
 		bool r = mParams.mpSrcStream->Serialize(dest, size);
@@ -134,6 +151,7 @@ bool DataStreamContainer::Serialize(char* dest, unsigned __int64 size) {
 void DataStreamContainer::Read(unsigned __int64 offset, unsigned __int64* pContainerSize) {
 	mParams.mpSrcStream->SetPosition(offset, DataStreamSeekType::eSeekType_Begin);
 	unsigned __int32 type = 0;
+	mStreamStart = offset;
 	mParams.mpSrcStream->Serialize((char*)&type, 4);
 	if (type == 0x5454434E) {//TTNC telltale not compressed
 		mParams.mbCompress = false;
@@ -188,13 +206,18 @@ DataStreamContainer::~DataStreamContainer() {
 		free(mpCachedPage);
 	if (mpReadTransitionBuf)
 		free(mpReadTransitionBuf);
+	if (mParams.mpSrcStream)
+		delete mParams.mpSrcStream;
 }
 
 void DataStreamContainer::GetChunk(unsigned __int64 index) {
+	if (mCurrentIndex == index)return;
 	unsigned __int64 offset = mPageOffsets[index];
 	unsigned __int64 size = GetCompressedPageSize(index);
-	mParams.mpSrcStream->SetPosition(mStreamOffset + offset, DataStreamSeekType::eSeekType_Begin);
+	mParams.mpSrcStream->SetPosition(mStreamStart + offset, DataStreamSeekType
+		::eSeekType_Begin);
 	mParams.mpSrcStream->Serialize(mpReadTransitionBuf, size);
+	mCurrentIndex = index;
 	if (mParams.mbEncrypt) {
 		LibTelltaleTool_BlowfishDecrypt((unsigned char*)mpReadTransitionBuf, size, true, (unsigned char*)sBlowfishKeys[sSetKeyIndex].game_key);
 	}
@@ -203,7 +226,9 @@ void DataStreamContainer::GetChunk(unsigned __int64 index) {
 		bool r = Compression::ZlibDecompress(mpCachedPage, &destl, mpReadTransitionBuf, size);
 #if defined(_MSC_VER) && defined(_DEBUG)
 		if (destl != mParams.mWindowSize || !r)
-			printf("Decompression failed: %s", destl != mParams.mWindowSize ? "Dest len not equal" : "ZDecompress returned false.");
+			printf("Decompression failed: %s %d\n", destl 
+				!= mParams.mWindowSize ? "Dest len not equal, and returned " : 
+					"ZDecompress returned ", r);
 #endif
 	}else if (mParams.mCompressionLibrary == Compression::Library::OODLE) {
 		throw "OODLE NOT IMPLEMENTED YET!";

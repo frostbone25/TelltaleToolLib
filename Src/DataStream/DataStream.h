@@ -133,6 +133,8 @@ public:
 	DataStream() : mMode(DataStreamMode::eMode_Unset), mSubStreams(0) {}
 	DataStream(DataStreamMode mode) : mMode(mode), mSubStreams(0) {}
 
+	virtual ~DataStream() = default;
+
 };
 
 /*
@@ -268,8 +270,9 @@ struct DataStreamContainerParams {
 	DataStreamContainerParams() : mWindowSize(0x10000) {}
 
 };
-
-//A compressed/encrypted data stream container used for READING data. To write use Create. This is where TTNC,TTCZ,TTCE,TTCe,TTCz is.
+//A compressed/encrypted data stream container used for READING data.
+//To write use Create. This is where TTNC,TTCZ,TTCE,TTCe,TTCz is.
+//In read mode takes ownership of the DataStreamContainerParams::mSrcStream (deletes)
 class DataStreamContainer : public DataStream {
 
 	//page and chunk are synonymous
@@ -280,10 +283,11 @@ class DataStreamContainer : public DataStream {
 
 public:
 	unsigned __int64 mStreamOffset, mStreamPosition, mStreamSize;
+	unsigned __int64 mStreamStart;
 	DataStreamContainerParams mParams;
 	char* mpCachedPage;//0x32
 	char* mpReadTransitionBuf;
-	signed __int32 mStartPageIndex;// , mCacheablePages;
+	signed __int32 mCurrentIndex;// , mCacheablePages;
 	unsigned __int64* mPageOffsets;
 	unsigned __int64 mNumPages;
 
@@ -305,7 +309,8 @@ public:
 	bool Transfer(DataStream* dst, unsigned __int64 off, unsigned __int64 size) { return false; }
 
 	DataStreamContainer(DataStreamContainerParams params) : mParams(params), mStreamOffset(0), /*mCacheablePages(-1),*/ mpReadTransitionBuf(NULL),
-			mStreamSize(0), mStartPageIndex(-1), mStreamPosition(0), mNumPages(0), mPageOffsets(NULL), mpCachedPage(NULL)
+		mStreamSize(0), mStreamStart(0),
+		mCurrentIndex(-1), mStreamPosition(0), mNumPages(0), mPageOffsets(NULL), mpCachedPage(NULL)
 		, DataStream(DataStreamMode::eMode_Read) {
 	}//Create
 

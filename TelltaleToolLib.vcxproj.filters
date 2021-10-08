@@ -99,6 +99,9 @@
     <ClInclude Include="Src\Types\PropertySet.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Src\TTArchive2.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Src\TelltaleToolLibrary.cpp">
@@ -150,6 +153,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Src\Zlib\zutil.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\TTArchive2.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
