@@ -13,6 +13,9 @@ If you want to get farmiliar with the API (for C++) then there should always be 
 It provides an API for opening and reading the files aswell as writing them. You can open any file from any telltale game with this library (read its meta header). However to read the payload of the files (the data after the header) you need to make sure the game is supported. You can then write files back to disc, but only if they are using MSV5 or MSV6 meta versions. The payload file data is what is version dependent. In Src/Tests I will put examples and tests for how the API is used. You can also create files without opening a one previously (only for new games) and set data into those files and write them.
 
 ## IMPORTANT
+
+When loading TTARCH2 bundles, MAKE SURE to have 'oo2core_5_win64.dll' is in the same directory as the executable. Preferably this dll should be kept along side this library's DLL.
+
 This library is designed for TWD: Definitive but games newer than Minecraft: Story Mode - Season Two (inclusive) are likely to be compatible (this is not guaranteed). This means most of the functions to read and write the files should be compatible. 
 Older games may work, but its not guarunteed and I suggest you stick to the ones that should work:
 Minecraft Story Mode: Season Two
