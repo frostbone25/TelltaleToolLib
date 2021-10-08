@@ -14,7 +14,7 @@ It provides an API for opening and reading the files aswell as writing them. You
 
 ## IMPORTANT
 
-When loading TTARCH2 bundles, MAKE SURE to have 'oo2core_8_win64.dll' is in the same directory as the executable. Preferably this dll should be kept along side this library's DLL.
+When loading TTARCH2 bundles, MAKE SURE to have 'oo2core_5_win64.dll' is in the same directory as the executable. Preferably this dll should be kept along side this library's DLL.
 
 This library is designed for TWD: Definitive but games newer than Minecraft: Story Mode - Season Two (inclusive) are likely to be compatible (this is not guaranteed). This means most of the functions to read and write the files should be compatible. 
 Older games may work, but its not guarunteed and I suggest you stick to the ones that should work:
