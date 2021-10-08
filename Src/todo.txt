@@ -1,6 +1,7 @@
 TODO LIST:
 
 - Add TTARCH2 support
+- Rect Type
 - Add HashDB support
 - Add version 0 to .prop using HashDB support
 
