@@ -7,6 +7,119 @@
 #include <utility>
 #include "../Blowfish.h"
 
+bool DataStream::Copy(DataStream* pDst, unsigned __int64 pDstOffset, unsigned __int64 pSrcOffset, unsigned __int64 size) {
+	static char _CopyBuf[0x10000];
+	if (!pDst || pSrcOffset + size > GetSize() || mMode != DataStreamMode::eMode_Read
+		|| pDst->mMode != DataStreamMode::eMode_Write)return false;
+	SetPosition(pSrcOffset, DataStreamSeekType::eSeekType_Begin);
+	pDst->SetPosition(pDstOffset, DataStreamSeekType::eSeekType_Begin);
+	if (0x10000 >= size) {
+		Serialize(_CopyBuf, size);
+		pDst->Serialize(_CopyBuf, size);
+	}
+	else {
+		int rounds = size / 0x10000;
+		int extra = size % 0x10000;
+		for (int i = 0; i < rounds; i++) {
+			Serialize(_CopyBuf, 0x10000);
+			pDst->Serialize(_CopyBuf, 0x10000);
+		}
+		if (extra) {
+			Serialize(_CopyBuf, extra);
+			pDst->Serialize(_CopyBuf, extra);
+		}
+	}
+	return true;
+}
+
+void DataStreamContainer::Create(DataStreamContainerParams params, unsigned __int64 insize) {
+#define writeint(var, size) to->Serialize((char*)&var,size)
+	if (!params.mpSrcStream || !params.mpDstStream)return;
+	if (params.mbEncrypt)params.mbCompress = true;
+	unsigned __int64 v;
+	DataStream* to = params.mpDstStream;
+	DataStream* from = params.mpSrcStream;
+	from->SetPosition(params.mDstOffset, DataStreamSeekType::eSeekType_Begin);
+	if (params.mbCompress) {
+		HMODULE dll{};
+		if (params.mCompressionLibrary != Compression::Library::ZLIB) {
+			v = params.mbEncrypt ? 1414808421 : 1414808442;
+			dll = LoadLibraryA("oo2core_5_win64.dll");
+			if (!dll) {
+#ifdef _DEBUG
+				printf("COULD NOT INITIALIZE OODLE LIBRARY (DLL oo2core_5_win64.dll NOT FOUND).\n");
+#endif
+				return;
+			}
+		}
+		else {
+			v = params.mbEncrypt ? 1414808389 : 1414808410;
+		}
+		unsigned __int64 start = to->GetPosition();
+		writeint(v, 4);
+		if (params.mCompressionLibrary != Compression::Library::ZLIB)
+			writeint(params.mCompressionLibrary, 4);
+		writeint(params.mWindowSize, 4);
+		int pages = insize / params.mWindowSize;
+		if (insize % params.mWindowSize)pages++;
+		writeint(pages, 4);
+		unsigned __int64 pagesoff = to->GetPosition();
+		unsigned __int64 csize = 0;
+		unsigned __int64 *pagebuf = (unsigned __int64*)calloc(1, (pages + 1) * 8);
+		to->Serialize((char*)pagebuf, (pages + 1) * 8);
+		pagebuf[0] = to->GetPosition() - start;
+
+		char* decompressed = (char*)malloc(params.mWindowSize);
+		char* compressed = (char*)malloc(params.mWindowSize + 0x50);
+
+		for (int i = 0; i < pages; i++, csize = 0) {
+			if (i == pages - 1) {
+				from->Serialize(decompressed, insize % params.mWindowSize);
+				memset(decompressed + (insize % params.mWindowSize), 0, 0x10000 - (insize % params.mWindowSize));
+			}else from->Serialize(decompressed, params.mWindowSize);
+
+			if (params.mCompressionLibrary == Compression::Library::ZLIB) {
+				if (!Compression::ZlibCompress(compressed, (unsigned int*)&csize, decompressed, 0x10000)) {
+#ifdef _DEBUG
+					printf("COULD NOT COMPRESS WITH ZLIB: RETURNED FALSE! (FOR CREATING COMPRESSED .TTARCH2).\n");
+#endif
+					return;
+				}
+			}
+			else {
+				if (!Compression::OodleLZCompress(compressed, (unsigned int*)&csize, decompressed, 0x10000, dll)) {
+#ifdef _DEBUG
+					printf("COULD NOT COMPRESS WITH OODLE: RETURNED FALSE! (FOR CREATING COMPRESSED .TTARCH2).\n");
+#endif
+					return;
+				}
+			}
+
+			if (params.mbEncrypt) {
+				LibTelltaleTool_BlowfishEncrypt((unsigned char*)compressed, csize, true, 
+					(unsigned char*)sBlowfishKeys[sSetKeyIndex].game_key);
+			}
+			pagebuf[i + 1] = pagebuf[i] + csize;
+			to->Serialize(compressed, csize);
+		}
+
+
+		free(decompressed);
+		free(compressed);
+		unsigned __int64 endpos = to->GetPosition();
+		to->SetPosition(pagesoff, DataStreamSeekType::eSeekType_Begin);
+		to->Serialize((char*)pagebuf, (pages + 1) * 8);
+		to->SetPosition(endpos, DataStreamSeekType::eSeekType_Begin);
+		free(pagebuf);
+	}
+	else {
+		v = 1414808398;
+		writeint(v, 4);
+		writeint(insize, 8);
+		from->Copy(to, params.mDstOffset + 12, from->GetPosition(), insize);
+	}
+}
+
 DataStream::DataStream(DataStream&& o)  {
 	mMode = o.mMode;
 	o.mMode = DataStreamMode::eMode_Unset;
@@ -211,6 +324,7 @@ DataStreamContainer::~DataStreamContainer() {
 }
 
 void DataStreamContainer::GetChunk(unsigned __int64 index) {
+	static HMODULE dll{};
 	if (mCurrentIndex == index)return;
 	unsigned __int64 offset = mPageOffsets[index];
 	unsigned __int64 size = GetCompressedPageSize(index);
@@ -231,7 +345,20 @@ void DataStreamContainer::GetChunk(unsigned __int64 index) {
 					"ZDecompress returned ", r);
 #endif
 	}else if (mParams.mCompressionLibrary == Compression::Library::OODLE) {
-		throw "OODLE NOT IMPLEMENTED YET!";
+		if (!dll) {
+			dll = LoadLibraryA("oo2core_5_win64.dll");
+			if (!dll) {
+#ifdef _DEBUG
+				printf("COULD NOT INITIALIZE OODLE LIBRARY (DLL oo2core_5_win64.dll NOT FOUND).\n");
+#endif
+				return;
+			}
+		}
+		bool r = Compression::OodleLZDecompress(mpCachedPage, mParams.mWindowSize, mpReadTransitionBuf, size, dll);
+#if defined(_MSC_VER) && defined(_DEBUG)
+		if (!r)
+			printf("Decompression failed: ZDecompress returned %d", r);
+#endif
 	}
 }
 
@@ -276,7 +403,6 @@ bool DataStreamContainer::SetPosition(signed __int64 pos, DataStreamSeekType typ
 	}
 	if (final > mStreamSize)return false;
 	if (mParams.mbCompress) {
-		unsigned __int64 tot = 0;
 		int blocks = pos / mParams.mWindowSize;
 		if (blocks != (mStreamPosition / mParams.mWindowSize)) {
 			GetChunk(blocks);
@@ -517,19 +643,23 @@ DataStreamSubStream& DataStreamSubStream::operator=(DataStreamSubStream&& o) {
 	DataStream::operator=(std::move(o));
 	this->mOffset = o.mOffset;
 	this->mSize = o.mSize;
+	this->mStreamOffset = o.mStreamOffset;
 	this->mpBase = o.mpBase;
 	o.mpBase = NULL;
 	o.mSize = 0;
 	o.mOffset = 0;
+	o.mStreamOffset = 0;
 	return *this;
 }
 
-DataStreamSubStream::DataStreamSubStream(DataStreamSubStream&& o) : DataStream(std::move(o)){
+DataStreamSubStream::DataStreamSubStream(DataStreamSubStream&& o) : DataStream(o.mMode) {
 	this->mOffset = o.mOffset;
 	this->mSize = o.mSize;
+	this->mStreamOffset = o.mStreamOffset;
 	this->mpBase = o.mpBase;
 	o.mpBase = NULL;
 	o.mSize = 0;
+	o.mStreamOffset = 0;
 	o.mOffset = 0;
 }
 

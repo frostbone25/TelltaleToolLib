@@ -41,6 +41,7 @@ void TTArchive2::Activate(DataStream* inArchiveStream) {
 	getint(&resources, 4);
 	if (resources > 0xFFFFF)return;
 	mResources.reserve(resources);
+	u32 u;
 	//int* buffer = version < 1 ? new int[resources] : NULL;
 	for (int i = 0; i < resources; i++) {
 		ResourceEntry entry;
@@ -48,10 +49,10 @@ void TTArchive2::Activate(DataStream* inArchiveStream) {
 		getint(&entry.mOffset, 8);
 		if (version < 1) {//if v2
 			//getint(buffer + i, 4);
-			inArchiveStream->SetPosition(4, DataStreamSeekType::eSeekType_Current);
+			getint(&u, 4);//skipped member
 		}
 		getint(&entry.mSize, 4);
-		inArchiveStream->SetPosition(4, DataStreamSeekType::eSeekType_Current);//skipped
+		getint(&u, 4);//skipped member
 		getint(&entry.mNamePageIndex, 2);
 		getint(&entry.mNamePageOffset, 2);
 		mResources.push_back(entry);
@@ -65,8 +66,24 @@ void TTArchive2::Activate(DataStream* inArchiveStream) {
 	mVersion = version;
 }
 
-DataStreamSubStream&& TTArchive2::GetResourceStream(TTArchive2::ResourceEntry* entry) {
-	return DataStreamSubStream(mpResourceStream, entry->mSize, entry->mOffset);
+DataStream* TTArchive2::GetResourceStream(TTArchive2::ResourceEntry* entry) {
+	return new DataStreamSubStream(mpResourceStream, (unsigned __int64)entry->mSize, entry->mOffset);
+}
+
+bool TTArchive2::Create(DataStream* pDst, TTArchive2::ResourceCreateEntry* pFiles, int pNumFiles,
+	bool pEncrypt, bool pCompress, u32 pVersion,Compression::Library
+	pCompressionLibrary = Compression::Library::ZLIB) {
+	if (!pDst || pVersion > 2)return false;
+	if (pVersion == 0) {
+		//TODO create
+	}
+	else if (pVersion == 1) {
+
+	}
+	else {
+
+	}
+	return true;
 }
 
 String* TTArchive2::GetResourceName(const Symbol& name, String* result) {
@@ -78,9 +95,10 @@ String* TTArchive2::GetResourceName(const Symbol& name, String* result) {
 	if (!mpNamePageCache)
 		return NULL;
 	if (mNamePageCacheIndex != e->mNamePageIndex) {
-		mpNameStream->SetPosition((e->mNamePageIndex << 16) | e->mNamePageOffset,
+		mpNameStream->SetPosition(e->mNamePageIndex << 16,
 			DataStreamSeekType::eSeekType_Begin);
 		mpNameStream->Serialize(mpNamePageCache, 0x10000);
+		mNamePageCacheIndex = e->mNamePageIndex;
 	}
 	result->assign(mpNamePageCache + e->mNamePageOffset);
 	return result;

@@ -58,26 +58,45 @@ void run() {
 
 void run_ttarch2() {
 
-	const char* home_pc = "d:/games/minecraft - story mode/archives/"
-		"MCSM_pc_Minecraft101_voice.ttarch2";
-	const char* laptop = "c:/users/lucas/desktop/TTArch/"
-		"MC2_pc_Menu_anichore.ttarch2";
+	DataStream* src = OpenDataStreamFromDisc("D:/Games/Batman Season 1/Archives/BM_pc_Batman102_data.ttarch2", DataStreamMode::eMode_Read);
 
-	DataStream* src = OpenDataStreamFromDisc(laptop, DataStreamMode::eMode_Read);
+	TelltaleToolLib_SetBlowfishKey("batman");
 
 	TTArchive2 archive;
 	archive.Activate(src);
-	DataStreamSubStream&& stream = archive.GetResourceStream(
-		archive.mResources.data());
-	char header[5];
-	header[4] = 0;
-	stream.Serialize(header, 4);
+	if (archive.mResources.size()) {
 
-	printf("Header %s\n", header);
+		String str;
+		archive.GetResourceName(archive.mResources.data()->mNameCRC, &str);
+		printf("Name %s size %d off %llx\n", str.c_str(), archive.mResources.data()->mSize, archive.mResources.data()->mOffset);
+		u32 header;
+		DataStream* stream = archive.GetResourceStream(archive.mResources.data());
+		stream->Serialize((char*)&header, 4);
+		printf("Header DWORD %x\n", header);
 
-	printf("Resource count: %llu, version %d\n", archive.mResources.size(),
-		archive.mVersion);
 
+		printf("Resource count: %llu, version %d\n", archive.mResources.size(),
+			archive.mVersion);
+		delete stream;
+	}
+
+}
+
+void run_ttarch2w() {
+	DataStream* dst = OpenDataStreamFromDisc("c:/users/lucas/desktop/test.ttarch2", DataStreamMode::eMode_Write);
+	void* buf = calloc(1, 67);
+	memcpy(buf, "LUCAS IS AWESOMEEEEEEEE!! THIS IS A TELLTALE DATA STREAM CONTAINER", 67);
+	DataStream* src = new DataStreamMemory(buf, 67, DataStreamMode::eMode_Read);
+	DataStreamContainerParams params;
+	params.mDstOffset = 0;
+	params.mbCompress = 1;
+	params.mbEncrypt = 0;
+	params.mpDstStream = dst;
+	params.mpSrcStream = src;
+	params.mCompressionLibrary = Compression::Library::OODLE;
+	DataStreamContainer::Create(params, 67);
+	delete dst;
+	delete src;
 }
 
 int main(int argn, char** argv) {

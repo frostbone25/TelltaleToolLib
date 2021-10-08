@@ -16,10 +16,15 @@ class TTArchive2 {
 public:
 
 	struct ResourceEntry {
-		u32 mNameCRC;
+		u64 mNameCRC;
 		u64 mOffset;
 		u32 mSize;
 		u16 mNamePageIndex, mNamePageOffset;
+	};
+
+	struct ResourceCreateEntry {
+		char* mName;
+		DataStream* mpStream;
 	};
 
 	DataStream* mpNameStream;
@@ -36,8 +41,13 @@ public:
 	bool HasResource(const Symbol&);
 	String* GetResourceName(const Symbol&, String* result);
 	bool GetResourceInfo(const Symbol&, ResourceInfo*);
-	DataStreamSubStream&& GetResourceStream(ResourceEntry*);
+	//Delete after use!
+	DataStream* GetResourceStream(ResourceEntry*);
 	void Deactivate();
+
+	static bool Create(DataStream* pDst, ResourceCreateEntry* pFiles, int pNumFiles, bool pEncrypt,
+		bool pCompress, u32 pVersion, Compression::Library 
+		pCompressionLibrary = Compression::Library::ZLIB);
 
 	TTArchive2() : mbActive(false), mpInStream(NULL), mNamePageCacheIndex(-1)
 	, mpNamePageCache(NULL), mpNameStream(NULL), mpResourceStream(NULL) {}

@@ -7,12 +7,15 @@
 #define _COMPRESSION
 
 #include "Zlib/zlib.h"
+//Windows platform specific DLL loading for OODLE
+#include <Windows.h>
 
 
 
 namespace Compression {
 
-	typedef long long (*OodleLZ_Compress)(int algo, unsigned char* in, int insz, unsigned char* out, long long max, void* a, void* b, void* c);
+	typedef long long (*OodleLZ_Compress)(int algo, const void *pSrc, unsigned int srcLen, void* dst, long long max, void* a, void* b, void* c);
+	//typedef long long (*OodleLZ_Compress)(int algo, unsigned char* in, int insz, unsigned char* out, long long max, void* a, void* b, void* c);
 	typedef int (*OodleLZ_Decompress)(void* in, int insz, void* out, long long outsz, long long a, long long b, long long c, void* d, void* e, void* f, void* g, void* h, void* i, long long j);
 
 	enum class Library {
@@ -23,9 +26,9 @@ namespace Compression {
 
 	bool ZlibCompress(void* pDst, unsigned int* pDstLength, const void* pSrc, unsigned int srcLength);
 
-	//void OodleLZCompress(void* pDst, unsigned int* dstLength, const void* pSrc, unsigned int srcLength);
+	bool OodleLZCompress(void* pDst, unsigned int* dstLength, const void* pSrc, unsigned int srcLength, HMODULE);
 
-	//bool OodleLZDecompress(void* pDst, unsigned int dstLength, const void* pSrc, unsigned int srcLength);
+	bool OodleLZDecompress(void* pDst, unsigned int dstLength, const void* pSrc, unsigned int srcLength, HMODULE);
 
 }
 

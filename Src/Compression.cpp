@@ -4,6 +4,21 @@
 // the amazing Telltale Games.
 
 #include "Compression.h"
+#include <iostream>
+
+bool Compression::OodleLZCompress(void* pDst, unsigned int* dstLength, const void* pSrc, unsigned int srcLength,HMODULE l) {
+	OodleLZ_Compress compressor = (OodleLZ_Compress)GetProcAddress(l, "OodleLZ_Compress");
+	if (!compressor)return false;
+	*dstLength = compressor(6, pSrc, srcLength, pDst,7,0,0,0);
+	return true;
+}
+
+bool Compression::OodleLZDecompress(void* pDst, unsigned int dstLength, const void* pSrc, unsigned int srcLength, HMODULE l) {
+	OodleLZ_Decompress decompressor = (OodleLZ_Decompress)GetProcAddress(l, "OodleLZ_Decompress");
+	if (!decompressor)return false;
+	decompressor((void*)pSrc, srcLength, pDst, dstLength, 0, 0, 0, NULL, NULL, NULL, NULL, NULL, NULL, 3);
+	return true;
+}
 
 bool Compression::ZlibDecompress(void* dest, unsigned int* destLen, const void* source, unsigned int sourceLen) {
 	z_stream stream;
@@ -60,9 +75,10 @@ bool Compression::ZlibDecompress(void* dest, unsigned int* destLen, const void* 
 }
 
 bool Compression::ZlibCompress(void* pDst, unsigned int* pDstLength, const void* pSrc, unsigned int srcLength) {
-	z_stream_s stream;
+	z_stream_s stream{ 0 };
 	stream.next_in = (Bytef*)pSrc;
 	stream.avail_in = srcLength;
+	if(!*pDstLength)*pDstLength = compressBound(srcLength);
 	stream.avail_out = *pDstLength;
 	stream.next_out = (Bytef*)pDst;
 	if (!deflateInit2_(&stream, Z_BEST_SPEED, Z_DEFLATED, -15, MAX_MEM_LEVEL, Z_DEFAULT_STRATEGY, "1.2.8", sizeof(stream))) {

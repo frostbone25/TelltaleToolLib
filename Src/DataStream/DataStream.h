@@ -54,6 +54,8 @@ public:
 	DataStreamMode mMode;
 	int mSubStreams;
 
+	virtual bool Copy(DataStream* pDst, unsigned __int64 pDstOffset, unsigned __int64 pSrcOffset, unsigned __int64 size);
+
 	/*
 	* Serialize bytes. First is the buffer, second is the size. The mode member variable decides if its write or reading into the buffer.
 	* Returns if this function was successful. 
@@ -261,13 +263,14 @@ public:
 struct DataStreamContainerParams {
 	DataStream* mpSrcStream;
 	DataStream* mpDstStream;
+	//offset which to start serialing to in the destination stream
 	unsigned __int64 mDstOffset;
 	unsigned __int32 mWindowSize;
 	bool mbCompress;
 	bool mbEncrypt;
 	Compression::Library mCompressionLibrary;
 
-	DataStreamContainerParams() : mWindowSize(0x10000) {}
+	DataStreamContainerParams() : mWindowSize(0x10000), mCompressionLibrary(Compression::Library::ZLIB) {}
 
 };
 //A compressed/encrypted data stream container used for READING data.
@@ -294,8 +297,9 @@ public:
 	//init from src stream
 	void Read(unsigned __int64 offset, unsigned __int64* pContainerSize);
 
-	//Creates a TT data stream container with the parameters.
-	static void Create(DataStreamContainerParams, unsigned __int64 size) {}
+	//Creates a TT data stream container with the parameters. Serializes from src to dest. srcInStreamSize is the amount of bytes to
+	//serialize from the src stream from the source streams current offset
+	static void Create(DataStreamContainerParams, unsigned __int64 srcInStreamSize);
 	bool SetPosition(signed __int64, DataStreamSeekType);
 	bool Serialize(char*, unsigned __int64);
 
