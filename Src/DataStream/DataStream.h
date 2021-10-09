@@ -219,6 +219,12 @@ public:
 	bool Truncate(unsigned __int64 new_size);
 	bool Transfer(DataStream* dst, unsigned __int64 off, unsigned __int64 size);
 
+	inline unsigned __int64 GetMemoryBufferSize() {
+		int memorybufsize = mSize;
+		if (mSize % mGFact)memorybufsize += mGFact - (mSize % mGFact);
+		return memorybufsize;
+	}
+
 
 	//buffer param needs to be allocated with malloc/calloc
 	DataStreamMemory(void* buffer, unsigned __int64 size,DataStreamMode m) : mMemoryBuffer(buffer), mSize(size), mOffset(0), DataStream(m) {}

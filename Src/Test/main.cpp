@@ -58,9 +58,7 @@ void run() {
 
 void run_ttarch2() {
 
-	DataStream* src = OpenDataStreamFromDisc("D:/Games/Batman Season 1/Archives/BM_pc_Batman102_data.ttarch2", DataStreamMode::eMode_Read);
-
-	TelltaleToolLib_SetBlowfishKey("batman");
+	DataStream* src = OpenDataStreamFromDisc("c:/users/lucas/desktop/test.ttarch2", DataStreamMode::eMode_Read);
 
 	TTArchive2 archive;
 	archive.Activate(src);
@@ -87,14 +85,12 @@ void run_ttarch2w() {
 	void* buf = calloc(1, 67);
 	memcpy(buf, "LUCAS IS AWESOMEEEEEEEE!! THIS IS A TELLTALE DATA STREAM CONTAINER", 67);
 	DataStream* src = new DataStreamMemory(buf, 67, DataStreamMode::eMode_Read);
-	DataStreamContainerParams params;
-	params.mDstOffset = 0;
-	params.mbCompress = 1;
-	params.mbEncrypt = 0;
-	params.mpDstStream = dst;
-	params.mpSrcStream = src;
-	params.mCompressionLibrary = Compression::Library::OODLE;
-	DataStreamContainer::Create(params, 67);
+	char* p = new char[sizeof(TTArchive2::ResourceCreateEntry) * 2];
+	new (p) TTArchive2::ResourceCreateEntry("AwesomeFile.txt", src);
+	new (p + sizeof(TTArchive2::ResourceCreateEntry)) TTArchive2::ResourceCreateEntry("AwesomeFile22.txt", src);
+	TTArchive2::Create(dst, (TTArchive2::ResourceCreateEntry*)p, 2, false, false, Compression::Library::OODLE,0);
+
+	delete[]p;
 	delete dst;
 	delete src;
 }
@@ -102,7 +98,7 @@ void run_ttarch2w() {
 int main(int argn, char** argv) {
 	TelltaleToolLib_Initialize("MC2");
 
-	run_ttarch2();
+	run_ttarch2w();
 
 	printf("Done!");
 	_CrtDumpMemoryLeaks();

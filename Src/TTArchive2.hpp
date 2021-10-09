@@ -23,8 +23,29 @@ public:
 	};
 
 	struct ResourceCreateEntry {
+		int mNameLen;
 		char* mName;
 		DataStream* mpStream;
+
+		ResourceCreateEntry(const ResourceCreateEntry& o) = delete;
+		ResourceCreateEntry& operator=(const ResourceCreateEntry& o) = delete;
+		ResourceCreateEntry(ResourceCreateEntry&&) = delete;
+		ResourceCreateEntry& operator=(ResourceCreateEntry) = delete;
+
+		//stream param is up to you to dealloc
+		ResourceCreateEntry(const char* pResourceName, DataStream* ppStream/*lol*/) {
+			mpStream = ppStream;
+			mNameLen = strlen(pResourceName);
+			mName = new char[mNameLen + 1];
+			memcpy(mName, pResourceName, mNameLen);
+			mName[mNameLen] = 0;
+		}
+
+		~ResourceCreateEntry() {
+			if (mName)
+				delete[] mName;
+		}
+
 	};
 
 	DataStream* mpNameStream;
@@ -46,8 +67,8 @@ public:
 	void Deactivate();
 
 	static bool Create(DataStream* pDst, ResourceCreateEntry* pFiles, int pNumFiles, bool pEncrypt,
-		bool pCompress, u32 pVersion, Compression::Library 
-		pCompressionLibrary = Compression::Library::ZLIB);
+		bool pCompress, Compression::Library 
+		pCompressionLibrary = Compression::Library::ZLIB, u32 pVersion = 2);
 
 	TTArchive2() : mbActive(false), mpInStream(NULL), mNamePageCacheIndex(-1)
 	, mpNamePageCache(NULL), mpNameStream(NULL), mpResourceStream(NULL) {}

@@ -71,18 +71,75 @@ DataStream* TTArchive2::GetResourceStream(TTArchive2::ResourceEntry* entry) {
 }
 
 bool TTArchive2::Create(DataStream* pDst, TTArchive2::ResourceCreateEntry* pFiles, int pNumFiles,
-	bool pEncrypt, bool pCompress, u32 pVersion,Compression::Library
-	pCompressionLibrary = Compression::Library::ZLIB) {
+	bool pEncrypt, bool pCompress, Compression::Library
+	pCompressionLibrary, u32 pVersion) {
+#define writeint(i,size) out.Serialize((char*)i,size);
 	if (!pDst || pVersion > 2)return false;
+	DataStreamFileDisc out(tmpfile(), DataStreamMode::eMode_Write);
+	u32 vh;
 	if (pVersion == 0) {
-		//TODO create
+		vh = 1414807858;//TTA2
 	}
 	else if (pVersion == 1) {
-
+		vh = 1414807859;//TTA3
 	}
 	else {
-
+		vh = 1414807860;//TTA4
 	}
+	writeint(&vh, 4);
+	u32 i = 2;
+	if (pVersion <= 1) {
+		writeint(&i, 4);
+	}
+	i = 0;
+	for (int x = 0; x < pNumFiles; x++) {
+		i += (pFiles + x)->mNameLen + 1;
+	}
+	u32 ntz = i;
+	i += 0x10000 - (i % 0x10000);
+	writeint(&i, 4);
+	writeint(&pNumFiles, 4);
+	u64 curroff = 0;
+	u32 curnameoff = 0;
+	for (int i = 0; i < pNumFiles; i++) {
+		ResourceCreateEntry* entry = pFiles + i;
+		u64 crc = CRC64_CaseInsensitive(0, entry->mName);
+		writeint(&crc, 8);
+		writeint(&curroff, 8);
+		crc = 0;
+		if(pVersion < 1)
+			writeint(&crc, 4);
+		crc = entry->mpStream->GetSize();
+		writeint(&crc, 4);
+		crc = 0;
+		writeint(&crc, 4);
+		crc = curnameoff / 0x10000;
+		writeint(&crc, 2);
+		crc = curnameoff % 0x10000;
+		writeint(&crc, 2);
+		curnameoff += entry->mNameLen + 1;
+		curroff += entry->mpStream->GetSize();
+	}
+	for (int x = 0; x < pNumFiles; x++) {
+		out.SerializeWrite((pFiles + x)->mName, (pFiles + x)->mNameLen+1);
+	}
+	int rem = 0x10000 - (ntz%0x10000);
+	char* temp = (char*)calloc(1, rem);
+	out.Serialize(temp, rem);
+	free(temp);
+	for (int x = 0; x < pNumFiles; x++) {
+		(pFiles + x)->mpStream->Copy(&out, out.GetPosition(), 0, (pFiles + x)->mpStream->GetSize());
+	}
+	out.SetPosition(0, DataStreamSeekType::eSeekType_Begin);
+	out.SetMode(DataStreamMode::eMode_Read);
+	DataStreamContainerParams p;
+	p.mpSrcStream = &out;
+	p.mpDstStream = pDst;
+	p.mDstOffset = pDst->GetPosition();
+	p.mbEncrypt = pEncrypt;
+	p.mbCompress = pCompress;
+	p.mCompressionLibrary = pCompressionLibrary;
+	DataStreamContainer::Create(p, out.GetSize());
 	return true;
 }
 
