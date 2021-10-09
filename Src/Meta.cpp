@@ -491,7 +491,7 @@ MetaStream::MetaStream(const char* Name) {
 }
 
 void MetaStream::serialize_uint64(u64* param) {
-	if (std::endian::native == std::endian::big) {
+	/*if (std::endian::native == std::endian::big) {
 		if (mMode == MetaStreamMode::eMetaStream_Read)
 			ReadData(param, 8);
 		u64 p = 0;
@@ -508,7 +508,7 @@ void MetaStream::serialize_uint64(u64* param) {
 		else
 			*param = p;
 		return;
-	}
+	}*/
 	if (mMode == MetaStreamMode::eMetaStream_Read) {
 		ReadData(param, 8);
 	}
@@ -519,7 +519,7 @@ void MetaStream::serialize_uint64(u64* param) {
 
 
 void MetaStream::serialize_uint32(u32* param) {
-	if (std::endian::native == std::endian::big) {
+	/*if (std::endian::native == std::endian::big) {
 		if (mMode == MetaStreamMode::eMetaStream_Read)
 			ReadData(param, 4);
 		u32 p = 0;
@@ -532,7 +532,7 @@ void MetaStream::serialize_uint32(u32* param) {
 		else
 			*param = p;
 		return;
-	}
+	}*/
 	if (mMode == MetaStreamMode::eMetaStream_Read) {
 		ReadData(param, 4);
 	}
@@ -543,7 +543,7 @@ void MetaStream::serialize_uint32(u32* param) {
 
 
 void MetaStream::serialize_uint16(u16* param) {
-	if (std::endian::native == std::endian::big) {
+	/*if (std::endian::native == std::endian::big) {
 		if (mMode == MetaStreamMode::eMetaStream_Read)
 			ReadData(param, 2);
 		u16 p = 0;
@@ -554,7 +554,7 @@ void MetaStream::serialize_uint16(u16* param) {
 		else
 			*param = p;
 		return;
-	}
+	}*/
 	if (mMode == MetaStreamMode::eMetaStream_Read) {
 		ReadData(param, 2);
 	}

@@ -40,7 +40,7 @@
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>v142</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
@@ -154,6 +154,7 @@
     <ClInclude Include="Src\Compression.h" />
     <ClInclude Include="Src\DataStream\DataStream.h" />
     <ClInclude Include="Src\MetaInitialize.h" />
+    <ClInclude Include="Src\TelltaleEditor\TEditor.h" />
     <ClInclude Include="Src\TTArchive2.hpp" />
     <ClInclude Include="Src\Types\Container.h" />
     <ClInclude Include="Src\Types\DCArray.h" />

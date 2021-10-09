@@ -5,6 +5,8 @@ This is an updated version of my old LibTelltale library. This library will not 
 
 This is a library, it is designed to be made into a dynamic library. The library is not 100% portable but I have made some endian checks and platform specific definitions which may be useful. If you were to compile on a different plaform (ie not windows) you made need to do some tinkering. This library is to make telltale modding easier, and to handle all file serialization.
 
+#### Please note that if you are to rebuild this library or use it without building it beforehand (ie copying src and headers) you should not include Src/Test or Src/TelltaleEditor in your project. These folders are for project specific implementations.
+
 ### Where to start?
 The Library's external exported functions and all type definitions can be found in TelltaleToolLibrary.h. I suggest looking here first and reading the docs.
 If you want to get farmiliar with the API (for C++) then there should always be some example code in Test/main.cpp.

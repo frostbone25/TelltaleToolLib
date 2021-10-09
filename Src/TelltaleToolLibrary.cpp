@@ -7,6 +7,45 @@
 
 bool sInitialized = false;
 
+u8* TelltaleToolLib_EncryptLencScript(u8* data, u32 size, u32* outsize) {
+    u8* ret = (u8*)malloc(size);
+    memcpy(ret, data, size);
+    LibTelltaleTool_BlowfishEncrypt(ret, size, sBlowfishKeys[sSetKeyIndex].isNewEncryption, (unsigned char*)sBlowfishKeys[sSetKeyIndex].game_key);
+    return ret;
+}
+
+u8* TelltaleToolLib_DecryptLencScript(u8* data, u32 size, u32* outsize) {
+    u8* ret = (u8*)malloc(size);
+    memcpy(ret, data, size);
+    LibTelltaleTool_BlowfishDecrypt(ret, size, sBlowfishKeys[sSetKeyIndex].isNewEncryption, (unsigned char*)sBlowfishKeys[sSetKeyIndex].game_key);
+    return ret;
+}
+
+u8* TelltaleToolLib_EncryptScript(u8* data, u32 size) {
+    if (!data || 4 < size)return NULL;
+    u8* ret = (u8*)malloc(size);
+    memcpy(ret, data, size);
+    if (*(int*)data == *(const int*)"\x1BLua") {
+        *(int*)ret = 1850035227;
+    }
+    else if (*(int*)data != *(const int*)"\x1BLEo" && *(int*)data != *(const int*)"\x1BLEn") {
+        *(int*)ret = 1866812443;
+    }
+    LibTelltaleTool_BlowfishEncrypt(ret + 4, size - 4, sBlowfishKeys[sSetKeyIndex].isNewEncryption, (unsigned char*)sBlowfishKeys[sSetKeyIndex].game_key);
+    return ret;
+}
+
+u8* TelltaleToolLib_DecryptScript(u8* data, u32 size) {
+    if (4 > size || !data)return NULL;
+    u8* ret = (u8*)malloc(size);
+    memcpy(ret, data, size);
+    if (*(char*)data != '\x1B')return ret;//plain old text version workaround
+    LibTelltaleTool_BlowfishDecrypt(ret + 4, size - 4, sBlowfishKeys[sSetKeyIndex].isNewEncryption, (unsigned char*)sBlowfishKeys[sSetKeyIndex].game_key);
+    if (*(int*)data == *(const int*)"\x1BLEn")
+        *(int*)ret = 1635077147;
+    return ret;
+}
+
 const char* TelltaleToolLib_GetMetaClassDescriptionName(MetaClassDescription* pObjDesc) {
     return pObjDesc->mpTypeInfoName;
 }

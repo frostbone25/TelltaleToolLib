@@ -7,6 +7,12 @@
 
 #pragma once
 
+//PLEASE NOTE: THIS LIBRARY IS DESIGNED ONLY FOR LITTLE ENDIAN SYSTEMS. IF YOUR TELLTALE FILES ARE IN BIG ENDIAN AND THE SYSTEM IS BIG ENDIAN
+//THEN YOU SHOULD BE OK. BUT TELLTALE FILES ARE NORMALLY IN LITTLE ENDIAN.
+
+//If you want to forcefully make sure telltale editor functions arent included and exported, define the macro below
+//#define FORCE_EXCLUDE_TEditor
+
 #include <type_traits>
 #include <string>
 #include "DataStream/DataStream.h"
@@ -167,6 +173,18 @@ _TTToolLib_Exp char* TelltaleToolLib_Alloc_GetFixed1024ByteStringBuffer();
 * pointer to it in this buffer to save memory allocations.
 */
 _TTToolLib_Exp char* TelltaleToolLib_Alloc_GetFixed8BytePointerBuffer();
+
+//These next two family of functions return a buffer allocated with MALLOC! So use FREE. Returns NULL if a problem occurred.
+//These only work for LUA files.
+
+_TTToolLib_Exp u8* TelltaleToolLib_EncryptScript(u8* data, u32 size);
+_TTToolLib_Exp u8* TelltaleToolLib_DecryptScript(u8* data, u32 size);
+
+//These next two family of functions return a buffer allocated with MALLOC! So use FREE. Returns NULL if a problem occurred.
+//These only work for LENC files.
+
+_TTToolLib_Exp u8* TelltaleToolLib_EncryptLencScript(u8* data, u32 size, u32 *outsize);
+_TTToolLib_Exp u8* TelltaleToolLib_DecryptLencScript(u8* data, u32 size, u32* outsize);
 
 extern bool sInitialized;
 
