@@ -210,6 +210,7 @@ namespace MetaInit {
 			meta_u64.InstallSpecializedMetaOperation(&meta_u64_eMetaOpSerializeAsync);
 			meta_u64.Insert();
 			meta_u64.mbIsIntrinsic = true;
+
 			DEFINET(float, float)
 				meta_float.mFlags = MetaFlag::MetaFlag_MetaSerializeBlockingDisabled | MetaFlag::MetaFlag_PlaceInAddPropMenu;
 			meta_float.Initialize("float");
@@ -363,6 +364,38 @@ namespace MetaInit {
 			METAOP_CUSTOM(handlebase, eMetaOpSerializeAsync, HandleBase::MetaOperation_SerializeAsync);
 			meta_handlebase.InstallSpecializedMetaOperation(&meta_handlebase_eMetaOpSerializeAsync);
 			meta_handlebase.Insert();
+
+			//TRange<uint>
+			DEFINET(rangeuint, TRange<unsigned int>);
+			meta_rangeuint.Initialize(typeid(TRange<unsigned int>));
+			meta_rangeuint.mFlags |= 6;//blocking disabled, add to prop menu
+			DEFINEM(rangeuint, max);
+			meta_rangeuint_max.mpName = "max";
+			meta_rangeuint_max.mOffset = memberOffset(&TRange<unsigned int>::max);
+			meta_rangeuint_max.mpMemberDesc = &meta___uint32;
+			DEFINEM(rangeuint, min);
+			meta_rangeuint_min.mpName = "min";
+			meta_rangeuint_min.mOffset = memberOffset(&TRange<unsigned int>::min);
+			meta_rangeuint_min.mpMemberDesc = &meta___uint32;
+			meta_rangeuint_min.mpNextMember = &meta_rangeuint_max;
+			meta_rangeuint.mpFirstMember = &meta_rangeuint_min;
+			meta_rangeuint.Insert();
+
+			//TRange<float>
+			DEFINET(rangef, TRange<float>);
+			meta_rangef.Initialize(typeid(TRange<float>));
+			meta_rangef.mFlags |= 6;//blocking disabled, add to prop menu
+			DEFINEM(rangef, max);
+			meta_rangef_max.mpName = "max";
+			meta_rangef_max.mOffset = memberOffset(&TRange<float>::max);
+			meta_rangef_max.mpMemberDesc = &meta_float;
+			DEFINEM(rangef, min);
+			meta_rangef_min.mpName = "min";
+			meta_rangef_min.mOffset = memberOffset(&TRange<float>::min);
+			meta_rangef_min.mpMemberDesc = &meta_float;
+			meta_rangef_min.mpNextMember = &meta_rangef_max;
+			meta_rangef.mpFirstMember = &meta_rangef_min;
+			meta_rangef.Insert();
 
 			//Vector3
 			DEFINET(vec3, Vector3);

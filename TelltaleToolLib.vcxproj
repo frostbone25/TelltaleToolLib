@@ -171,6 +171,8 @@
     <ClInclude Include="Src\Types\Rect.h" />
     <ClInclude Include="Src\Types\SArray.h" />
     <ClInclude Include="Src\Types\Set.h" />
+    <ClInclude Include="Src\Types\Skeleton.h" />
+    <ClInclude Include="Src\Types\TRange.h" />
     <ClInclude Include="Src\Types\TypeIncludes.h" />
     <ClInclude Include="Src\Zlib\crc32.h" />
     <ClInclude Include="Src\Zlib\deflate.h" />
