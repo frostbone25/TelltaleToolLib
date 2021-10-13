@@ -15,6 +15,8 @@ struct ResourceInfo {
 class TTArchive2 {
 public:
 
+	typedef void (*ProgressFunc)(const char* _Msg, float _Progress);
+
 	struct ResourceEntry {
 		u64 mNameCRC;
 		u64 mOffset;
@@ -26,25 +28,6 @@ public:
 		char* mName;
 		DataStream* mpStream;
 		int mNameLen;
-
-		ResourceCreateEntry(const ResourceCreateEntry& o) = delete;
-		ResourceCreateEntry& operator=(const ResourceCreateEntry& o) = delete;
-		ResourceCreateEntry(ResourceCreateEntry&&) = delete;
-		ResourceCreateEntry& operator=(ResourceCreateEntry) = delete;
-
-		//stream param is up to you to dealloc
-		ResourceCreateEntry(const char* pResourceName, DataStream* ppStream/*lol*/) {
-			mpStream = ppStream;
-			mNameLen = strlen(pResourceName);
-			mName = new char[mNameLen + 1];
-			memcpy(mName, pResourceName, mNameLen);
-			mName[mNameLen] = 0;
-		}
-
-		~ResourceCreateEntry() {
-			if (mName)
-				delete[] mName;
-		}
 
 	};
 	DataStream* mpNameStream;
@@ -66,7 +49,7 @@ public:
 	DataStream* GetResourceStream(ResourceEntry*);
 	void Deactivate();
 
-	static bool Create(DataStream* pDst, ResourceCreateEntry* pFiles, int pNumFiles, bool pEncrypt,
+	static bool Create(ProgressFunc,DataStream* pDst, ResourceCreateEntry* pFiles, int pNumFiles, bool pEncrypt,
 		bool pCompress, Compression::Library 
 		pCompressionLibrary = Compression::Library::ZLIB, u32 pVersion = 2);
 

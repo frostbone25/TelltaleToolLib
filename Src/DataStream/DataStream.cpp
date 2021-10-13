@@ -32,7 +32,7 @@ bool DataStream::Copy(DataStream* pDst, unsigned __int64 pDstOffset, unsigned __
 	return true;
 }
 
-void DataStreamContainer::Create(DataStreamContainerParams params, unsigned __int64 insize) {
+void DataStreamContainer::Create(DataStreamContainer::ProgressF f, DataStreamContainerParams params, unsigned __int64 insize) {
 #define writeint(var, size) to->Serialize((char*)&var,size)
 	if (!params.mpSrcStream || !params.mpDstStream)return;
 	if (params.mbEncrypt)params.mbCompress = true;
@@ -71,7 +71,10 @@ void DataStreamContainer::Create(DataStreamContainerParams params, unsigned __in
 
 		char* decompressed = (char*)malloc(params.mWindowSize);
 		char* compressed = (char*)malloc(params.mWindowSize + 0x50);
-
+		static char temp[100];
+		f("Compressing Chunks", 87);
+		float incr = 12 / pages;
+		float pr = 87;
 		for (int i = 0; i < pages; i++, csize = 0) {
 			if (i == pages - 1) {
 				from->Serialize(decompressed, insize % params.mWindowSize);
@@ -101,6 +104,9 @@ void DataStreamContainer::Create(DataStreamContainerParams params, unsigned __in
 			}
 			pagebuf[i + 1] = pagebuf[i] + csize;
 			to->Serialize(compressed, csize);
+			sprintf(temp, "Compressing page %d/%d",i+1,pages);
+			pr += incr;
+			f(temp, pr);
 		}
 
 
@@ -113,6 +119,7 @@ void DataStreamContainer::Create(DataStreamContainerParams params, unsigned __in
 		free(pagebuf);
 	}
 	else {
+		f("Copying data", 95);
 		v = 1414808398;
 		writeint(v, 4);
 		writeint(insize, 8);

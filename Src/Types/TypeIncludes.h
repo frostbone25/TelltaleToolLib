@@ -17,3 +17,4 @@
 #include "Map.h"
 #include "PropertySet.h"
 #include "Rect.h"
+#include "TRange.h"

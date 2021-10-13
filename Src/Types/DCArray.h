@@ -122,8 +122,9 @@ public:
 		if (mSize == mCapacity) {
 			Resize(4);//bit different to telltale who cares
 		}
-		mSize++;
+		if (mSize && !at_index)at_index = mSize;
 		SetElement(at_index, pKeyData, pValueToAdd);
+		mSize++;
 	}
 
 	virtual String* GetElementName(String* result,int index) override {

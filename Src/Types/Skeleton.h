@@ -11,7 +11,8 @@
 #include "SArray.h"
 #include <vector>
 #include "TRange.h"
-#include <map>
+#include "ObjectSpaceIntrinsics.h"
+#include "Map.h"
 
 //define meta class for skeleton::entry then skeleton (with extension .skl)
 
@@ -40,7 +41,7 @@ struct Skeleton {
 		Vector3 mGlobalTranslationScale;
 		Vector3 mLocalTranslationScale;
 		Vector3 mAnimTranslationScale;
-		Map<Symbol, float, std::less<Symbol> > mResourceGroupMembership;
+		Map<Symbol, float, Symbol::CompareCRC> mResourceGroupMembership;
 		BoneContraints mConstraints;
 		Flags mFlags;
 	};

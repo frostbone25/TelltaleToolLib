@@ -20,10 +20,14 @@ typedef FILE* FileHandle;
 #define READ DataStreamMode::eMode_Read
 #define WRITE DataStreamMode::eMode_Write
 
-#define OpenDataStreamFromDisc(file_path, mode) new DataStreamFileDisc(\
+#define _OpenDataStreamFromDisc_(file_path, mode) DataStreamFileDisc(\
 PlatformSpecOpenFile(file_path,\
 	mode),\
-	mode);
+	mode)
+
+#define _OpenDataStreamFromDisc(file_path, mode) new _OpenDataStreamFromDisc_(file_path, mode)
+
+#define OpenDataStreamFromDisc(file_path, mode) _OpenDataStreamFromDisc(file_path, mode);
 
 //this is for windows, if on POSIX then include unistd and set the platform specific truncate function to truncate
 #include <io.h>
@@ -291,6 +295,9 @@ class DataStreamContainer : public DataStream {
 	inline unsigned __int64 GetCompressedPageSize(unsigned __int32 index);
 
 public:
+
+	typedef void (*ProgressF)(const char* _Msg, float _Progress);
+
 	unsigned __int64 mStreamOffset, mStreamPosition, mStreamSize;
 	unsigned __int64 mStreamStart;
 	DataStreamContainerParams mParams;
@@ -305,7 +312,8 @@ public:
 
 	//Creates a TT data stream container with the parameters. Serializes from src to dest. srcInStreamSize is the amount of bytes to
 	//serialize from the src stream from the source streams current offset
-	static void Create(DataStreamContainerParams, unsigned __int64 srcInStreamSize);
+	//progres function starts progress percentage at 80 (assumming you use this with .ttarch, otherwise just modify the function input)
+	static void Create(ProgressF, DataStreamContainerParams, unsigned __int64 srcInStreamSize);
 	bool SetPosition(signed __int64, DataStreamSeekType);
 	bool Serialize(char*, unsigned __int64);
 
@@ -329,11 +337,11 @@ public:
 	inline Compression::Library GetCompressionLibrary() { return mParams.mCompressionLibrary; }
 
 	inline bool IsCompressed() {
-		return mParams.mbEncrypt;
+		return mParams.mbCompress;
 	};
 
 	inline bool IsEncrypted() {
-		return mParams.mbCompress;
+		return mParams.mbEncrypt;
 	}
 
 	DataStreamContainer(DataStreamContainer&&) = delete;

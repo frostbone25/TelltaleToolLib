@@ -380,7 +380,6 @@ namespace MetaInit {
 			meta_rangeuint_min.mpNextMember = &meta_rangeuint_max;
 			meta_rangeuint.mpFirstMember = &meta_rangeuint_min;
 			meta_rangeuint.Insert();
-
 			//TRange<float>
 			DEFINET(rangef, TRange<float>);
 			meta_rangef.Initialize(typeid(TRange<float>));

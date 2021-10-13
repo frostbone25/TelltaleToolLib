@@ -351,6 +351,8 @@ public:
 	Job_WriteTTArchive2() { mbProgressStatAvailable = true; }
 
 	bool mResult;
+	
+	static void _cb(const char*, float) {}
 
 	void PerformOperation(void* pInput) override {
 		DataStream* dst = *static_cast<DataStream**>(pInput);
@@ -365,7 +367,7 @@ public:
 		if (version > 2)version = 2;
 		IFFAIL(dst);
 		IFFAIL(entries);
-		mResult = TTArchive2::Create(dst, entries, numentries, encrypt, compress, lib, version);
+		mResult = TTArchive2::Create(_cb,dst, entries, numentries, encrypt, compress, lib, version);
 		SUCCEED;
 	}
 

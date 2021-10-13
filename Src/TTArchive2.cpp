@@ -71,7 +71,7 @@ DataStream* TTArchive2::GetResourceStream(TTArchive2::ResourceEntry* entry) {
 	return new DataStreamSubStream(mpResourceStream, (unsigned __int64)entry->mSize, entry->mOffset);
 }
 
-bool TTArchive2::Create(DataStream* pDst, TTArchive2::ResourceCreateEntry* pFiles, int pNumFiles,
+bool TTArchive2::Create(ProgressFunc func, DataStream* pDst, TTArchive2::ResourceCreateEntry* pFiles, int pNumFiles,
 	bool pEncrypt, bool pCompress, Compression::Library
 	pCompressionLibrary, u32 pVersion) {
 #define writeint(i,size) out.Serialize((char*)i,size);
@@ -100,6 +100,7 @@ bool TTArchive2::Create(DataStream* pDst, TTArchive2::ResourceCreateEntry* pFile
 	i += 0x10000 - (i % 0x10000);
 	writeint(&i, 4);
 	writeint(&pNumFiles, 4);
+	func("Writing Headers", 10);
 	u64 curroff = 0;
 	u32 curnameoff = 0;
 	for (int i = 0; i < pNumFiles; i++) {
@@ -121,16 +122,24 @@ bool TTArchive2::Create(DataStream* pDst, TTArchive2::ResourceCreateEntry* pFile
 		curnameoff += entry->mNameLen + 1;
 		curroff += entry->mpStream->GetSize();
 	}
+	float pr = 10;
+	float incr = 10 / pNumFiles;
 	for (int x = 0; x < pNumFiles; x++) {
 		out.SerializeWrite((pFiles + x)->mName, (pFiles + x)->mNameLen+1);
+		func(NULL, pr);
+		pr += incr;
 	}
 	int rem = 0x10000 - (ntz%0x10000);
 	char* temp = (char*)calloc(1, rem);
 	out.Serialize(temp, rem);
 	free(temp);
+	incr = 60 / pNumFiles;
 	for (int x = 0; x < pNumFiles; x++) {
 		(pFiles + x)->mpStream->Copy(&out, out.GetPosition(), 0, (pFiles + x)->mpStream->GetSize());
+		func((pFiles+x)->mName, pr);
+		pr += incr;
 	}
+	pr = 80;//in case
 	out.SetPosition(0, DataStreamSeekType::eSeekType_Begin);
 	out.SetMode(DataStreamMode::eMode_Read);
 	DataStreamContainerParams p;
@@ -140,7 +149,10 @@ bool TTArchive2::Create(DataStream* pDst, TTArchive2::ResourceCreateEntry* pFile
 	p.mbEncrypt = pEncrypt;
 	p.mbCompress = pCompress;
 	p.mCompressionLibrary = pCompressionLibrary;
-	DataStreamContainer::Create(p, out.GetSize());
+	pr = 85;
+	DataStreamContainer::Create(func,p, out.GetSize());
+	pr = 100;
+	func("Created container", pr);
 	return true;
 }
 

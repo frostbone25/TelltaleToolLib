@@ -80,25 +80,9 @@ void run_ttarch2() {
 
 }
 
-void run_ttarch2w() {
-	DataStream* dst = OpenDataStreamFromDisc("c:/users/lucas/desktop/test.ttarch2", DataStreamMode::eMode_Write);
-	void* buf = calloc(1, 67);
-	memcpy(buf, "LUCAS IS AWESOMEEEEEEEE!! THIS IS A TELLTALE DATA STREAM CONTAINER", 67);
-	DataStream* src = new DataStreamMemory(buf, 67, DataStreamMode::eMode_Read);
-	char* p = new char[sizeof(TTArchive2::ResourceCreateEntry) * 2];
-	new (p) TTArchive2::ResourceCreateEntry("AwesomeFile.txt", src);
-	new (p + sizeof(TTArchive2::ResourceCreateEntry)) TTArchive2::ResourceCreateEntry("AwesomeFile22.txt", src);
-	TTArchive2::Create(dst, (TTArchive2::ResourceCreateEntry*)p, 2, false, false, Compression::Library::OODLE,0);
-
-	delete[]p;
-	delete dst;
-	delete src;
-}
-
 int _RunTestMain(int argn, char** argv) {
 	TelltaleToolLib_Initialize("MC2");
 
-	run_ttarch2w();
 
 	printf("Done!");
 	_CrtDumpMemoryLeaks();
