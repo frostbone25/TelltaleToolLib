@@ -96,7 +96,7 @@ void DataStreamContainer::Create(DataStreamContainerParams params, unsigned __in
 			}
 
 			if (params.mbEncrypt) {
-				LibTelltaleTool_BlowfishEncrypt((unsigned char*)compressed, csize, true, 
+				TelltaleToolLib_BlowfishEncrypt((unsigned char*)compressed, csize, true,
 					(unsigned char*)sBlowfishKeys[sSetKeyIndex].game_key);
 			}
 			pagebuf[i + 1] = pagebuf[i] + csize;
@@ -156,7 +156,7 @@ bool DataStreamLegacyEncrypted::Serialize(char* buffer, unsigned __int64 size) {
 							}
 						}
 						else {
-							LibTelltaleTool_BlowfishDecrypt((unsigned char*)mBuf, mEncryptSize, false,
+							TelltaleToolLib_BlowfishDecrypt((unsigned char*)mBuf, mEncryptSize, false,
 								(unsigned char*)sBlowfishKeys[sSetKeyIndex].game_key);
 						}
 					}
@@ -333,7 +333,7 @@ void DataStreamContainer::GetChunk(unsigned __int64 index) {
 	mParams.mpSrcStream->Serialize(mpReadTransitionBuf, size);
 	mCurrentIndex = index;
 	if (mParams.mbEncrypt) {
-		LibTelltaleTool_BlowfishDecrypt((unsigned char*)mpReadTransitionBuf, size, true, (unsigned char*)sBlowfishKeys[sSetKeyIndex].game_key);
+		TelltaleToolLib_BlowfishDecrypt((unsigned char*)mpReadTransitionBuf, size, true, (unsigned char*)sBlowfishKeys[sSetKeyIndex].game_key);
 	}
 	if (mParams.mCompressionLibrary == Compression::Library::ZLIB) {
 		unsigned int destl = mParams.mWindowSize;
@@ -727,6 +727,10 @@ bool DataStreamFile_Win::Serialize(char* buf, unsigned __int64 bufsize) {
 }
 
 DataStreamFile_Win::DataStreamFile_Win(FileHandle handle,DataStreamMode m) : mHandle{ handle }, DataStream(m) {
+	if (!handle) {
+		mMode = DataStreamMode::eMode_Unset;
+		return;
+	}
 	mStreamOffset = ftell(handle);
 	fseek(handle, 0, SEEK_END);
 	mStreamSize = ftell(handle);

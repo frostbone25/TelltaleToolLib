@@ -486,8 +486,8 @@ MetaStream::MetaStream(const char* Name) {
 	this->mMode = MetaStreamMode::eMetaStream_Closed;
 	this->mStreamVersion = 0;
 	v1->mRuntimeFlags.mFlags = 0;
-	int len = strlen(Name);
-	memcpy(mName, Name, len >= 260 ? 259 : len);
+	//int len = strlen(Name);
+	//memcpy(mName, Name, len >= 260 ? 259 : len);
 }
 
 void MetaStream::serialize_uint64(u64* param) {

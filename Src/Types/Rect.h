@@ -3,17 +3,6 @@
 // the engine and require that if you use this code or library, you give credit to me and
 // the amazing Telltale Games.
 
-#pragma once
-
-#include "Container.h"
-#include "DCArray.h"
-#include "HandleObjectInfo.h"
-#include "SArray.h"
-#include "DCArray.h"
-#include "ObjectSpaceIntrinsics.h"
-#include "Set.h"
-#include "List.h"
-#include "Deque.h"
-#include "Map.h"
-#include "PropertySet.h"
-#include "Rect.h"
+struct Rect /*synonymous with doing : public tagRECT from the WIN32 API (telltale actually did that!)*/{
+	int left, top, right, bottom;
+};

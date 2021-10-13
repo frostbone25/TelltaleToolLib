@@ -23,9 +23,9 @@ public:
 	};
 
 	struct ResourceCreateEntry {
-		int mNameLen;
 		char* mName;
 		DataStream* mpStream;
+		int mNameLen;
 
 		ResourceCreateEntry(const ResourceCreateEntry& o) = delete;
 		ResourceCreateEntry& operator=(const ResourceCreateEntry& o) = delete;
@@ -47,7 +47,6 @@ public:
 		}
 
 	};
-
 	DataStream* mpNameStream;
 	DataStream* mpResourceStream;
 	std::vector<TTArchive2::ResourceEntry> mResources;
@@ -58,6 +57,7 @@ public:
 	bool mbActive;//by lib, for lib
 	DataStream* mpInStream;//for lib
 
+	//Deletes in stream when done TAKES OWNERSHIP
 	void Activate(DataStream* inArchiveStream);//nullable (assumes creation)
 	bool HasResource(const Symbol&);
 	String* GetResourceName(const Symbol&, String* result);

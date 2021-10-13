@@ -138,7 +138,7 @@ public:
 	}
 
 	virtual void* GetElement(int index) override{
-		return (void*)&mpStorage[index];
+		return (void*)(mpStorage + index);
 	}
 
 	bool Resize(int num_to_add_or_remove) {

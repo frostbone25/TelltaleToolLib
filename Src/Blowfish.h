@@ -304,8 +304,8 @@ struct Blowfish {
 	unsigned long long P[18];
 };
 
-extern "C" __declspec(dllexport) void LibTelltaleTool_BlowfishEncrypt(unsigned char* data, unsigned int size, bool n, unsigned char* k);
-extern "C" __declspec(dllexport) void LibTelltaleTool_BlowfishDecrypt(unsigned char* data, unsigned int size, bool n, unsigned char* k);
+extern "C" __declspec(dllexport) void TelltaleToolLib_BlowfishEncrypt(unsigned char* data, unsigned int size, bool n, unsigned char* k);
+extern "C" __declspec(dllexport) void TelltaleToolLib_BlowfishDecrypt(unsigned char* data, unsigned int size, bool n, unsigned char* k);
 
 /*
 struct Blowfish {//singleton

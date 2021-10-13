@@ -4,11 +4,13 @@
 // the amazing Telltale Games.
 
 #include "../TelltaleToolLibrary.h"
+#include "../HashDB/HashDB.h"
 #include "../Meta.hpp"
 #include "Set.h"
 #include "List.h"
 #include "Map.h"
 #include "HandleObjectInfo.h"
+#include <algorithm>
 
 #ifndef _PROP
 #define _PROP
@@ -181,11 +183,25 @@ public:
 		u32 parents = prop->mParentList.GetSize();
 		stream->serialize_uint32(&parents);
 		if (stream->mMode == MetaStreamMode::eMetaStream_Write) {
+			HashDatabase* db = TelltaleToolLib_GetGlobalHashDatabase();
+			if (!db && prop->mPropVersion == 1)return eMetaOp_SymbolNotFoundInDB;
+			HashDatabase::Page* page = NULL;
+			if (prop->mPropVersion == 1) {
+				String pagen = "Files_PROP_";
+				String gameid = sBlowfishKeys[sSetKeyIndex].game_id;
+				std::transform(gameid.begin(), gameid.end(), gameid.begin(), ::toupper);
+				pagen += gameid;
+				page = db->FindPage(pagen.c_str());
+				if (!page)return eMetaOp_SymbolNotFoundInDB;
+			}
 			for (int i = 0; i < parents; i++) {
 				if (prop->mPropVersion == 1) {
-					//String str("");
-					return eMetaOp_Fail;//cannot get string from symbol, YET!
-					//stream->serialize_String(&str);
+					Symbol sym = prop->mParentList[i].
+						mhParent.mHandleObjectInfo.mObjectName;
+					String str;
+					db->FindEntry(page, sym.GetCRC(), &str);
+					if (str.empty())return eMetaOp_SymbolNotFoundInDB;
+					stream->serialize_String(&str);
 				}
 				else if (prop->mPropVersion == 2) {
 					Symbol sym = prop->mParentList[i].

@@ -38,6 +38,7 @@ void TTArchive2::Activate(DataStream* inArchiveStream) {
 	u32 namesize, resources;
 	getint(&namesize, 4);
 	if (namesize > 0x10000000)return;
+	this->mNamePageCount = namesize / 0x10000;
 	getint(&resources, 4);
 	if (resources > 0xFFFFF)return;
 	mResources.reserve(resources);

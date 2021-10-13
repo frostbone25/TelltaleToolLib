@@ -40,7 +40,7 @@
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
-    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>v142</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
@@ -153,6 +153,7 @@
     <ClInclude Include="Src\Blowfish.h" />
     <ClInclude Include="Src\Compression.h" />
     <ClInclude Include="Src\DataStream\DataStream.h" />
+    <ClInclude Include="Src\HashDB\HashDB.h" />
     <ClInclude Include="Src\MetaInitialize.h" />
     <ClInclude Include="Src\TelltaleEditor\TEditor.h" />
     <ClInclude Include="Src\TTArchive2.hpp" />
@@ -167,6 +168,7 @@
     <ClInclude Include="Src\Types\Map.h" />
     <ClInclude Include="Src\Types\ObjectSpaceIntrinsics.h" />
     <ClInclude Include="Src\Types\PropertySet.h" />
+    <ClInclude Include="Src\Types\Rect.h" />
     <ClInclude Include="Src\Types\SArray.h" />
     <ClInclude Include="Src\Types\Set.h" />
     <ClInclude Include="Src\Types\TypeIncludes.h" />
@@ -185,7 +187,9 @@
     <ClCompile Include="Src\Blowfish.cpp" />
     <ClCompile Include="Src\Compression.cpp" />
     <ClCompile Include="Src\DataStream\DataStream.cpp" />
+    <ClCompile Include="Src\HashDB\HashDB.cpp" />
     <ClCompile Include="Src\Meta.cpp" />
+    <ClCompile Include="Src\TelltaleEditor\CLI_Interface.cpp" />
     <ClCompile Include="Src\TelltaleToolLibrary.cpp" />
     <ClCompile Include="Src\Test\main.cpp" />
     <ClCompile Include="Src\TTArchive2.cpp" />

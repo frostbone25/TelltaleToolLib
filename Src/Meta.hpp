@@ -97,7 +97,8 @@ enum MetaOpResult {
 	eMetaOp_Succeed = 0x1,
 	eMetaOp_Invalid = 0x2,
 	eMetaOp_OutOfMemory = 0x3,
-	eMetaOp_MAX = 0x4,
+	eMetaOp_SymbolNotFoundInDB = 0x4,
+	eMetaOp_MAX = 0x5,//normally 4
 };
 
 namespace UID {
@@ -277,13 +278,12 @@ public:
 	MetaStreamMode mMode;
 	//Blowfish* mpBlowfish;
 	Flags mRuntimeFlags;//flag values: RuntimeFlags enum
-	char mName[260];
+	//char mName[260];
 
 	bool mbDontDeleteStream = false;//by lib
 
 	bool mbErrored = false;
 
-	INLINE virtual const char* GetName() { return mName; }
 	INLINE virtual MetaStream::StreamType GetStreamType() { return StreamType::eStream_Binary; }
 	u64 Close();//returns size of stream
 	bool Attach(DataStream*, MetaStreamMode, MetaStreamParams);

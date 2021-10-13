@@ -456,7 +456,32 @@ namespace MetaInit {
 			meta_transform_rot.mpNextMember = &meta_transform_trans;
 			meta_transform.mpFirstMember = &meta_transform_rot;
 			meta_transform.Insert();
-				
+
+			DEFINET(rect, Rect);
+			meta_rect.Initialize(typeid(Rect));
+			meta_rect.mFlags |= (int)MetaFlag::MetaFlag_MetaSerializeBlockingDisabled;
+			DEFINEM(rect,bottom);
+			meta_rect_bottom.mpName = "bottom";
+			meta_rect_bottom.mpMemberDesc = &meta_long;
+			meta_rect_bottom.mOffset = memberOffset(&Rect::bottom);
+			DEFINEM(rect, top);
+			meta_rect_top.mpName = "top";
+			meta_rect_top.mpMemberDesc = &meta_long;
+			meta_rect_top.mOffset = memberOffset(&Rect::top);
+			meta_rect_top.mpNextMember = &meta_rect_bottom;
+			DEFINEM(rect, right);
+			meta_rect_right.mpName = "right";
+			meta_rect_right.mpMemberDesc = &meta_long;
+			meta_rect_right.mOffset = memberOffset(&Rect::right);
+			meta_rect_right.mpNextMember = &meta_rect_top;
+			DEFINEM(rect, left);
+			meta_rect_left.mpName = "left";
+			meta_rect_left.mpMemberDesc = &meta_long;
+			meta_rect_left.mOffset = memberOffset(&Rect::left);
+			meta_rect.mpFirstMember = &meta_rect_left;
+			meta_rect_left.mpNextMember = &meta_rect_right;
+			meta_rect.Insert();
+
 			DEFINET(sphere, Sphere);
 			meta_sphere.Initialize(typeid(Sphere));
 			DEFINEM(sphere, radius);

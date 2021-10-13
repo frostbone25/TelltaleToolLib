@@ -1,11 +1,6 @@
 TODO LIST:
 
-- DataStreamContainer OODLE + Compression::Oodle
-- TTArchive2::Write
-- static DataStreamContainer::Write
-- Rect Type
-- Add HashDB support
-- Add version 0 to .prop using HashDB support
+- IMPLEMENT ALL TYPES!!
 
 notes:
 metastream deletes the datastream passed on open

@@ -5,18 +5,22 @@
 #ifndef _TTToolLib
 #define _TTToolLib
 
-#pragma once
+#define _VERSION "4.0"
 
 //PLEASE NOTE: THIS LIBRARY IS DESIGNED ONLY FOR LITTLE ENDIAN SYSTEMS. IF YOUR TELLTALE FILES ARE IN BIG ENDIAN AND THE SYSTEM IS BIG ENDIAN
 //THEN YOU SHOULD BE OK. BUT TELLTALE FILES ARE NORMALLY IN LITTLE ENDIAN.
 
 //If you want to forcefully make sure telltale editor functions arent included and exported, define the macro below
-//#define FORCE_EXCLUDE_TEditor
+//If this macro is defined, CLI_Interface.cpp from the TelltaleEditor folder (if present and passed to compiler) will be compiled
+//but this does not effect anything since it doesnt export any functions apart from main (which isnt exported if built as a library)
+#define FORCE_EXCLUDE_TEditor
 
 #include <type_traits>
 #include <string>
 #include "DataStream/DataStream.h"
 #include "Blowfish.h"
+
+//64 BIT! ONLY!
 
 #ifdef _MSC_VER
 #ifdef _DEBUG
@@ -30,8 +34,6 @@
 
 #define INLINE __inline
 #define FORCE_INLINE __forceinline
-
-#define _VERSION "3.5"
 
 #define _TTToolLib_Exp extern "C" __declspec(dllexport)
 
@@ -186,6 +188,31 @@ _TTToolLib_Exp u8* TelltaleToolLib_DecryptScript(u8* data, u32 size);
 _TTToolLib_Exp u8* TelltaleToolLib_EncryptLencScript(u8* data, u32 size, u32 *outsize);
 _TTToolLib_Exp u8* TelltaleToolLib_DecryptLencScript(u8* data, u32 size, u32* outsize);
 
+class HashDatabase;
+class DataStream;
+
+/*
+* Sets the global hash database used to search CRCs. It is very important that its set before you read or write most types (eg PropertySet)
+* If one is already set, then this deletes the old use using operator delete.
+*/
+_TTToolLib_Exp void TelltaleToolLib_SetGlobalHashDatabase(HashDatabase*);
+
+/*
+* Does the same as the normal set global hash db, but creates it for you. Pass in the reading file stream to it. This stream 
+* is deleted by the library so DONT DELETE IT!
+*/
+_TTToolLib_Exp void TelltaleToolLib_SetGlobalHashDatabaseFromStream(DataStream*);
+
+/*
+* Gets the global hash database, or NULL if its not been set.
+*/
+_TTToolLib_Exp HashDatabase* TelltaleToolLib_GetGlobalHashDatabase();
+
+/*
+* Frees all non-static memory related to this library. 
+*/
+_TTToolLib_Exp void TelltaleToolLib_Free();
+
 extern bool sInitialized;
 
 struct Flags {
@@ -243,6 +270,5 @@ public:
 	}
 
 };
-
 
 #endif

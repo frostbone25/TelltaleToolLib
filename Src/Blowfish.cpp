@@ -51,7 +51,7 @@ unsigned long bf(Blowfish* bc, unsigned long x)
 	return y;
 }
 
-void LibTelltaleTool_BlowfishEncrypt(unsigned char* data, unsigned int size, bool n, unsigned char* k) {
+void TelltaleToolLib_BlowfishEncrypt(unsigned char* data, unsigned int size, bool n, unsigned char* k) {
 	Blowfish cipher;
 	Blowfish* c = &cipher;
 	if (n) {
@@ -63,7 +63,7 @@ void LibTelltaleTool_BlowfishEncrypt(unsigned char* data, unsigned int size, boo
 		eo(c, (unsigned long*)data, size / 8);
 	}
 }
-void LibTelltaleTool_BlowfishDecrypt(unsigned char* data, unsigned int size, bool n, unsigned char* k) {
+void TelltaleToolLib_BlowfishDecrypt(unsigned char* data, unsigned int size, bool n, unsigned char* k) {
 	Blowfish cipher;
 	Blowfish* c = &cipher;
 	if (n) {

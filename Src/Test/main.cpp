@@ -95,7 +95,7 @@ void run_ttarch2w() {
 	delete src;
 }
 
-int main(int argn, char** argv) {
+int _RunTestMain(int argn, char** argv) {
 	TelltaleToolLib_Initialize("MC2");
 
 	run_ttarch2w();
