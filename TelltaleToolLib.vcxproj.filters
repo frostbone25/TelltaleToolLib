@@ -105,6 +105,12 @@
     <ClInclude Include="Src\TelltaleEditor\TEditor.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Src\Types\Skeleton.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Types\TRange.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Src\TelltaleToolLibrary.cpp">
