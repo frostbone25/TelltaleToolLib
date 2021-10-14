@@ -50,6 +50,20 @@ meta_DCArray_##type##_baseclass.mpMemberDesc = &meta_cinterface;\
 meta_DCArray_##type##_baseclass.mFlags |= (int)MetaFlag::MetaFlag_BaseClass;\
 meta_DCArray_##type##.Insert();
 
+#define DEFINEDCARRAY2(_Ty,type) DEFINET(DCArray_##type##, DCArray<_Ty>);\
+meta_DCArray_##type##.Initialize(typeid(DCArray<_Ty>));\
+METAOP_CUSTOM(DCArray_##type##, eMetaOpSerializeAsync, DCArray<_Ty>::MetaOperation_SerializeAsync);\
+meta_DCArray_##type##.InstallSpecializedMetaOperation(&meta_DCArray_##type##_eMetaOpSerializeAsync);\
+METAOP_CUSTOM(DCArray_##type##, eMetaOpSerializeMain, DCArray<_Ty>::MetaOperation_SerializeMain);\
+meta_DCArray_##type##.InstallSpecializedMetaOperation(&meta_DCArray_##type##_eMetaOpSerializeMain);\
+DEFINEM(DCArray_##type##,baseclass);\
+meta_DCArray_##type##.mpFirstMember = &meta_DCArray_##type##_baseclass;\
+meta_DCArray_##type##_baseclass.mpName = "Baseclass_ContainerInterface";\
+meta_DCArray_##type##_baseclass.mOffset = 0;\
+meta_DCArray_##type##_baseclass.mpMemberDesc = &meta_cinterface;\
+meta_DCArray_##type##_baseclass.mFlags |= (int)MetaFlag::MetaFlag_BaseClass;\
+meta_DCArray_##type##.Insert();
+
 #define DEFINESET(type) DEFINET(Set_##type##, Set<type>);\
 meta_Set_##type##.Initialize(typeid(Set<type>));\
 METAOP_CUSTOM(Set_##type##, eMetaOpSerializeAsync, Set<type>::MetaOperation_SerializeAsync);\
@@ -684,7 +698,93 @@ namespace MetaInit {
 			meta_sklentry_flags.mpName = "mFlags";
 			meta_sklentry_flags.mpMemberDesc =& meta_flags;
 			meta_sklentry_flags.mOffset = memberOffset(&Skeleton::Entry::mFlags);
+			DEFINEM(sklentry, constraints);
+			meta_sklentry_constraints.mpName = "mConstraints";
+			meta_sklentry_constraints.mpMemberDesc =& meta_bc;
+			meta_sklentry_constraints.mOffset = memberOffset(&Skeleton::Entry::mConstraints);
+			meta_sklentry_constraints.mpNextMember = &meta_sklentry_flags;
+			DEFINEM(sklentry, rgm);
+			meta_sklentry_rgm.mpName = "mResourceGroupMembership";
+			meta_sklentry_rgm.mOffset = memberOffset(&Skeleton::Entry::mResourceGroupMembership);
+			meta_sklentry_rgm.mpNextMember = &meta_sklentry_constraints;
+			meta_sklentry_rgm.mpMemberDesc = &meta_Map_Symbol_float;
+			DEFINEM(sklentry, ats);
+			meta_sklentry_ats.mpName = "mAnimTranslationScale";
+			meta_sklentry_ats.mOffset = memberOffset(&Skeleton::Entry::mAnimTranslationScale);
+			meta_sklentry_ats.mpNextMember = &meta_sklentry_rgm;
+			meta_sklentry_ats.mpMemberDesc = &meta_vec3;
+			DEFINEM(sklentry, lts);
+			meta_sklentry_lts.mpName = "mLocalTranslationScale";
+			meta_sklentry_lts.mOffset = memberOffset(&Skeleton::Entry::mLocalTranslationScale);
+			meta_sklentry_lts.mpNextMember = &meta_sklentry_ats;
+			meta_sklentry_lts.mpMemberDesc = &meta_vec3;
+			DEFINEM(sklentry, gts);
+			meta_sklentry_gts.mpName = "mGlobalTranslationScale";
+			meta_sklentry_gts.mOffset = memberOffset(&Skeleton::Entry::mGlobalTranslationScale);
+			meta_sklentry_gts.mpNextMember = &meta_sklentry_lts;
+			meta_sklentry_gts.mpMemberDesc = &meta_vec3;
+			DEFINEM(sklentry, restx);
+			meta_sklentry_restx.mpName = "mRestXForm";
+			meta_sklentry_restx.mOffset = memberOffset(&Skeleton::Entry::mRestXform);
+			meta_sklentry_restx.mpNextMember = &meta_sklentry_gts;
+			meta_sklentry_restx.mpMemberDesc = &meta_transform;
+			DEFINEM(sklentry, localq);
+			meta_sklentry_localq.mpName = "mLocalQuat";
+			meta_sklentry_localq.mOffset = memberOffset(&Skeleton::Entry::mLocalQuat);
+			meta_sklentry_localq.mpNextMember = &meta_sklentry_restx;
+			meta_sklentry_localq.mpMemberDesc = &meta_quat;
+			DEFINEM(sklentry, localp);
+			meta_sklentry_localp.mpName = "mLocalPos";
+			meta_sklentry_localp.mOffset = memberOffset(&Skeleton::Entry::mLocalPos);
+			meta_sklentry_localp.mpNextMember = &meta_sklentry_localq;
+			meta_sklentry_localp.mpMemberDesc = &meta_vec3;
+			DEFINEM(sklentry, blen);
+			meta_sklentry_blen.mpName = "mBoneLength";
+			meta_sklentry_blen.mOffset = memberOffset(&Skeleton::Entry::mBoneLength);
+			meta_sklentry_blen.mpNextMember = &meta_sklentry_localp;
+			meta_sklentry_blen.mpMemberDesc = &meta_float;
+			meta_sklentry_blen.mFlags |= MetaFlag::MetaFlag_MetaSerializeDisable;
+			DEFINEM(sklentry, mblen);
+			meta_sklentry_mblen.mpName = "mMirrorBoneIndex";
+			meta_sklentry_mblen.mOffset = memberOffset(&Skeleton::Entry::mMirrorBoneIndex);
+			meta_sklentry_mblen.mpNextMember = &meta_sklentry_blen;
+			meta_sklentry_mblen.mpMemberDesc = &meta_long;
+			DEFINEM(sklentry, mbn);
+			meta_sklentry_mbn.mpName = "mMirrorBoneName";
+			meta_sklentry_mbn.mOffset = memberOffset(&Skeleton::Entry::mMirrorBoneName);
+			meta_sklentry_mbn.mpNextMember = &meta_sklentry_mblen;
+			meta_sklentry_mbn.mpMemberDesc = &meta_symbol;
+			DEFINEM(sklentry, pi);
+			meta_sklentry_pi.mpName = "mParentIndex";
+			meta_sklentry_pi.mOffset = memberOffset(&Skeleton::Entry::mParentIndex);
+			meta_sklentry_pi.mpNextMember = &meta_sklentry_mbn;
+			meta_sklentry_pi.mpMemberDesc = &meta_long;
+			DEFINEM(sklentry, pn);
+			meta_sklentry_pn.mpName = "mParentName";
+			meta_sklentry_pn.mOffset = memberOffset(&Skeleton::Entry::mParentName);
+			meta_sklentry_pn.mpNextMember = &meta_sklentry_pi;
+			meta_sklentry_pn.mpMemberDesc = &meta_symbol;
+			DEFINEM(sklentry, jn);
+			meta_sklentry_jn.mpName = "mJointName";
+			meta_sklentry_jn.mOffset = memberOffset(&Skeleton::Entry::mJointName);
+			meta_sklentry_jn.mpNextMember = &meta_sklentry_pn;
+			meta_sklentry_jn.mpMemberDesc = &meta_symbol;
+			meta_sklentry.mpFirstMember = &meta_sklentry_jn;
 			meta_sklentry.Insert();
+
+			DEFINEDCARRAY2(Skeleton::Entry,sklentry);
+
+			DEFINET(skl, Skeleton);
+			meta_skl.Initialize(typeid(Skeleton));
+			meta_skl.mpExt = "skl";
+			DEFINEM(skl, entries);
+			meta_skl_entries.mpName = "mEntries";
+			meta_skl_entries.mOffset = memberOffset(&Skeleton::mEntries);
+			meta_skl_entries.mpMemberDesc = &meta_DCArray_sklentry;
+			meta_skl.mpFirstMember = &meta_skl_entries;
+			meta_skl.Insert();
+
+
 
 		}
 		Initialize2();

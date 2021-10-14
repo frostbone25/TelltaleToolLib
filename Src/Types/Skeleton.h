@@ -21,6 +21,7 @@ enum BoneType {
 	eBoneType_Ball = 1
 };
 
+//look. i didnt spell this wrong. telltale did!
 struct BoneContraints {
 	BoneType mBoneType; 
 	Vector3 mHingeAxis; 
