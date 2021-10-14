@@ -41,6 +41,11 @@ struct PropertyValue {
 		if (!pDescription)return;
 		ClearData();
 		mpDataDescription = pDescription;
+		if (!(pDescription->mpVTable[0]) || !(pDescription->mpVTable[2]) || !(pDescription->mpVTable[3])) {
+			printf("BAD ERROR: COULD NOT ADD TYPE TO PROP. THIS TYPE (%s) SHOULD NOT BE IN A .PROP!!!\n",pDescription->mpTypeInfoName);
+			throw "TYPE ATTEMPED TO BE ADDED TO PROP WHICH SHOULD NOT BE THERE!";
+			return;
+		}
 		mpValue = operator new(pDescription->mClassSize);
 		if (pSrcObj) {
 			pDescription->CopyConstruct(mpValue, pSrcObj);

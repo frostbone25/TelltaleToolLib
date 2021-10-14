@@ -7,6 +7,17 @@
 #include "Types/TypeIncludes.h"
 #include "TelltaleToolLibrary.h"
 
+//types that use no copy should not be used in .prop since these functions are needed. .scene files use this, so NO scene should be in a prop
+#define DEFINETNOCOPY(name_,Ty) }++sMetaTypesCount;static MetaClassDescription meta_##name_; \
+if(!(meta_##name_.mFlags.mFlags & MetaFlag::Internal_MetaFlag_Initialized)){ \
+meta_##name_.mpVTable[0] = NULL;\
+meta_##name_.mpVTable[1] = MetaClassDescription_Typed<Ty>::Delete;\
+meta_##name_.mpVTable[2] = NULL;\
+meta_##name_.mpVTable[3] = NULL;\
+meta_##name_.mpVTable[4] = MetaClassDescription_Typed<Ty>::Destroy;\
+meta_##name_.mClassSize = sizeof(Ty);\
+meta_##name_.mpTypeInfoExternalName = typeid(Ty).name();
+
 #define DEFINET(name_,Ty) }++sMetaTypesCount;static MetaClassDescription meta_##name_; \
 if(!(meta_##name_.mFlags.mFlags & MetaFlag::Internal_MetaFlag_Initialized)){ \
 meta_##name_.mpVTable[0] = MetaClassDescription_Typed<Ty>::New;\
@@ -16,6 +27,9 @@ meta_##name_.mpVTable[3] = MetaClassDescription_Typed<Ty>::CopyConstruct;\
 meta_##name_.mpVTable[4] = MetaClassDescription_Typed<Ty>::Destroy;\
 meta_##name_.mClassSize = sizeof(Ty);\
 meta_##name_.mpTypeInfoExternalName = typeid(Ty).name();
+
+#define DEFINET2NOCOPY(name,_Ty) DEFINETNOCOPY(name,_Ty);\
+meta_##name##.Initialize(typeid(_Ty))
 
 #define DEFINET2(name,_Ty) DEFINET(name,_Ty);\
 meta_##name##.Initialize(typeid(_Ty))
@@ -980,7 +994,7 @@ namespace MetaInit {
 
 			DEFINELIST_(Scene::AgentInfo*, agentinfoptr);
 
-			DEFINET2(scene, Scene);
+			DEFINET2NOCOPY(scene, Scene);
 			METAOP_CUSTOM(scene, eMetaOpSerializeAsync, Scene::MetaOperation_SerializeAsync);
 			FIRSTMEM2(scene, mTimeScale, Scene, float, 1);
 			NEXTMEM2(scene, mbActive, Scene, bool, 1, mTimeScale);
