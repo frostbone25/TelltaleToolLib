@@ -16,8 +16,13 @@
 
 //define meta class for skeleton::entry then skeleton (with extension .skl)
 
+enum BoneType {
+	eBoneType_Hinge = 0,
+	eBoneType_Ball = 1
+};
+
 struct BoneContraints {
-	int mBoneType; 
+	BoneType mBoneType; 
 	Vector3 mHingeAxis; 
 	SArray<TRange<float>, 3> mAxisRange;
 

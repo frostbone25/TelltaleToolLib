@@ -466,7 +466,7 @@ enum VTableFunction {
 	eVTableCount = 5//6
 };
 
-enum MetaFlag {
+enum MetaFlag : int {
 	//Dont serialize this type
 	MetaFlag_MetaSerializeDisable = 1,
 	//Dont put a block size infront of this type

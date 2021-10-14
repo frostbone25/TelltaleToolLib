@@ -1,6 +1,7 @@
 TODO LIST:
 
 - IMPLEMENT ALL TYPES!!
+- test skeleton serialize (complex sarrays etc)
 
 notes:
 metastream deletes the datastream passed on open

@@ -18,3 +18,4 @@
 #include "PropertySet.h"
 #include "Rect.h"
 #include "TRange.h"
+#include "Skeleton.h"

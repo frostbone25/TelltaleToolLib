@@ -74,6 +74,20 @@ meta_Set_##type##_baseclass.mFlags |= (int)MetaFlag::MetaFlag_BaseClass;\
 meta_Set_##type##.InstallSpecializedMetaOperation(&meta_Set_##type##_eMetaOpSerializeAsync);\
 meta_Set_##type##.Insert();
 
+#define DEFINESARRAY_(_Ty,type,count) DEFINET(sarray_##type##_##count##, SArray<_Ty>);\
+meta_sarray_##type##_##count##.Initialize(typeid(SArray<_Ty>));\
+METAOP_CUSTOM(sarray_##type##_##count, eMetaOpSerializeAsync, SArray<_Ty>::MetaOperation_SerializeAsync);\
+meta_sarray_##type##_##count##.InstallSpecializedMetaOperation(&meta_sarray_##type##_##count##_eMetaOpSerializeAsync);\
+METAOP_CUSTOM(sarray_##type##_##count, eMetaOpSerializeMain, SArray<_Ty>::MetaOperation_SerializeMain);\
+meta_sarray_##type##_##count##.InstallSpecializedMetaOperation(&meta_sarray_##type##_##count##_eMetaOpSerializeMain);\
+DEFINEM(sarray_##type##_##count##,baseclass);\
+meta_sarray_##type##_##count##.mpFirstMember = &meta_sarray_##type##_##count##_baseclass;\
+meta_sarray_##type##_##count##_baseclass.mpName = "Baseclass_ContainerInterface";\
+meta_sarray_##type##_##count##_baseclass.mOffset = 0;\
+meta_sarray_##type##_##count##_baseclass.mpMemberDesc = &meta_cinterface;\
+meta_sarray_##type##_##count##_baseclass.mFlags |= (int)MetaFlag::MetaFlag_BaseClass;\
+meta_sarray_##type##_##count##.Insert();
+
 #define DEFINELIST(type) DEFINET(List_##type##, List<type>);\
 meta_List_##type##.Initialize(typeid(List<type>));\
 METAOP_CUSTOM(List_##type##, eMetaOpSerializeAsync, List<type>::MetaOperation_SerializeAsync);\
@@ -582,6 +596,7 @@ namespace MetaInit {
 			DEFINESARRAY(i32, 3);
 			DEFINESARRAY(float, 9);
 			DEFINESARRAY(float, 3);
+			DEFINESARRAY_(TRange<float> SEP 3, rangefloat, 3);
 			DEFINEDCARRAY(i32);
 			DEFINEDCARRAY(u16);
 			DEFINEDCARRAY(u64);
@@ -634,6 +649,42 @@ namespace MetaInit {
 			meta_prop_keymap.mOffset = memberOffset(&PropertySet::mKeyMap);
 			meta_prop_flags.mpNextMember = &meta_prop_keymap;
 			meta_prop.Insert();
+
+			DEFINET(bc, BoneContraints);
+			meta_bc.Initialize(typeid(BoneContraints));
+			DEFINEM(bc, btype);
+			meta_bc_btype.mOffset = memberOffset(&BoneContraints::mBoneType);
+			meta_bc_btype.mpName = "mBoneType";
+			meta_bc_btype.mpMemberDesc = &meta_long;
+			meta_bc_btype.mFlags |= MetaFlag::MetaFlag_EnumIntType;
+			static MetaEnumDescription meta_bce_hinge, meta_bce_joint;//joint=ball oops
+			meta_bce_hinge.mpEnumName = "eBoneType_Hinge";
+			meta_bce_hinge.mEnumIntValue = 0;
+			meta_bce_hinge.mpNext = &meta_bce_joint;
+			meta_bce_joint.mpEnumName = "eBoneType_Ball";
+			meta_bce_joint.mEnumIntValue = 1;
+			meta_bc_btype.mpEnumDescriptions = &meta_bce_hinge;
+			DEFINEM(bc, axis);
+			meta_bc_btype.mpNextMember = &meta_bc_axis;
+			meta_bc_axis.mpName = "mHingeAxis";
+			meta_bc_axis.mOffset = memberOffset(&BoneContraints::mHingeAxis);
+			meta_bc_axis.mFlags |= MetaFlag::MetaFlag_PlaceInAddPropMenu;
+			meta_bc_axis.mpMemberDesc = &meta_vec3;
+			DEFINEM(bc, range);
+			meta_bc_axis.mpNextMember = &meta_bc_range;
+			meta_bc_range.mpName = "mAxisRange";
+			meta_bc_range.mOffset = memberOffset(&BoneContraints::mAxisRange);
+			meta_bc_range.mpMemberDesc = &meta_sarray_rangefloat_3;
+			meta_bc.mpFirstMember = &meta_bc_btype;
+			meta_bc.Insert();
+
+			DEFINET(sklentry, Skeleton::Entry);
+			meta_sklentry.Initialize(typeid(Skeleton::Entry));
+			DEFINEM(sklentry, flags);
+			meta_sklentry_flags.mpName = "mFlags";
+			meta_sklentry_flags.mpMemberDesc =& meta_flags;
+			meta_sklentry_flags.mOffset = memberOffset(&Skeleton::Entry::mFlags);
+			meta_sklentry.Insert();
 
 		}
 		Initialize2();

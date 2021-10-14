@@ -80,7 +80,7 @@ struct PropertyValue {
 
 };
 
-//.PROP FILES (Versions 1 & 2 Supported) | Cant write prop version 1 if it has parents!
+//.PROP FILES
 class PropertySet {
 public:
 
