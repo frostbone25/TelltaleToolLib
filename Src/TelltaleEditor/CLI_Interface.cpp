@@ -443,5 +443,27 @@ namespace TEditorCLI {
 
 }
 int main(int argn, char* argv[]) {
-	return TEditorCLI::TEditor_Main(argn, argv);
+	TelltaleToolLib_Initialize("WDC");
+	void* buf = TEditor_GetArgumentBuffer();
+	TTArchive2 arc;
+	DataStream* s;
+
+	*(const char**)buf = "DataStreamFileDisc";
+	*(const char**)(((char*)buf) + 8) = "d:/games/the walking dead - definitive series/archives/"
+		"WDC_pc_RussianUISeason4_compressed.ttarch2";
+	*(DataStreamMode*)(((char*)buf) + 16) = DataStreamMode::eMode_Read;
+	Job* j = TEditor_CreateDispatchJob(JobOp::eCreateObject, buf);
+	while (j->mAccessLock.PollState() == TryWaitResult::eResult_NotDone);
+	s = (DataStream*)j->GetOutput();
+	TEditor_FinishJob(j);
+	*(TTArchive2**)buf = &arc;
+	*(DataStream**)(((char*)buf) + 8) = s;
+	
+	Job* job = TEditor_CreateDispatchJob(JobOp::eReadArchive, buf);
+	while (job->mAccessLock.PollState() == TryWaitResult::eResult_NotDone);
+	printf("done %d\n", arc.mResources.size());
+	TEditor_FinishJob(job);
+	getchar();
+	return 0;
+	//return TEditorCLI::TEditor_Main(argn, argv);
 }

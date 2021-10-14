@@ -31,7 +31,7 @@ enum class TryWaitResult {
 };
 
 class CriticalJobAccess {
-	std::mutex mAccessLock;
+	std::recursive_mutex mAccessLock;
 	TryWaitResult mState;
 	JobResult mResult;
 	float mProgress;
@@ -40,35 +40,35 @@ public:
 	CriticalJobAccess() : mState(TryWaitResult::eResult_NotDone), mResult(JobResult::eJobResult_Uninitialized), mProgress(0.0f) {}
 
 	TryWaitResult PollState() {
-		std::scoped_lock<std::mutex> _Lock(mAccessLock);
+		std::scoped_lock<std::recursive_mutex> _Lock(mAccessLock);
 		return mState;
 	}
 
 	void SetState(TryWaitResult pState) {
-		std::scoped_lock<std::mutex> _Lock(mAccessLock);
+		std::scoped_lock<std::recursive_mutex> _Lock(mAccessLock);
 		mState = pState;
 		if (mState != TryWaitResult::eResult_NotDone)
 			SetProgress(1.0f);
 	}
 
 	void SetProgress(float pProgress) {
-		std::scoped_lock<std::mutex> _Lock(mAccessLock);
+		std::scoped_lock<std::recursive_mutex> _Lock(mAccessLock);
 		if (pProgress > 1 || pProgress < 0)return;
 		mProgress = pProgress;
 	}
 
 	float GetProgress() {
-		std::scoped_lock<std::mutex> _Lock(mAccessLock);
+		std::scoped_lock<std::recursive_mutex> _Lock(mAccessLock);
 		return mProgress;
 	}
 
 	JobResult GetResult() {
-		std::scoped_lock<std::mutex> _Lock(mAccessLock);
+		std::scoped_lock<std::recursive_mutex> _Lock(mAccessLock);
 		return mResult;
 	}
 
 	void SetResult(JobResult pResult) {
-		std::scoped_lock<std::mutex> _Lock(mAccessLock);
+		std::scoped_lock<std::recursive_mutex> _Lock(mAccessLock);
 		mResult = pResult;
 	}
 
@@ -117,10 +117,10 @@ public:
 		if (!_stricmp(type, "TTArchive2")) {
 			mObj = new TTArchive2;
 		}
-		else if (_stricmp(type, "MetaStream")) {
+		else if (!_stricmp(type, "MetaStream")) {
 			mObj = new MetaStream(NULL);
 		}
-		else if (_stricmp(type, "DataStreamFileDisc")) {
+		else if (!_stricmp(type, "DataStreamFileDisc")) {
 			const char* filepath = *static_cast<const char**>((void*)((char*)pInput + 8));
 			IFFAIL(filepath);
 			DataStreamMode mode = *static_cast<DataStreamMode*>((void*)((char*)pInput + 16));
@@ -336,6 +336,7 @@ public:
 		TTArchive2* archive = *static_cast<TTArchive2**>(pInput);
 		DataStream* instream = *static_cast<DataStream**>((void*)((char*)pInput + sizeof(size_t)));
 		IFFAIL(archive);
+		IFFAIL(instream);
 		archive->Activate(instream);
 		SUCCEED;
 	}
@@ -377,7 +378,7 @@ public:
 
 };
 
-enum class JobOp {
+enum JobOp : int {
 	eCreateObject,
 	eDeleteObject,
 	eSetHashDB,
@@ -435,7 +436,7 @@ void FinishJob(Job* pJob) {//call to destroy a job
 }
 
 _TTToolLib_Exp Job* TEditor_CreateDispatchJob(JobOp _Operation, void* _Input) {
-	return DispatchJob(_Operation, _Input);
+	return DispatchJob(_Operation, _Input); 
 }
 
 _TTToolLib_Exp TryWaitResult TEditor_PollJobState(Job* _JobPtr) {
