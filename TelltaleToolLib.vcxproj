@@ -158,6 +158,9 @@
     <ClInclude Include="Src\TelltaleEditor\dirent.h" />
     <ClInclude Include="Src\TelltaleEditor\TEditor.h" />
     <ClInclude Include="Src\TTArchive2.hpp" />
+    <ClInclude Include="Src\Types\ActorAgentMapper.h" />
+    <ClInclude Include="Src\Types\AgentMap.h" />
+    <ClInclude Include="Src\Types\AssetCollection.h" />
     <ClInclude Include="Src\Types\Container.h" />
     <ClInclude Include="Src\Types\DCArray.h" />
     <ClInclude Include="Src\Types\Deque.h" />
@@ -165,14 +168,17 @@
     <ClInclude Include="Src\HashManager.h" />
     <ClInclude Include="Src\Meta.hpp" />
     <ClInclude Include="Src\TelltaleToolLibrary.h" />
+    <ClInclude Include="Src\Types\InputMapper.h" />
     <ClInclude Include="Src\Types\List.h" />
     <ClInclude Include="Src\Types\Map.h" />
     <ClInclude Include="Src\Types\ObjectSpaceIntrinsics.h" />
     <ClInclude Include="Src\Types\PropertySet.h" />
     <ClInclude Include="Src\Types\Rect.h" />
     <ClInclude Include="Src\Types\SArray.h" />
+    <ClInclude Include="Src\Types\Scene.h" />
     <ClInclude Include="Src\Types\Set.h" />
     <ClInclude Include="Src\Types\Skeleton.h" />
+    <ClInclude Include="Src\Types\SoundBusSystem.h" />
     <ClInclude Include="Src\Types\TRange.h" />
     <ClInclude Include="Src\Types\TypeIncludes.h" />
     <ClInclude Include="Src\Zlib\crc32.h" />

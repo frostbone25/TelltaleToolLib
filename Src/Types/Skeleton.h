@@ -14,8 +14,6 @@
 #include "ObjectSpaceIntrinsics.h"
 #include "Map.h"
 
-//define meta class for skeleton::entry then skeleton (with extension .skl)
-
 enum BoneType {
 	eBoneType_Hinge = 0,
 	eBoneType_Ball = 1

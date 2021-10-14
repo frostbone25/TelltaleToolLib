@@ -619,7 +619,7 @@ struct MetaOperationDescription {
 	enum sIDs {
 		eMetaOpZero = 0x0,
 		eMetaOpOne = 0x1,
-		eMetaOpTwo = 0x2,
+		eMetaOpTwo = 0x2,//AddToChore
 		eMetaOpThree = 0x3,
 		//add to panel
 		eMetaOpFour = 0x4,
@@ -631,20 +631,20 @@ struct MetaOperationDescription {
 		//equivalence
 		eMetaOpNine = 0x9,
 		eMetaOpTen = 0x0A,
-		eMetaOpEleven = 0x0B,
+		eMetaOpEleven = 0x0B,//GetLength
 		eMetaOpTwelve = 0x0C,
 		eMetaOpThirteen = 0x0D,
 		eMetaOpFourteen = 0x0E,
 		eMetaOpFifteen = 0x0F,//ObjectState
-		eMetaOpSixteen = 0x10,
+		eMetaOpSixteen = 0x10,//OpenEditor
 		eMetaOpSeventeen = 0x11,
 		eMetaOpEighteen = 0x12,//ScriptLock
 		eMetaOpNineteen = 0x13,//ScriptUnlock
 		eMetaOpTwenty = 0x14,
-		eMetaOpTwentyOne = 0x15,//MetaOperation_SerializedVersionInfo
-		eMetaOpTwentyTwo = 0x16,
+		eMetaOpTwentyOne = 0x15,//SerializedVersionInfo
+		eMetaOpTwentyTwo = 0x16,//SetObjectName
 		eMetaOpTwentyThree = 0x17,//ToString
-		eMetaOpTwentyFour = 0x18,
+		eMetaOpTwentyFour = 0x18,//GetName
 		eMetaOpTwentyFive = 0x19,
 		eMetaOpTwentySix = 0x1A,
 		eMetaOpTwentySeven = 0x1B,

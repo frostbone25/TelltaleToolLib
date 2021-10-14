@@ -236,6 +236,16 @@ struct Flags {
 	}
 };
 
+template<int Bits, typename T>
+struct TTBitArray {
+	enum NoInit {
+		eNoInit = 0
+	};
+
+	T mBits[Bits / 8];
+
+};
+
 template<typename T> void PtrModifyRefCount(T*, int delta) {}//deprecated in engine/not needed for shipping
 
 //telltale impl of pointers, mainly its calls to the ref count 

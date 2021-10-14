@@ -17,6 +17,13 @@ meta_##name_.mpVTable[4] = MetaClassDescription_Typed<Ty>::Destroy;\
 meta_##name_.mClassSize = sizeof(Ty);\
 meta_##name_.mpTypeInfoExternalName = typeid(Ty).name();
 
+#define DEFINET2(name,_Ty) DEFINET(name,_Ty);\
+meta_##name##.Initialize(typeid(_Ty))
+
+#define ADD(name) meta_##name##.Insert()
+
+#define EXT(name,e) meta_##name##.mpExt = #e;
+
 #define DEFINETABS(name_,Ty) }++sMetaTypesCount;static MetaClassDescription meta_##name_; \
 if(!(meta_##name_.mFlags.mFlags & MetaFlag::Internal_MetaFlag_Initialized)){ \
 meta_##name_.mClassSize = sizeof(Ty);\
@@ -138,6 +145,28 @@ meta_Deque_##type##_baseclass.mFlags |= (int)MetaFlag::MetaFlag_BaseClass;\
 meta_Deque_##type##.InstallSpecializedMetaOperation(&meta_Deque_##type##_eMetaOpSerializeAsync);\
 meta_Deque_##type##.Insert();
 
+#define NEXTMEM(parent, namestr, memberNameInStruct, pathToMember, typeDesc, flags, previousMember) \
+DEFINEM(parent, memberNameInStruct);\
+meta_##parent##_##memberNameInStruct##.mpName = namestr;\
+meta_##parent##_##memberNameInStruct##.mOffset = memberOffset(&##pathToMember##::##memberNameInStruct##);\
+meta_##parent##_##memberNameInStruct##.mpMemberDesc = &meta_##typeDesc##;\
+meta_##parent##_##memberNameInStruct##.mFlags |= flags;\
+meta_##parent##_##previousMember##.mpNextMember =& meta_##parent##_##memberNameInStruct##;
+
+#define FIRSTMEM(parent, namestr, memberNameInStruct, pathToMember, typeDesc, flags) \
+DEFINEM(parent, memberNameInStruct);\
+meta_##parent##_##memberNameInStruct##.mpName = namestr;\
+meta_##parent##_##memberNameInStruct##.mOffset = memberOffset(&##pathToMember##::##memberNameInStruct##);\
+meta_##parent##_##memberNameInStruct##.mpMemberDesc = &meta_##typeDesc##;\
+meta_##parent##_##memberNameInStruct##.mFlags |= flags;\
+meta_##parent##.mpFirstMember = &meta_##parent##_##memberNameInStruct##;
+
+#define NEXTMEM2(parent, memberNameInStruct, pathToMember, typeDesc, flags, previousMember) \
+NEXTMEM(parent, #memberNameInStruct, memberNameInStruct, pathToMember, typeDesc, flags, previousMember)
+
+#define FIRSTMEM2(parent, memberNameInStruct, pathToMember, typeDesc, flags) \
+FIRSTMEM(parent, #memberNameInStruct, memberNameInStruct, pathToMember, typeDesc, flags)
+
 #define DEFINEMAP(key,value,less) DEFINET(Map_##key##_##value##, Map<key SEP value SEP less>);\
 meta_Map_##key##_##value##.Initialize(typeid(Map<key SEP value SEP less>));\
 METAOP_CUSTOM(Map_##key##_##value##, eMetaOpSerializeAsync, Map<key SEP value SEP less>::MetaOperation_SerializeAsync);\
@@ -175,6 +204,18 @@ METAOP_CUSTOM(Handle##name_,eMetaOpSerializeAsync, Handle<Ty>::MetaOperation_Ser
 meta_Handle##name_##.InstallSpecializedMetaOperation(&meta_Handle##name_##_eMetaOpSerializeAsync);\
 meta_Handle##name_##.Insert();\
 
+#define DEFINEHANDLELOCK(name_,Ty) DEFINET(HandleLock##name_, HandleLock<Ty>) \
+meta_HandleLock##name_##.Initialize(typeid(HandleLock<Ty>));\
+meta_HandleLock##name_##.mFlags |= 0x20004;\
+DEFINEM(HandleLock##name_, handlebase);\
+meta_HandleLock##name_##_handlebase.mpName = "Baseclass_HandleBase";\
+meta_HandleLock##name_##_handlebase.mOffset = 0;\
+meta_HandleLock##name_##_handlebase.mpMemberDesc = &meta_handlebase;\
+meta_HandleLock##name_##_handlebase.mFlags |= 0x10;\
+meta_HandleLock##name_##.mpFirstMember = &meta_HandleLock##name_##_handlebase;\
+METAOP_CUSTOM(HandleLock##name_,eMetaOpSerializeAsync, HandleLock<Ty>::MetaOperation_SerializeAsync);\
+meta_HandleLock##name_##.InstallSpecializedMetaOperation(&meta_HandleLock##name_##_eMetaOpSerializeAsync);\
+meta_HandleLock##name_##.Insert();\
 
 #define DEFINEOP(name, opName,fid,fun)static MetaOperationDescription meta_##name##_##opName; meta_##name##_##opName.id = fid;\
 meta_##name##_##opName.mpOpFn = fun;
@@ -629,6 +670,7 @@ namespace MetaInit {
 			DEFINEDEQUE(i32);
 			DEFINEDEQUE(String);
 			DEFINEMAP(Symbol, String, Symbol::CompareCRC);
+			DEFINEMAP(Symbol, Symbol, Symbol::CompareCRC);
 			DEFINEMAP(Symbol, float, Symbol::CompareCRC);
 			DEFINEMAP(String, int, std::less<String>);
 			DEFINEMAP(int, Symbol, std::less<int>);
@@ -784,7 +826,170 @@ namespace MetaInit {
 			meta_skl.mpFirstMember = &meta_skl_entries;
 			meta_skl.Insert();
 
+			DEFINET(aam, ActorAgentMapper);
+			meta_aam.Initialize(typeid(ActorAgentMapper));
+			meta_aam.mpExt = "aam";
+			DEFINEM(aam, aam);
+			meta_aam_aam.mpName = "mActorAgentMap";
+			meta_aam_aam.mpMemberDesc = &meta_prop;
+			meta_aam_aam.mOffset = memberOffset(&ActorAgentMapper::mActorAgentMap);
+			meta_aam.mpFirstMember = &meta_aam_aam;
+			DEFINEM(aam, aa);
+			meta_aam_aa.mpName = "mActionActors";
+			meta_aam_aa.mpMemberDesc = &meta_Set_String;
+			meta_aam_aa.mOffset = memberOffset(&ActorAgentMapper::mActionActors);
+			meta_aam_aam.mpNextMember = &meta_aam_aa;
+			meta_aam.Insert();
 
+			DEFINET(amape, AgentMap::AgentMapEntry);
+			meta_amape.Initialize(typeid(AgentMap::AgentMapEntry));
+			DEFINEM(amape, name);
+			meta_amape_name.mpName = "mzName";
+			meta_amape_name.mOffset = memberOffset(&AgentMap::AgentMapEntry::mzName);
+			meta_amape_name.mpMemberDesc = &meta_string;
+
+			DEFINEM(amape, Actor);
+			meta_amape_Actor.mpName = "mzActor";
+			meta_amape_Actor.mOffset = memberOffset(&AgentMap::AgentMapEntry::mzActor);
+			meta_amape_Actor.mpMemberDesc = &meta_string;
+			meta_amape_name.mpNextMember = &meta_amape_Actor;
+
+			DEFINEM(amape, name2);
+			meta_amape_name2.mpName = "mazModels";
+			meta_amape_name2.mOffset = memberOffset(&AgentMap::AgentMapEntry::mazModels);
+			meta_amape_name2.mpMemberDesc = &meta_Set_String;
+			meta_amape_Actor.mpNextMember = &meta_amape_name2;
+		
+			DEFINEM(amape, name3);
+			meta_amape_name3.mpName = "mazGuides";
+			meta_amape_name3.mOffset = memberOffset(&AgentMap::AgentMapEntry::mazGuides);
+			meta_amape_name3.mpMemberDesc = &meta_Set_String;
+			meta_amape_name2.mpNextMember = &meta_amape_name3;
+
+			DEFINEM(amape, name4);
+			meta_amape_name4.mpName = "mazStyleIdles";
+			meta_amape_name4.mOffset = memberOffset(&AgentMap::AgentMapEntry::mazStyleIdles);
+			meta_amape_name4.mpMemberDesc = &meta_Set_String;
+			meta_amape_name3.mpNextMember = &meta_amape_name4;
+
+			meta_amape.mpFirstMember = &meta_amape_name;
+			meta_amape.Insert();
+
+			DEFINEMAP2(String, AgentMap::AgentMapEntry, str, amape, std::less<String>);
+
+			DEFINET(amap, AgentMap);
+			meta_amap.Initialize(typeid(AgentMap));
+			meta_amap.mpExt = "amap";
+			DEFINEM(amap, agents);
+			meta_amap_agents.mpName = "maAgents";
+			meta_amap_agents.mOffset = memberOffset(&AgentMap::maAgents);
+			meta_amap_agents.mpMemberDesc = &meta_Map_str_amape;
+			meta_amap.mpFirstMember = &meta_amap_agents;
+			meta_amap.Insert();
+
+			DEFINET(acol, AssetCollection);
+			meta_acol.Initialize(typeid(AssetCollection));
+			meta_acol.mpExt = "acol";
+			DEFINEM(acol, inc);
+			DEFINEM(acol, exl);
+			DEFINEM(acol, pre);
+			meta_acol_inc.mpMemberDesc = &meta_DCArray_String;
+			meta_acol_exl.mpMemberDesc = &meta_DCArray_String;
+			meta_acol_pre.mpMemberDesc = &meta_string;
+			meta_acol_inc.mOffset = memberOffset(&AssetCollection::mIncludeMasks);
+			meta_acol_exl.mOffset = memberOffset(&AssetCollection::mExcludeMasks);
+			meta_acol_pre.mOffset = memberOffset(&AssetCollection::mPreFilter);
+			meta_acol_inc.mpName = "mIncludeMasks";
+			meta_acol_exl.mpName = "mExcludeMasks";
+			meta_acol_pre.mpName = "mPreFilter";
+			meta_acol_pre.mFlags |= MetaFlag::MetaFlag_EditorHide;
+			meta_acol.mpFirstMember = &meta_acol_inc;
+			meta_acol_inc.mpNextMember = &meta_acol_exl;
+			meta_acol_exl.mpNextMember = &meta_acol_pre;
+			meta_acol.Insert();
+
+			DEFINEMAP2(String, SoundBusSystem::BusDescription, str, bd, std::less<String>);//we can define since it doesnt ref the mcd yet
+	
+			DEFINET(busd, SoundBusSystem::BusDescription);
+			meta_busd.Initialize(typeid(SoundBusSystem::BusDescription));
+			FIRSTMEM(busd, "fVolumedB", fVolumedB, SoundBusSystem::BusDescription, float, 0);
+			NEXTMEM(busd, "fReverbWetLeveldB", fReverbWetLeveldB, SoundBusSystem::BusDescription, float, 0, fVolumedB);
+			NEXTMEM(busd, "fLowPassFrequencyCutoff", fLowPassFrequencyCutoff, SoundBusSystem::BusDescription, float, 0, fReverbWetLeveldB);
+			NEXTMEM(busd, "fHighPassFrequencyCutoff", fHighPassFrequencyCutoff, SoundBusSystem::BusDescription, float, 0, fLowPassFrequencyCutoff);
+			NEXTMEM(busd, "bEnableLowPass", bEnableLowPass, SoundBusSystem::BusDescription, bool, 0, fHighPassFrequencyCutoff);
+			NEXTMEM(busd, "bEnableHighPass", bEnableHighPass, SoundBusSystem::BusDescription, bool, 0, bEnableLowPass);
+			NEXTMEM(busd, "children", children, SoundBusSystem::BusDescription, Map_str_bd, 0, bEnableHighPass);
+			NEXTMEM(busd, "autoAssignPatternCollection", autoAssignPatternCollection, SoundBusSystem::BusDescription, acol, 0, children);
+			meta_busd.Insert();
+
+			DEFINET(bus, SoundBusSystem::BusHolder);
+			meta_bus.Initialize(typeid(SoundBusSystem::BusHolder));
+			meta_bus.mpExt = "audiobus";
+			DEFINEM(bus, mbus);
+			meta_bus_mbus.mpName = "masterBus";
+			meta_bus_mbus.mOffset = memberOffset(&SoundBusSystem::BusHolder::masterBus);
+			meta_bus_mbus.mpMemberDesc = &meta_busd;
+			DEFINEM(bus, am);
+			meta_bus_am.mpName = "assetMap";
+			meta_bus_mbus.mpNextMember = &meta_bus_am;
+			meta_bus_am.mOffset = memberOffset(&SoundBusSystem::BusHolder::assetMap);
+			meta_bus_am.mpMemberDesc = &meta_Map_Symbol_Symbol;
+			meta_bus_am.mFlags |= MetaFlag::MetaFlag_EditorHide;
+			meta_bus.mpFirstMember = &meta_bus_mbus;
+			meta_bus.Insert();
+
+			DEFINET2(imapm, InputMapper::EventMapping);
+			FIRSTMEM(imapm, "mInputCode", mInputCode, InputMapper::EventMapping, long, MetaFlag::MetaFlag_EnumIntType);
+			NEXTMEM2(imapm, mEvent, InputMapper::EventMapping, long, MetaFlag::MetaFlag_EnumIntType, mInputCode);
+			NEXTMEM2(imapm, mScriptFunction, InputMapper::EventMapping, string, 0, mEvent);
+			NEXTMEM2(imapm, mControllerIndexOverride, InputMapper::EventMapping, long, 0, mScriptFunction);
+			ADD(imapm);
+
+			DEFINEDCARRAY2(InputMapper*, imapptr);//telltale made a mistake! would not need to serialize ptrs? has overriden metaop tho
+
+			DEFINET2(imapr, InputMapper::RawEvent);
+			FIRSTMEM2(imapr, mKey, InputMapper::RawEvent, long, MetaFlag::MetaFlag_EnumIntType);
+			NEXTMEM2(imapr, mType, InputMapper::RawEvent, long, MetaFlag::MetaFlag_EnumIntType, mKey);
+			NEXTMEM2(imapr, mX, InputMapper::RawEvent, float, 0, mType);
+			NEXTMEM2(imapr, mY, InputMapper::RawEvent, float, 0, mX);
+			NEXTMEM2(imapr, mController, InputMapper::RawEvent, long, 0, mY);
+			NEXTMEM2(imapr, mIMAPFilter, InputMapper::RawEvent, DCArray_imapptr, MetaFlag::MetaFlag_NoPanelCaption | MetaFlag::MetaFlag_BaseClass, mController);
+			ADD(imapr);
+
+			DEFINEDCARRAY2(InputMapper::EventMapping, eventmapping);
+
+			DEFINET2(imap, InputMapper);
+			EXT(imap, imap);
+			METAOP_CUSTOM(imap, eMetaOpSerializeAsync, InputMapper::MetaOperation_SerializeAsync);
+			FIRSTMEM2(imap, mName, InputMapper, string, 0);
+			NEXTMEM2(imap, mMappedEvents, InputMapper, DCArray_eventmapping, 0, mName);
+			ADD(imap);
+
+			DEFINET2(pmapm, PlatformInputMapper::EventMapping);
+			FIRSTMEM2(pmapm, mPlatformInputCode, PlatformInputMapper::EventMapping, long, 0);
+			NEXTMEM2(pmapm, mInputCode, PlatformInputMapper::EventMapping, long, 0, mPlatformInputCode);
+			ADD(pmapm);
+
+			DEFINEHANDLELOCK(scenelock, Scene);
+			DEFINEDCARRAY2(HandleLock<Scene>, hlscene);
+
+			DEFINET2(sceneagent, Scene::AgentInfo);
+			FIRSTMEM2(sceneagent, mAgentName, Scene::AgentInfo, string, 0);
+			NEXTMEM2(sceneagent, mAgentSceneProps, Scene::AgentInfo, prop, 0, mAgentName);
+			ADD(sceneagent);
+
+			DEFINELIST_(Scene::AgentInfo*, agentinfoptr);
+
+			DEFINET2(scene, Scene);
+			METAOP_CUSTOM(scene, eMetaOpSerializeAsync, Scene::MetaOperation_SerializeAsync);
+			FIRSTMEM2(scene, mTimeScale, Scene, float, 1);
+			NEXTMEM2(scene, mbActive, Scene, bool, 1, mTimeScale);
+			NEXTMEM2(scene, mbHidden, Scene, bool, 0, mbActive);
+			NEXTMEM2(scene, mName, Scene, string, 0, mbHidden);
+			NEXTMEM2(scene, mAgentList, Scene, List_agentinfoptr, 1, mName);
+			NEXTMEM2(scene, mReferencedScenes, Scene, DCArray_hlscene, 0, mAgentList);
+			EXT(scene, scene);
+			ADD(scene);
 
 		}
 		Initialize2();

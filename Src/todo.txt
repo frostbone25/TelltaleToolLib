@@ -1,7 +1,6 @@
 TODO LIST:
 
 - IMPLEMENT ALL TYPES!!
-- test skeleton serialize (complex sarrays etc)
 
 notes:
 metastream deletes the datastream passed on open
@@ -17,4 +16,4 @@ mCompressionLibrary dd ? ; enum Compression::Library
 //db byte dd int32 dq int64 (quad)
 
 THINGS THAT DONT WORK WITH THE LIB
-- VERSION CRCS! HOW THE FUCK? DO? YOU? CALCULATE THEM?!
+- VERSION CRCS! HOW THE FUCK? DO? YOU? CALCULATE THEM?! NOTE if i get them to work, scene agent info wont work since i skipped the mpAgent member

@@ -58,6 +58,12 @@
     <ClInclude Include="Src\Zlib\zlib.h" />
     <ClInclude Include="Src\Zlib\zutil.h" />
     <ClInclude Include="Src\TelltaleEditor\dirent.h" />
+    <ClInclude Include="Src\Types\ActorAgentMapper.h" />
+    <ClInclude Include="Src\Types\AgentMap.h" />
+    <ClInclude Include="Src\Types\SoundBusSystem.h" />
+    <ClInclude Include="Src\Types\AssetCollection.h" />
+    <ClInclude Include="Src\Types\InputMapper.h" />
+    <ClInclude Include="Src\Types\Scene.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include=".gitattributes" />
