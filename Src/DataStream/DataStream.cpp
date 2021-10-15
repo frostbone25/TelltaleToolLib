@@ -5,6 +5,7 @@
 #include "DataStream.h"
 #include <vector>
 #include <utility>
+#include "../TelltaleToolLibrary.h"
 #include "../Blowfish.h"
 
 bool DataStream::Copy(DataStream* pDst, unsigned __int64 pDstOffset, unsigned __int64 pSrcOffset, unsigned __int64 size) {
@@ -640,7 +641,7 @@ mSize(size), mStreamOffset(off), mOffset(0) {
 
 
 DataStreamSubStream::DataStreamSubStream(DataStream* base, unsigned __int64 size) : DataStream(DataStreamMode::eMode_Read), mpBase(base),
-	mSize(size), mOffset(0) {
+mSize(size), mOffset(0) {
 	if (!base)throw "No base passed";
 	mStreamOffset = base->GetPosition();
 	mpBase->mSubStreams++;
@@ -733,9 +734,16 @@ bool DataStreamFile_Win::Serialize(char* buf, unsigned __int64 bufsize) {
 	return true;
 }
 
-DataStreamFile_Win::DataStreamFile_Win(FileHandle handle,DataStreamMode m) : mHandle{ handle }, DataStream(m) {
+DataStreamFile_Win::DataStreamFile_Win(FileHandle handle, DataStreamMode m) : mHandle{ handle }, DataStream(m) {
 	if (!handle) {
 		mMode = DataStreamMode::eMode_Unset;
+		TelltaleToolLib_RaiseError("File handle passed in was not valid", ErrorSeverity::ERR);
+		return;
+	}
+	struct stat st;
+	fstat(_fileno(handle), &st);
+	if ((st.st_mode & S_IFMT) != S_IFREG){
+		TelltaleToolLib_RaiseError("File handle passed in was not valid", ErrorSeverity::ERR);
 		return;
 	}
 	mStreamOffset = ftell(handle);

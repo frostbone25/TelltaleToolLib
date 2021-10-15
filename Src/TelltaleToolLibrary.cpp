@@ -14,11 +14,30 @@
 HashDatabase* sgHashDB = NULL;
 bool sInitialized = false;
 
+void _DefaultCallback(const char* msg, ErrorSeverity e) {
+#ifdef DEBUGMODE
+    printf("ERROR: %s: [%s]\n",msg, e == ErrorSeverity::CRITICAL_ERROR ? "CRITICAL" : e == ErrorSeverity::NOTIFY ? "NOTIFY" 
+    : e == ErrorSeverity::WARN ? "WARNING" : "ERR");
+#endif
+    if (e == ErrorSeverity::CRITICAL_ERROR)exit(-1);
+}
+
+ErrorCallbackF sDefaultErrorCallback = _DefaultCallback;
+
+void TelltaleToolLib_SetErrorCallback(ErrorCallbackF _Func) {
+    sDefaultErrorCallback = _Func;
+}
+
+void TelltaleToolLib_RaiseError(const char* _Msg, ErrorSeverity _S) {
+    sDefaultErrorCallback(_Msg, _S);
+}
+
 void TelltaleToolLib_Free() {
     if (sgHashDB) {
         delete sgHashDB;
         sgHashDB = NULL;
     }
+    sDefaultErrorCallback = _DefaultCallback;
 }
 
 void TelltaleToolLib_SetGlobalHashDatabaseFromStream(DataStream* stream) {

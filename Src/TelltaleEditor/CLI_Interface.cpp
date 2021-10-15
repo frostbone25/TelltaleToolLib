@@ -447,9 +447,10 @@ namespace TEditorCLI {
 #include "../Types/DlgSystemSettings.h"
 
 int main(int argn, char* argv[]) {
-	TelltaleToolLib_Initialize("WDC");
+	TelltaleToolLib_Initialize("MC2");
 	TelltaleToolLib_SetGlobalHashDatabaseFromStream(
-		_OpenDataStreamFromDisc("c:/users/lucas/desktop/db.HashDB", DataStreamMode::eMode_Read));
+		_OpenDataStreamFromDisc("c:/users/lucas/desktop/My Stuff/Projects/HashDB Creator/LibTelltale DB/LibTelltale.HashDB", 
+			DataStreamMode::eMode_Read));
 	DlgSystemSettings settings;
 	MetaStream meta = MetaStream(NULL);
 	meta.Open(_OpenDataStreamFromDisc("c:/users/lucas/desktop/in.dss",
@@ -458,8 +459,8 @@ int main(int argn, char* argv[]) {
 	printf("Result: %d\n",PerformMetaSerializeFull(&meta, &settings));
 	DCArray<DlgObjectPropsMap::GroupDefinition*>* defs = &settings.mPropsMapUser.mGroupDefs;
 	for (int i = 0; i < defs->mSize; i++) {
-		printf("Cat %d, Ver %d, Prop: %llX\n",defs->operator[](i)->mGroupCat
-			, defs->operator[](i)->mVer, defs->operator[](i)->mhProps.mHandleObjectInfo.mObjectName);
+		printf("Cat %d, Ver %d, Prop: %s\n",defs->operator[](i)->mGroupCat
+			, defs->operator[](i)->mVer, defs->operator[](i)->mhProps.GetObjectName().c_str());
 	}
 	return 0;
 	//return TEditorCLI::TEditor_Main(argn, argv);

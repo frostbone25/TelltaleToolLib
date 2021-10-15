@@ -8,6 +8,8 @@ HashDatabase::HashDatabase(DataStream* stream) {
 	this->db_pages = NULL;
 	this->flags = 0;
 	this->numPages = 0;
+	this->cached_page = NULL;
+	this->bufferedPage = NULL;
 }
 
 HashDatabase::Page* HashDatabase::PageAt(int index) {
@@ -21,21 +23,36 @@ HashDatabase::Page** HashDatabase::Pages() {
 
 void HashDatabase::FindEntry(HashDatabase::Page* page, u64 crc, String* result) {
 	if (page) {
-		this->db_stream->SetPosition(page->offset, DataStreamSeekType::eSeekType_Begin);
+		if (!(cached_page && cached_page == page)) {
+			this->db_stream->SetPosition(page->offset, DataStreamSeekType::eSeekType_Begin);
+			if (bufferedPage)free(bufferedPage);
+			bufferedPage = (char*)malloc(page->count * 0xC);
+			this->db_stream->Serialize(bufferedPage, page->count * 0xC);
+			cached_page = page;
+		}
+		char* cp;
+		u32 c;
 		for (int i = 0; i < page->count; i++) {
-			u64 c;
-			db_stream->Serialize((char*)&c, 8);
-			if (c == crc) {
-				u32 p;
-				db_stream->Serialize((char*)&p, 4);
-				db_stream->SetPosition((page->count * 12) + page->offset + p, DataStreamSeekType::eSeekType_Begin);
-				char ch = 0;
-				while ((db_stream->Serialize(&ch, 1)) != 0) {
-					result->operator+=(ch);
+			cp = (bufferedPage + 0xC * i);
+			if (*((u64*)(cp)) == crc) {
+				cp = (bufferedPage + 0xC * i + 8);
+				c = *((u32*)(cp));
+				db_stream->SetPosition((page->count * 0xC) + page->offset + c, DataStreamSeekType::eSeekType_Begin);
+				int len = 0;
+				if (i + 1 != page->count) {
+					cp = (bufferedPage + (0xC * (i+1)) + 8);
+					len = *((u32*)(cp));
+					len -= c;
 				}
+				else {
+					len = page->size - (0xC * page->count) - c;
+				}
+				char* t = new char[len];
+				db_stream->Serialize(t, len);
+				result->operator=(t);
+				delete[] t;
 				return;
 			}
-			else db_stream->Serialize((char*)&c, 4);
 		}
 		return;
 	}
@@ -110,4 +127,6 @@ HashDatabase::~HashDatabase() {
 		delete[] PageAt(i)->pageName;
 	}
 	if (!this->db_pages)free(this->db_pages);
+	if (this->bufferedPage)
+		free(bufferedPage);
 }

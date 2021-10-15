@@ -33,7 +33,6 @@ public:
 	Page* PageAt(int index);
 	Page** Pages();
 	Page* FindPage(const char* name);
-	//page can be NULL, if so it will search all pages. CALL DELETE ON RETURN VALUE
 	void FindEntry(Page* page, u64 crc,String* result);
 
 protected:
@@ -41,6 +40,8 @@ protected:
 	Page** db_pages;
 	int numPages;
 	int flags;
+	char* bufferedPage;
+	Page* cached_page;
 };
 
 #endif

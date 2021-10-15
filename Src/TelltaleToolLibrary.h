@@ -213,6 +213,22 @@ _TTToolLib_Exp HashDatabase* TelltaleToolLib_GetGlobalHashDatabase();
 */
 _TTToolLib_Exp void TelltaleToolLib_Free();
 
+enum ErrorSeverity {
+	NOTIFY,
+	WARN,
+	ERR,
+	CRITICAL_ERROR
+};
+
+typedef void (*ErrorCallbackF)(const char* _Msg, ErrorSeverity _Severity);
+
+/*
+* Sets the error callback which will be called when any error occurs.
+*/
+_TTToolLib_Exp void TelltaleToolLib_SetErrorCallback(ErrorCallbackF _Func);
+
+_TTToolLib_Exp void TelltaleToolLib_RaiseError(const char* _Msg, ErrorSeverity _S);
+
 extern bool sInitialized;
 
 struct Flags {

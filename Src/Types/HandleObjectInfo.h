@@ -8,6 +8,8 @@
 
 #include "../TelltaleToolLibrary.h"
 #include "../Meta.hpp"
+#include <algorithm>
+#include "../HashDB/HashDB.h"
 
 struct HandleObjectInfo {
 	Symbol mObjectName;
@@ -46,6 +48,28 @@ template<typename T> struct Handle : public HandleBase {
 	Handle<T>& operator=(const Symbol& o) {
 		mHandleObjectInfo.mObjectName = o;
 		return *this;
+	}
+
+	String GetObjectName() {
+		static const String _NF = "<NotFound>";
+		HashDatabase* db = TelltaleToolLib_GetGlobalHashDatabase();
+		MetaClassDescription* desc = GetMetaClassDescription(typeid(T).name());
+		if (!desc || !desc->mpExt)return _NF;
+		if (!db)return _NF;
+		HashDatabase::Page* page = NULL;
+		String pagen = "Files_";
+		pagen += desc->mpExt;
+		pagen += '_';
+		String gameid = sBlowfishKeys[sSetKeyIndex].game_id;
+		std::transform(gameid.begin(), gameid.end(), gameid.begin(), ::toupper);
+		pagen += gameid;
+		page = db->FindPage(pagen.c_str());
+		if (!page)return _NF;
+		String ret;
+		db->FindEntry(page, mHandleObjectInfo.mObjectName.GetCRC(), &ret);
+		if (ret.size() == 0)
+			ret = _NF;
+		return ret;
 	}
 
 	static MetaOpResult MetaOperation_SerializeAsync(void* pObj, MetaClassDescription* pObjDescription, MetaMemberDescription* pCtx,
