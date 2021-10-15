@@ -142,6 +142,15 @@ public:
 		return (void*)(mpStorage + index);
 	}
 
+	bool ReserveAndResize(int num_to_add_or_remove) {
+		if (Resize(num_to_add_or_remove)) {
+			mSize = mCapacity;
+			return true;
+		}
+		return false;
+	}
+	
+	//Reserves memory
 	bool Resize(int num_to_add_or_remove) {
 		if (!num_to_add_or_remove)return true;
 		T* oldstorage = mpStorage;

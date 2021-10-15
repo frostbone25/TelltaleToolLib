@@ -109,6 +109,8 @@ meta_Set_##type##_baseclass.mFlags |= (int)MetaFlag::MetaFlag_BaseClass;\
 meta_Set_##type##.InstallSpecializedMetaOperation(&meta_Set_##type##_eMetaOpSerializeAsync);\
 meta_Set_##type##.Insert();
 
+#define ADDFLAGS(name, flags) meta_##name.mFlags |= flags
+
 #define DEFINESARRAY_(_Ty,type,count) DEFINET(sarray_##type##_##count##, SArray<_Ty>);\
 meta_sarray_##type##_##count##.Initialize(typeid(SArray<_Ty>));\
 METAOP_CUSTOM(sarray_##type##_##count, eMetaOpSerializeAsync, SArray<_Ty>::MetaOperation_SerializeAsync);\
@@ -217,6 +219,10 @@ meta_Handle##name_##.mpFirstMember = &meta_Handle##name_##_handlebase;\
 METAOP_CUSTOM(Handle##name_,eMetaOpSerializeAsync, Handle<Ty>::MetaOperation_SerializeAsync);\
 meta_Handle##name_##.InstallSpecializedMetaOperation(&meta_Handle##name_##_eMetaOpSerializeAsync);\
 meta_Handle##name_##.Insert();\
+
+#define SERIALIZER(name,_Ty) \
+METAOP_CUSTOM(name, eMetaOpSerializeAsync, _Ty##::MetaOperation_SerializeAsync);\
+meta_##name##.InstallSpecializedMetaOperation(&meta_##name##_eMetaOpSerializeAsync)
 
 #define DEFINEHANDLELOCK(name_,Ty) DEFINET(HandleLock##name_, HandleLock<Ty>) \
 meta_HandleLock##name_##.Initialize(typeid(HandleLock<Ty>));\
@@ -975,6 +981,7 @@ namespace MetaInit {
 			DEFINET2(imap, InputMapper);
 			EXT(imap, imap);
 			METAOP_CUSTOM(imap, eMetaOpSerializeAsync, InputMapper::MetaOperation_SerializeAsync);
+			meta_imap.InstallSpecializedMetaOperation(&meta_imap_eMetaOpSerializeAsync);
 			FIRSTMEM2(imap, mName, InputMapper, string, 0);
 			NEXTMEM2(imap, mMappedEvents, InputMapper, DCArray_eventmapping, 0, mName);
 			ADD(imap);
@@ -996,6 +1003,7 @@ namespace MetaInit {
 
 			DEFINET2NOCOPY(scene, Scene);
 			METAOP_CUSTOM(scene, eMetaOpSerializeAsync, Scene::MetaOperation_SerializeAsync);
+			meta_scene.InstallSpecializedMetaOperation(&meta_scene_eMetaOpSerializeAsync);
 			FIRSTMEM2(scene, mTimeScale, Scene, float, 1);
 			NEXTMEM2(scene, mbActive, Scene, bool, 1, mTimeScale);
 			NEXTMEM2(scene, mbHidden, Scene, bool, 0, mbActive);
@@ -1004,6 +1012,32 @@ namespace MetaInit {
 			NEXTMEM2(scene, mReferencedScenes, Scene, DCArray_hlscene, 0, mAgentList);
 			EXT(scene, scene);
 			ADD(scene);
+
+			DEFINET2(dlgprops, DlgObjectPropsMap);
+			SERIALIZER(dlgprops, DlgObjectPropsMap);
+			ADD(dlgprops);
+
+			DEFINET2(dlgdef, DlgObjectPropsMap::GroupDefinition);
+			SERIALIZER(dlgdef, DlgObjectPropsMap::GroupDefinition);
+			ADDFLAGS(dlgdef, MetaFlag::MetaFlag_NoPanelCaption);
+			DEFINEM(dlgdef, uidowner);
+			meta_dlgdef_uidowner.mpName = "Baseclass_UID::Owner";
+			meta_dlgdef_uidowner.mpMemberDesc = &meta_uidowner;
+			meta_dlgdef.mpFirstMember = &meta_dlgdef_uidowner;
+			meta_dlgdef_uidowner.mOffset = 0;
+			NEXTMEM2(dlgdef, mGroupCat, DlgObjectPropsMap::GroupDefinition, long, MetaFlag::MetaFlag_EditorHide, uidowner);
+			NEXTMEM2(dlgdef, mVer, DlgObjectPropsMap::GroupDefinition, long, MetaFlag::MetaFlag_EditorHide, mGroupCat);
+			NEXTMEM2(dlgdef, mhProps, DlgObjectPropsMap::GroupDefinition, Handlepropset, MetaFlag::MetaFlag_EditorHide, mVer);
+
+			ADD(dlgdef);
+
+			DEFINET2(dss, DlgSystemSettings);
+			EXT(dss, dss);
+			FIRSTMEM2(dss, mPropsMapUser, DlgSystemSettings, dlgprops, 0);
+			NEXTMEM2(dss, mPropsMapProduction, DlgSystemSettings, dlgprops, 0, mPropsMapUser);
+			ADD(dss);
+
+
 
 		}
 		Initialize2();

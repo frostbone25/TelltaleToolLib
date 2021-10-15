@@ -442,28 +442,25 @@ namespace TEditorCLI {
 	}
 
 }
+
+#include "../Meta.hpp"
+#include "../Types/DlgSystemSettings.h"
+
 int main(int argn, char* argv[]) {
 	TelltaleToolLib_Initialize("WDC");
-	void* buf = TEditor_GetArgumentBuffer();
-	TTArchive2 arc;
-	DataStream* s;
-
-	*(const char**)buf = "DataStreamFileDisc";
-	*(const char**)(((char*)buf) + 8) = "d:/games/the walking dead - definitive series/archives/"
-		"WDC_pc_RussianUISeason4_compressed.ttarch2";
-	*(DataStreamMode*)(((char*)buf) + 16) = DataStreamMode::eMode_Read;
-	Job* j = TEditor_CreateDispatchJob(JobOp::eCreateObject, buf);
-	while (j->mAccessLock.PollState() == TryWaitResult::eResult_NotDone);
-	s = (DataStream*)j->GetOutput();
-	TEditor_FinishJob(j);
-	*(TTArchive2**)buf = &arc;
-	*(DataStream**)(((char*)buf) + 8) = s;
-	
-	Job* job = TEditor_CreateDispatchJob(JobOp::eReadArchive, buf);
-	while (job->mAccessLock.PollState() == TryWaitResult::eResult_NotDone);
-	printf("done %d\n", arc.mResources.size());
-	TEditor_FinishJob(job);
-	getchar();
+	TelltaleToolLib_SetGlobalHashDatabaseFromStream(
+		_OpenDataStreamFromDisc("c:/users/lucas/desktop/db.HashDB", DataStreamMode::eMode_Read));
+	DlgSystemSettings settings;
+	MetaStream meta = MetaStream(NULL);
+	meta.Open(_OpenDataStreamFromDisc("c:/users/lucas/desktop/in.dss",
+		DataStreamMode::eMode_Read), MetaStreamMode::eMetaStream_Read, {0});
+	printf("Performing serialize..\n");
+	printf("Result: %d\n",PerformMetaSerializeFull(&meta, &settings));
+	DCArray<DlgObjectPropsMap::GroupDefinition*>* defs = &settings.mPropsMapUser.mGroupDefs;
+	for (int i = 0; i < defs->mSize; i++) {
+		printf("Cat %d, Ver %d, Prop: %llX\n",defs->operator[](i)->mGroupCat
+			, defs->operator[](i)->mVer, defs->operator[](i)->mhProps.mHandleObjectInfo.mObjectName);
+	}
 	return 0;
 	//return TEditorCLI::TEditor_Main(argn, argv);
 }

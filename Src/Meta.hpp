@@ -106,10 +106,15 @@ namespace UID {
 	
 	struct __declspec(align(8)) Owner {
 		idT miUniqueID;
+
+		Owner() : miUniqueID(0){}
+
 	};
 
 	struct __declspec(align(8)) Generator {
 		idT miNextUniqueID;
+
+		Generator() : miNextUniqueID(0) {}
 	};
 
 };
@@ -831,7 +836,7 @@ template<typename T> MetaOpResult PerformMetaSerializeFull(MetaStream* pStream, 
 }
 
 
-//Doesnt work on string!
+//Doesnt work on string! This is deprecated. You should use serialize full
 template<typename T> MetaOpResult PerformMetaSerializeAsync(MetaStream* pStream, T* pObj) {
 	MetaClassDescription* pDesc = MetaClassDescription_Typed<T>::GetMetaClassDescription();
 	if (!pDesc)return eMetaOp_Fail;

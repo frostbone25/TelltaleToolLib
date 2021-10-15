@@ -40,7 +40,7 @@
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
-    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>v142</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
@@ -164,6 +164,7 @@
     <ClInclude Include="Src\Types\Container.h" />
     <ClInclude Include="Src\Types\DCArray.h" />
     <ClInclude Include="Src\Types\Deque.h" />
+    <ClInclude Include="Src\Types\DlgSystemSettings.h" />
     <ClInclude Include="Src\Types\HandleObjectInfo.h" />
     <ClInclude Include="Src\HashManager.h" />
     <ClInclude Include="Src\Meta.hpp" />

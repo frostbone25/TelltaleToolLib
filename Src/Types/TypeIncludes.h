@@ -25,3 +25,4 @@
 #include "AssetCollection.h"
 #include "InputMapper.h"
 #include "Scene.h"
+#include "DlgSystemSettings.h"

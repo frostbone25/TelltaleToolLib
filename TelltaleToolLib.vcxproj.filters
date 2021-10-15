@@ -64,6 +64,7 @@
     <ClInclude Include="Src\Types\AssetCollection.h" />
     <ClInclude Include="Src\Types\InputMapper.h" />
     <ClInclude Include="Src\Types\Scene.h" />
+    <ClInclude Include="Src\Types\DlgSystemSettings.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include=".gitattributes" />
