@@ -150,7 +150,7 @@ public:
 		return false;
 	}
 	
-	//Reserves memory
+	//Reserves memory, does not change size
 	bool Resize(int num_to_add_or_remove) {
 		if (!num_to_add_or_remove)return true;
 		T* oldstorage = mpStorage;

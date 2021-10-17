@@ -49,7 +49,8 @@ void TelltaleToolLib_SetGlobalHashDatabase(HashDatabase* db) {
     if (sgHashDB)
         delete sgHashDB;
     sgHashDB = db;
-    db->Open();
+    if(db)
+        db->Open();
 }
 
 HashDatabase* TelltaleToolLib_GetGlobalHashDatabase() {

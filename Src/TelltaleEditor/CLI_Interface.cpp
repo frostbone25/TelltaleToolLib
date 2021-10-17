@@ -444,24 +444,53 @@ namespace TEditorCLI {
 }
 
 #include "../Meta.hpp"
-#include "../Types/DlgSystemSettings.h"
+#include "../Types/T3Texture.h"
+#include "../HashDB/HashDB.h"
+
+void _Main()
+{
+	T3Texture data;
+	MetaStream meta = MetaStream(NULL);
+	meta.Open(_OpenDataStreamFromDisc("c:/users/lucas/downloads/ui_configurator_slide3_bg.d3dtx",
+		DataStreamMode::eMode_Read), MetaStreamMode::eMetaStream_Read, { 0 });
+
+	printf("Result: %d\n", PerformMetaSerializeAsync(&meta, &data));//TODO check data
+	printf("Name %s\n", data.mName.c_str());
+
+	meta.SwitchToMode(MetaStreamMode::eMetaStream_Write, _OpenDataStreamFromDisc("c:/users/lucas/desktop/out.d3dtx",
+		DataStreamMode::eMode_Write));
+
+	data.mPlatform.mVal = PlatformType::ePlatform_iPhone;
+
+	PerformMetaSerializeAsync(&meta, &data);
+	meta.Close();
+
+}
+
+struct _LeakSlave {
+	~_LeakSlave() {
+		_CrtDumpMemoryLeaks();
+	}
+};
 
 int main(int argn, char* argv[]) {
-	TelltaleToolLib_Initialize("MC2");
-	TelltaleToolLib_SetGlobalHashDatabaseFromStream(
-		_OpenDataStreamFromDisc("c:/users/lucas/desktop/My Stuff/Projects/HashDB Creator/LibTelltale DB/LibTelltale.HashDB", 
-			DataStreamMode::eMode_Read));
-	DlgSystemSettings settings;
-	MetaStream meta = MetaStream(NULL);
-	meta.Open(_OpenDataStreamFromDisc("c:/users/lucas/desktop/in.dss",
-		DataStreamMode::eMode_Read), MetaStreamMode::eMetaStream_Read, {0});
-	printf("Performing serialize..\n");
-	printf("Result: %d\n",PerformMetaSerializeFull(&meta, &settings));
-	DCArray<DlgObjectPropsMap::GroupDefinition*>* defs = &settings.mPropsMapUser.mGroupDefs;
-	for (int i = 0; i < defs->mSize; i++) {
-		printf("Cat %d, Ver %d, Prop: %s\n",defs->operator[](i)->mGroupCat
-			, defs->operator[](i)->mVer, defs->operator[](i)->mhProps.GetObjectName().c_str());
+
+	_LeakSlave _s;
+
+	{
+		TelltaleToolLib_Initialize("MC2");
+
+		//TelltaleToolLib_SetGlobalHashDatabaseFromStream(
+		//	_OpenDataStreamFromDisc("c:/users/lucas/desktop/My Stuff/Projects/HashDB Creator/LibTelltale DB/LibTelltale.HashDB",
+		//		DataStreamMode::eMode_Read));
+
+		for(int i = 0; i < 1; i++)
+			_Main();
+
+		//TelltaleToolLib_SetGlobalHashDatabase(NULL);
+
 	}
+
 	return 0;
 	//return TEditorCLI::TEditor_Main(argn, argv);
 }

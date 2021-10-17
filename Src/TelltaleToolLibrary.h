@@ -193,7 +193,7 @@ class DataStream;
 
 /*
 * Sets the global hash database used to search CRCs. It is very important that its set before you read or write most types (eg PropertySet)
-* If one is already set, then this deletes the old use using operator delete.
+* If one is already set, then this deletes the old use using operator delete. Can be set to NULL.
 */
 _TTToolLib_Exp void TelltaleToolLib_SetGlobalHashDatabase(HashDatabase*);
 
@@ -261,6 +261,14 @@ struct TTBitArray {
 	T mBits[Bits / 8];
 
 };
+
+namespace Geo {
+
+	struct GeoGuid {
+		u64 _Id[2];
+	};
+
+}
 
 template<typename T> void PtrModifyRefCount(T*, int delta) {}//deprecated in engine/not needed for shipping
 

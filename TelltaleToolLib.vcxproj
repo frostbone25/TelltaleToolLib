@@ -165,6 +165,7 @@
     <ClInclude Include="Src\Types\DCArray.h" />
     <ClInclude Include="Src\Types\Deque.h" />
     <ClInclude Include="Src\Types\DlgSystemSettings.h" />
+    <ClInclude Include="Src\Types\EnlightenData.h" />
     <ClInclude Include="Src\Types\HandleObjectInfo.h" />
     <ClInclude Include="Src\HashManager.h" />
     <ClInclude Include="Src\Meta.hpp" />
@@ -180,6 +181,8 @@
     <ClInclude Include="Src\Types\Set.h" />
     <ClInclude Include="Src\Types\Skeleton.h" />
     <ClInclude Include="Src\Types\SoundBusSystem.h" />
+    <ClInclude Include="Src\Types\SoundReverbDefinition.h" />
+    <ClInclude Include="Src\Types\T3Texture.h" />
     <ClInclude Include="Src\Types\TRange.h" />
     <ClInclude Include="Src\Types\TypeIncludes.h" />
     <ClInclude Include="Src\Zlib\crc32.h" />
@@ -203,6 +206,7 @@
     <ClCompile Include="Src\TelltaleToolLibrary.cpp" />
     <ClCompile Include="Src\Test\main.cpp" />
     <ClCompile Include="Src\TTArchive2.cpp" />
+    <ClCompile Include="Src\Types\T3Texture.cpp" />
     <ClCompile Include="Src\Zlib\adler32.c" />
     <ClCompile Include="Src\Zlib\compress.c" />
     <ClCompile Include="Src\Zlib\crc32.c" />

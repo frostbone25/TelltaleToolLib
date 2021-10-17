@@ -52,6 +52,8 @@ template<typename T> struct Handle : public HandleBase {
 
 	String GetObjectName() {
 		static const String _NF = "<NotFound>";
+		static const String _E = "<Empty>";
+		if (mHandleObjectInfo.mObjectName.GetCRC() == 0)return _E;
 		HashDatabase* db = TelltaleToolLib_GetGlobalHashDatabase();
 		MetaClassDescription* desc = GetMetaClassDescription(typeid(T).name());
 		if (!desc || !desc->mpExt)return _NF;

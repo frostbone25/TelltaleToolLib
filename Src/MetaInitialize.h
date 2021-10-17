@@ -195,6 +195,18 @@ meta_Map_##key##_##value##_baseclass.mFlags |= (int)MetaFlag::MetaFlag_BaseClass
 meta_Map_##key##_##value##.InstallSpecializedMetaOperation(&meta_Map_##key##_##value##_eMetaOpSerializeAsync);\
 meta_Map_##key##_##value##.Insert();
 
+#define FIRSTENUM(parent,child,enumName, enumIndex, flags) static MetaEnumDescription meta_##parent##_##child##_##enumName##;\
+meta_##parent##_##child##_##enumName##.mpEnumName = #enumName;\
+meta_##parent##_##child##_##enumName##.mEnumIntValue = enumIndex;\
+meta_##parent##_##child##_##enumName##.mFlags |= flags;\
+meta_##parent##_##child##.mpEnumDescriptions = &meta_##parent##_##child##_##enumName##;
+
+#define NEXTENUM(parent,child,enumName, enumIndex, flags, previous) static MetaEnumDescription meta_##parent##_##child##_##enumName##;\
+meta_##parent##_##child##_##enumName##.mpEnumName = #enumName;\
+meta_##parent##_##child##_##enumName##.mEnumIntValue = enumIndex;\
+meta_##parent##_##child##_##enumName##.mFlags |= flags;\
+meta_##parent##_##child##_##previous.mpNext = &meta_##parent##_##child##_##enumName##;
+
 #define DEFINEMAP2(key,value,key_var_name, value_var_name,less) DEFINET(Map_##key_var_name##_##value_var_name##, Map<key SEP value SEP less>);\
 meta_Map_##key_var_name##_##value_var_name##.Initialize(typeid(Map<key SEP value SEP less>));\
 METAOP_CUSTOM(Map_##key_var_name##_##value_var_name##, eMetaOpSerializeAsync, Map<key SEP value SEP less>::MetaOperation_SerializeAsync);\
@@ -678,6 +690,7 @@ namespace MetaInit {
 			DEFINEDCARRAY(u32);
 			DEFINEDCARRAY(u8);
 			DEFINEDCARRAY(float);
+			DEFINEDCARRAY(Symbol);
 			DEFINEDCARRAY(bool);
 			DEFINEDCARRAY(String);
 			DEFINESET(i32);
@@ -1037,7 +1050,320 @@ namespace MetaInit {
 			NEXTMEM2(dss, mPropsMapProduction, DlgSystemSettings, dlgprops, 0, mPropsMapUser);
 			ADD(dss);
 
+			DEFINET2(bb, BinaryBuffer);
+			FIRSTMEM2(bb, mDataSize, BinaryBuffer, long, 0);
+			SERIALIZER(bb, BinaryBuffer);
+			ADD(bb);
 
+			DEFINET2(enlsig, EnlightenSignature);
+			FIRSTMEM2(enlsig, mSignature, EnlightenSignature, __int64, 0);
+			NEXTMEM2(enlsig, mMagicNumber, EnlightenSignature, long, 0, mSignature);
+			NEXTMEM2(enlsig, mVersion, EnlightenSignature, long, 0, mMagicNumber);
+			ADD(enlsig);
+
+			DEFINET2(enlprobe, EnlightenProbeData);
+			FIRSTMEM2(enlprobe, mEnvTileName, EnlightenProbeData, symbol, 0);
+			NEXTMEM2(enlprobe, mRadProbeSetCore, EnlightenProbeData, bb, 0, mEnvTileName);
+			ADD(enlprobe);
+
+			DEFINET2(enlsys, EnlightenSystemData);
+			FIRSTMEM2(enlsys, mName, EnlightenSystemData, symbol, 0);
+			NEXTMEM2(enlsys, mEnvTileName, EnlightenSystemData, symbol, 0, mName);
+			NEXTMEM2(enlsys, mRadSystemCore, EnlightenSystemData, bb, 0, mEnvTileName);
+			NEXTMEM2(enlsys, mInputWorkspace, EnlightenSystemData, bb, 0, mRadSystemCore);
+			NEXTMEM2(enlsys, mClusterAlbedoWorkspaceMaterial, EnlightenSystemData, bb, 0, mInputWorkspace);
+			NEXTMEM2(enlsys, mPrecomputedVisibility, EnlightenSystemData, bb, 0, mClusterAlbedoWorkspaceMaterial);
+			ADD(enlsys);
+
+			DEFINEDCARRAY(EnlightenSystemData);
+			DEFINEDCARRAY(EnlightenProbeData);
+
+			DEFINET2(enl, EnlightenData);
+			EXT(enl, enl);
+			FIRSTMEM2(enl, mSignature, EnlightenData, enlsig, 0);
+			NEXTMEM2(enl, mName, EnlightenData, string, 0, mSignature);
+			NEXTMEM2(enl, mSystemData, EnlightenData, DCArray_EnlightenSystemData, 0, mName);
+			NEXTMEM2(enl, mProbeData, EnlightenData, DCArray_EnlightenProbeData, 0, mSystemData);
+			//no need for overriden metaops since they just call meta::x
+			ADD(enl);
+
+			DEFINET2(reverb, SoundReverbDefinition);
+			EXT(reverb, reverb);
+			FIRSTMEM2(reverb, mbEnabled, SoundReverbDefinition, bool, 0);
+			NEXTMEM2(reverb, mfRoomEffectLevel, SoundReverbDefinition, float, 0, mbEnabled);
+			NEXTMEM2(reverb, mfRoomEffectLevelHighFrequency, SoundReverbDefinition, float, 0, mfRoomEffectLevel);
+			NEXTMEM2(reverb, mfRoomEffectLevelLowFrequency, SoundReverbDefinition, float, 0, mfRoomEffectLevelHighFrequency);
+			NEXTMEM2(reverb, mfDecayTime, SoundReverbDefinition, float, 0, mfRoomEffectLevelLowFrequency);
+			NEXTMEM2(reverb, mfDecayHighFrequencyRatio, SoundReverbDefinition, float, 0, mfDecayTime);
+			NEXTMEM2(reverb, mfReflections, SoundReverbDefinition, float, 0, mfDecayHighFrequencyRatio);
+			NEXTMEM2(reverb, mfReflectionsDelay, SoundReverbDefinition, float, 0, mfReflections);
+			NEXTMEM2(reverb, mfReverb, SoundReverbDefinition, float, 0, mfReflectionsDelay);
+			NEXTMEM2(reverb, mfReverbDelay, SoundReverbDefinition, float, 0, mfReverb);
+			NEXTMEM2(reverb, mfHighFrequencyReference, SoundReverbDefinition, float, 0, mfReverbDelay);
+			NEXTMEM2(reverb, mfLowFrequencyReference, SoundReverbDefinition, float, 0, mfHighFrequencyReference);
+			NEXTMEM2(reverb, mfDiffusion, SoundReverbDefinition, float, 0, mfLowFrequencyReference);
+			NEXTMEM2(reverb, mfDensity, SoundReverbDefinition, float, 0, mfDiffusion);
+			ADD(reverb);
+
+			DEFINET2(sampler, T3SamplerStateBlock);
+			FIRSTMEM2(sampler, mData, T3SamplerStateBlock, long, 0);
+			ADD(sampler);
+
+			DEFINET2(pt, EnumPlatformType);
+			FIRSTMEM2(pt, mVal, EnumPlatformType, long, 0);
+			ADDFLAGS(pt, MetaFlag::MetaFlag_NoPanelCaption | MetaFlag::MetaFlag_EnumWrapperClass);
+			FIRSTENUM(pt, mVal, ePlatform_None, 0, 0);
+			NEXTENUM(pt, mVal, ePlatform_All, 1, 0, ePlatform_None);
+			NEXTENUM(pt, mVal, ePlatform_PC, 2, 0, ePlatform_All);
+			NEXTENUM(pt, mVal, ePlatform_Wii, 3, 0, ePlatform_PC);
+			NEXTENUM(pt, mVal, ePlatform_Xbox, 4, 0, ePlatform_Wii);
+			NEXTENUM(pt, mVal, ePlatform_PS3, 5, 0, ePlatform_Xbox);
+			NEXTENUM(pt, mVal, ePlatform_Mac, 6, 0, ePlatform_PS3);
+			NEXTENUM(pt, mVal, ePlatform_iPhone, 7, 0, ePlatform_Mac);
+			NEXTENUM(pt, mVal, ePlatform_Android, 8, 0, ePlatform_iPhone);
+			NEXTENUM(pt, mVal, ePlatform_Vita, 9, 0, ePlatform_Android);
+			NEXTENUM(pt, mVal, ePlatform_Linux, 10, 0, ePlatform_Vita);
+			NEXTENUM(pt, mVal, ePlatform_PS4, 11, 0, ePlatform_Linux);
+			NEXTENUM(pt, mVal, ePlatform_XBOne, 12, 0, ePlatform_PS4);
+			NEXTENUM(pt, mVal, ePlatform_WiiU, 13, 0, ePlatform_XBOne);
+			NEXTENUM(pt, mVal, ePlatform_Win10, 14, 0, ePlatform_WiiU);
+			NEXTENUM(pt, mVal, ePlatform_NX, 15, 0, ePlatform_Win10);
+			ADDFLAGS(pt_mVal, MetaFlag::MetaFlag_EnumIntType);
+			ADD(pt);
+
+			DEFINET2(tp, ToolProps);
+			SERIALIZER(tp, ToolProps);
+			ADDFLAGS(tp, MetaFlag::MetaFlag_MetaSerializeNonBlockedVariableSize);
+			FIRSTMEM2(tp, mbHasProps, ToolProps, bool, 0);
+			ADD(tp);
+
+			DEFINET2(t3gr, T3ToonGradientRegion);
+			FIRSTMEM2(t3gr, mColor, T3ToonGradientRegion, color, 0);
+			NEXTMEM2(t3gr, mSize, T3ToonGradientRegion, float, 0, mColor);
+			NEXTMEM2(t3gr, mGradientSize, T3ToonGradientRegion, float, 0, mSize);
+			ADD(t3gr);
+
+			DEFINEDCARRAY(T3ToonGradientRegion);
+
+			DEFINET2(swizzle, RenderSwizzleParams);
+			DEFINEM(RenderSwizzleParams, s0);
+			size_t start = memberOffset(&RenderSwizzleParams::mSwizzle);
+			meta_RenderSwizzleParams_s0.mOffset = start + 0;
+			meta_RenderSwizzleParams_s0.mpName = "mSwizzle[0]";
+			meta_RenderSwizzleParams_s0.mpMemberDesc = &meta_char;
+			meta_swizzle.mpFirstMember = &meta_RenderSwizzleParams_s0;
+			DEFINEM(RenderSwizzleParams, s1);
+			meta_RenderSwizzleParams_s1.mOffset = start + 1;
+			meta_RenderSwizzleParams_s1.mpName = "mSwizzle[1]";
+			meta_RenderSwizzleParams_s1.mpMemberDesc = &meta_char;
+			meta_RenderSwizzleParams_s0.mpNextMember = &meta_RenderSwizzleParams_s1;
+			DEFINEM(RenderSwizzleParams, s2);
+			meta_RenderSwizzleParams_s2.mOffset = start + 2;
+			meta_RenderSwizzleParams_s2.mpName = "mSwizzle[2]";
+			meta_RenderSwizzleParams_s2.mpMemberDesc = &meta_char;
+			meta_RenderSwizzleParams_s1.mpNextMember = &meta_RenderSwizzleParams_s2;
+			DEFINEM(RenderSwizzleParams, s3);
+			meta_RenderSwizzleParams_s3.mOffset = start + 3;
+			meta_RenderSwizzleParams_s3.mpName = "mSwizzle[3]";
+			meta_RenderSwizzleParams_s3.mpMemberDesc = &meta_char;
+			meta_RenderSwizzleParams_s2.mpNextMember = &meta_RenderSwizzleParams_s3;
+			ADD(swizzle);
+
+			DEFINET2(tex, T3Texture);
+			EXT(tex, d3dtx);
+			FIRSTMEM2(tex, mVersion, T3Texture, long, MetaFlag::MetaFlag_EditorHide);
+			NEXTMEM2(tex, mSamplerState, T3Texture, sampler, 0, mVersion);
+			NEXTMEM2(tex, mPlatform, T3Texture, pt, 0, mSamplerState);
+			NEXTMEM2(tex, mName, T3Texture, string, 0, mPlatform);
+			NEXTMEM2(tex, mImportName, T3Texture, string, 0, mName);
+			NEXTMEM2(tex, mImportScale, T3Texture, float, 0, mImportName);
+			NEXTMEM2(tex, mToolProps, T3Texture, tp, MetaFlag::MetaFlag_EditorHide, mImportScale);
+			NEXTMEM2(tex, mNumMipLevels, T3Texture, long, 0, mToolProps);
+			NEXTMEM2(tex, mWidth, T3Texture, long, 0, mNumMipLevels);
+			NEXTMEM2(tex, mHeight, T3Texture, long, 0, mWidth);
+			NEXTMEM2(tex, mDepth, T3Texture, long, 0, mHeight);
+			NEXTMEM2(tex, mArraySize, T3Texture, long, 0, mDepth);
+			NEXTMEM2(tex, mSurfaceFormat, T3Texture, long, 0, mArraySize);
+			FIRSTENUM(tex, mSurfaceFormat, eSurface_Unknown, -1, 0);
+			NEXTENUM(tex, mSurfaceFormat, eSurface_ARGB8, 0, 0, eSurface_Unknown);
+			NEXTENUM(tex, mSurfaceFormat, eSurface_ARGB16, 0x1, 0, eSurface_ARGB8);
+			NEXTENUM(tex, mSurfaceFormat, eSurface_RGB565, 0x2, 0, eSurface_ARGB16);
+			NEXTENUM(tex, mSurfaceFormat, eSurface_ARGB1555, 0x3, 0, eSurface_RGB565);
+			NEXTENUM(tex, mSurfaceFormat, eSurface_ARGB4, 0x4, 0, eSurface_ARGB1555);
+			NEXTENUM(tex, mSurfaceFormat, eSurface_ARGB2101010, 0x5, 0, eSurface_ARGB4);
+			NEXTENUM(tex, mSurfaceFormat, eSurface_R16, 0x6, 0, eSurface_ARGB2101010);
+			NEXTENUM(tex, mSurfaceFormat, eSurface_RG16, 0x7, 0, eSurface_R16);
+			NEXTENUM(tex, mSurfaceFormat, eSurface_RGBA16, 0x8, 0, eSurface_RG16);
+			NEXTENUM(tex, mSurfaceFormat, eSurface_RG8, 0x9, 0, eSurface_RGBA16);
+			NEXTENUM(tex, mSurfaceFormat, eSurface_RGBA8, 0xA, 0, eSurface_RG8);
+			NEXTENUM(tex, mSurfaceFormat, eSurface_R32, 0xB, 0, eSurface_RGBA8);
+			NEXTENUM(tex, mSurfaceFormat, eSurface_RG32, 0xC, 0, eSurface_R32);
+			NEXTENUM(tex, mSurfaceFormat, eSurface_RGBA32, 0xD, 0, eSurface_RG32);
+			NEXTENUM(tex, mSurfaceFormat, eSurface_RGBA8S, 0xF, 0, eSurface_RGBA32);
+			NEXTENUM(tex, mSurfaceFormat, eSurface_A8, 0x10, 0, eSurface_RGBA8S);
+			NEXTENUM(tex, mSurfaceFormat, eSurface_L8, 0x11, 0, eSurface_A8);
+			NEXTENUM(tex, mSurfaceFormat, eSurface_AL8, 0x12, 0, eSurface_L8);
+			NEXTENUM(tex, mSurfaceFormat, eSurface_L16, 0x13, 0, eSurface_AL8);
+			NEXTENUM(tex, mSurfaceFormat, eSurface_RG16S, 0x14, 0, eSurface_L16);
+			NEXTENUM(tex, mSurfaceFormat, eSurface_RGBA16S, 0x15, 0, eSurface_RG16S);
+			NEXTENUM(tex, mSurfaceFormat, eSurface_R16UI, 0x16, 0, eSurface_RGBA16S);
+			NEXTENUM(tex, mSurfaceFormat, eSurface_RG16UI, 0x17, 0, eSurface_R16UI);
+			NEXTENUM(tex, mSurfaceFormat, eSurface_R16F, 0x20, 0, eSurface_RG16UI);
+			NEXTENUM(tex, mSurfaceFormat, eSurface_RG16F, 0x21, 0, eSurface_R16F);
+			NEXTENUM(tex, mSurfaceFormat, eSurface_RGBA16F, 0x22, 0, eSurface_RG16F);
+			NEXTENUM(tex, mSurfaceFormat, eSurface_R32F, 0x23, 0, eSurface_RGBA16F);
+			NEXTENUM(tex, mSurfaceFormat, eSurface_RG32F, 0x24, 0, eSurface_R32F);
+			NEXTENUM(tex, mSurfaceFormat, eSurface_RGBA32F, 0x25, 0, eSurface_RG32F);
+			NEXTENUM(tex, mSurfaceFormat, eSurface_RGBA1010102F, 0x26, 0, eSurface_RGBA32F);
+			NEXTENUM(tex, mSurfaceFormat, eSurface_RGB111110F, 0x27, 0, eSurface_RGBA1010102F);
+			NEXTENUM(tex, mSurfaceFormat, eSurface_RGB9E5F, 0x28, 0, eSurface_RGB111110F);
+			NEXTENUM(tex, mSurfaceFormat, eSurface_DepthPCF16, 0x30, 0, eSurface_RGB9E5F);
+			NEXTENUM(tex, mSurfaceFormat, eSurface_DepthPCF24, 0x31, 0, eSurface_DepthPCF16);
+			NEXTENUM(tex, mSurfaceFormat, eSurface_Depth16, 0x32, 0, eSurface_DepthPCF24);
+			NEXTENUM(tex, mSurfaceFormat, eSurface_Depth24, 0x33, 0, eSurface_Depth16);
+			NEXTENUM(tex, mSurfaceFormat, eSurface_DepthStencil32, 0x34, 0, eSurface_Depth24);
+			NEXTENUM(tex, mSurfaceFormat, eSurface_Depth32F, 0x35, 0, eSurface_DepthStencil32);
+			NEXTENUM(tex, mSurfaceFormat, eSurface_Depth32F_Stencil8, 0x36, 0, eSurface_Depth32F);
+			NEXTENUM(tex, mSurfaceFormat, eSurface_Depth24F_Stencil8, 0x37, 0, eSurface_Depth32F_Stencil8);
+			NEXTENUM(tex, mSurfaceFormat, eSurface_DXT1, 64, 0, eSurface_Depth24F_Stencil8);
+			NEXTENUM(tex, mSurfaceFormat, eSurface_DXT3, 65, 0, eSurface_DXT1);
+			NEXTENUM(tex, mSurfaceFormat, eSurface_DXT5, 66, 0, eSurface_DXT3);
+			NEXTENUM(tex, mSurfaceFormat, eSurface_DXT5A, 67, 0, eSurface_DXT5);
+			NEXTENUM(tex, mSurfaceFormat, eSurface_DXTN, 68, 0, eSurface_DXT5A);
+			NEXTENUM(tex, mSurfaceFormat, eSurface_CTX1, 69, 0, eSurface_DXTN);
+			NEXTENUM(tex, mSurfaceFormat, eSurface_BC6, 70, 0, eSurface_CTX1);
+			NEXTENUM(tex, mSurfaceFormat, eSurface_BC7, 71, 0, eSurface_BC6);
+			NEXTENUM(tex, mSurfaceFormat, eSurface_PVRTC2, 80, 0, eSurface_BC7);
+			NEXTENUM(tex, mSurfaceFormat, eSurface_PVRTC4, 81, 0, eSurface_PVRTC2);
+			NEXTENUM(tex, mSurfaceFormat, eSurface_PVRTC2a, 82, 0, eSurface_PVRTC4);
+			NEXTENUM(tex, mSurfaceFormat, eSurface_PVRTC4a, 83, 0, eSurface_PVRTC2a);
+			NEXTENUM(tex, mSurfaceFormat, eSurface_ATC_RGB, 96, 0, eSurface_PVRTC4a);
+			NEXTENUM(tex, mSurfaceFormat, eSurface_ATC_RGB1A, 97, 0, eSurface_ATC_RGB);
+			NEXTENUM(tex, mSurfaceFormat, eSurface_ATC_RGBA, 98, 0, eSurface_ATC_RGB1A);
+			NEXTENUM(tex, mSurfaceFormat, eSurface_ETC1_RGB, 112, 0, eSurface_ATC_RGBA);
+			NEXTENUM(tex, mSurfaceFormat, eSurface_ETC2_RGB, 113, 0, eSurface_ETC1_RGB);
+			NEXTENUM(tex, mSurfaceFormat, eSurface_ETC2_RGB1A, 114, 0, eSurface_ETC2_RGB);
+			NEXTENUM(tex, mSurfaceFormat, eSurface_ETC2_RGBA, 115, 0, eSurface_ETC2_RGB1A);
+			NEXTENUM(tex, mSurfaceFormat, eSurface_ETC2_R, 116, 0, eSurface_ETC2_RGBA);
+			NEXTENUM(tex, mSurfaceFormat, eSurface_ETC2_RG, 117, 0, eSurface_ETC2_R);
+			NEXTENUM(tex, mSurfaceFormat, eSurface_ATSC_RGBA_4x4, 128, 0, eSurface_ETC2_RG);
+			NEXTENUM(tex, mSurfaceFormat, eSurface_R8, 14, 0, eSurface_ATSC_RGBA_4x4);
+			ADDFLAGS(tex_mSurfaceFormat, MetaFlag::MetaFlag_EnumIntType);
+			NEXTMEM2(tex, mTextureLayout, T3Texture, long, 0, mSurfaceFormat);
+			ADDFLAGS(tex_mTextureLayout, MetaFlag::MetaFlag_EnumIntType);
+			FIRSTENUM(tex, mTextureLayout, eTextureLayout_Unknown, -1, 0);
+			NEXTENUM(tex, mTextureLayout, eTextureLayout_2D, 0, 0, eTextureLayout_Unknown);
+			NEXTENUM(tex, mTextureLayout, eTextureLayout_Cube, 1, 0, eTextureLayout_2D);
+			NEXTENUM(tex, mTextureLayout, eTextureLayout_3D, 2, 0, eTextureLayout_Cube);
+			NEXTENUM(tex, mTextureLayout, eTextureLayout_2DArray, 3, 0, eTextureLayout_3D);
+			NEXTENUM(tex, mTextureLayout, eTextureLayout_CubeArray, 4, 0, eTextureLayout_2DArray);
+			NEXTMEM2(tex, mSurfaceGamma, T3Texture, long, 0, mTextureLayout);
+			ADDFLAGS(tex_mSurfaceGamma, MetaFlag::MetaFlag_EnumIntType);
+			FIRSTENUM(tex, mSurfaceGamma, eSurfaceGamma_Unknown, -1, 0);
+			NEXTENUM(tex, mSurfaceGamma, eSurfaceGamma_Linear, 0, 0, eSurfaceGamma_Unknown);
+			NEXTENUM(tex, mSurfaceGamma, eSurfaceGamma_sRGB, 1, 0, eSurfaceGamma_Linear);
+			NEXTMEM2(tex, mSurfaceMultisample, T3Texture, long, 0, mSurfaceGamma);
+			ADDFLAGS(tex_mSurfaceMultisample, MetaFlag::MetaFlag_EnumIntType);
+			FIRSTENUM(tex,mSurfaceMultisample, eSurfaceMultisample_None, 0, 0);
+			NEXTENUM(tex, mSurfaceMultisample, eSurfaceMultisample_2x, 1, 0, eSurfaceMultisample_None);
+			NEXTENUM(tex, mSurfaceMultisample, eSurfaceMultisample_4x, 2, 0, eSurfaceMultisample_None);
+			NEXTENUM(tex, mSurfaceMultisample, eSurfaceMultisample_8x, 3, 0, eSurfaceMultisample_None);
+			NEXTENUM(tex, mSurfaceMultisample, eSurfaceMultisample_16x, 4, 0, eSurfaceMultisample_None);
+			NEXTMEM2(tex, mResourceUsage, T3Texture, long, 0, mSurfaceMultisample);
+			ADDFLAGS(tex_mResourceUsage, MetaFlag::MetaFlag_EnumIntType);
+			FIRSTENUM(tex, mResourceUsage, eResourceUsage_Static, 0, 0);
+			NEXTENUM(tex, mResourceUsage, eResourceUsage_Dynamic, 1, 0, eResourceUsage_Static);
+			NEXTENUM(tex, mResourceUsage, eResourceUsage_System, 2, 0, eResourceUsage_Dynamic);
+			NEXTMEM2(tex, mType, T3Texture, long, 0, mResourceUsage);
+			ADDFLAGS(tex_mType, MetaFlag::MetaFlag_EnumIntType);
+			FIRSTENUM(tex, mType, eTxUnknown, 0, 0);
+			NEXTENUM(tex, mType, eTxLightmap_V0, 0x1, 0, eTxUnknown);
+			NEXTENUM(tex, mType, eTxBumpmap, 0x2, 0, eTxLightmap_V0);
+			NEXTENUM(tex, mType, eTxNormalMap, 0x3, 0, eTxBumpmap);
+			NEXTENUM(tex, mType, eTxUNUSED1, 0x4, 0, eTxNormalMap);
+			NEXTENUM(tex, mType, eTxUNUSED0, 0x5, 0, eTxUNUSED1);
+			NEXTENUM(tex, mType, eTxSubsurfaceScatteringMap_V0, 0x6, 0, eTxUNUSED0);
+			NEXTENUM(tex, mType, eTxSubsurfaceScatteringMap, 0x7, 0, eTxSubsurfaceScatteringMap_V0);
+			NEXTENUM(tex, mType, eTxDetailMap, 0x8, 0, eTxSubsurfaceScatteringMap);
+			NEXTENUM(tex, mType, eTxStaticShadowMap, 0x9, 0, eTxDetailMap);
+			NEXTENUM(tex, mType, eTxLightmapHDR, 0xA, 0, eTxStaticShadowMap);
+			NEXTENUM(tex, mType, eTxSDFDetailMap, 0xB, 0, eTxLightmapHDR);
+			NEXTENUM(tex, mType, eTxEnvMap, 0xC, 0, eTxSDFDetailMap);
+			NEXTENUM(tex, mType, eTxSpecularColor, 0xD, 0, eTxEnvMap);
+			NEXTENUM(tex, mType, eTxToonLookup, 0xE, 0, eTxSpecularColor);
+			NEXTENUM(tex, mType, eTxStandard, 0xF, 0, eTxToonLookup);
+			NEXTENUM(tex, mType, eTxOutlineDiscontinuity, 0x10, 0, eTxStandard);
+			NEXTENUM(tex, mType, eTxLightmapHDRScaled, 0x11, 0, eTxOutlineDiscontinuity);
+			NEXTENUM(tex, mType, eTxEmissiveMap, 0x12, 0, eTxLightmapHDRScaled);
+			NEXTENUM(tex, mType, eTxParticleProperties, 0x13, 0, eTxEmissiveMap);
+			NEXTENUM(tex, mType, eTxBrushNormalMap, 0x14, 0, eTxParticleProperties);
+			NEXTENUM(tex, mType, eTxUNUSED2, 0x15, 0, eTxBrushNormalMap);
+			NEXTENUM(tex, mType, eTxNormalGlossMap, 0x16, 0, eTxUNUSED2);
+			NEXTENUM(tex, mType, eTxLookup, 0x17, 0, eTxNormalGlossMap);
+			NEXTENUM(tex, mType, eTxAmbientOcclusion, 0x18, 0, eTxLookup);
+			NEXTENUM(tex, mType, eTxPrefilteredEnvCubeMapHDR, 0x19, 0, eTxAmbientOcclusion);
+			NEXTENUM(tex, mType, eTxBrushLookupMap, 0x1A, 0, eTxPrefilteredEnvCubeMapHDR);
+			NEXTENUM(tex, mType, eTxVector2Map, 0x1B, 0, eTxBrushLookupMap);
+			NEXTENUM(tex, mType, eTxNormalDxDyMap, 0x1C, 0, eTxVector2Map);
+			NEXTENUM(tex, mType, eTxPackedSDFDetailMap, 0x1D, 0, eTxNormalDxDyMap);
+			NEXTENUM(tex, mType, eTxSingleChannelSDFDetailMap, 0x1E, 0, eTxPackedSDFDetailMap);
+			NEXTENUM(tex, mType, eTxLightmapDirection, 0x1F, 0, eTxSingleChannelSDFDetailMap);
+			NEXTENUM(tex, mType, eTxLightmapStaticShadows, 0x20, 0, eTxLightmapDirection);
+			NEXTENUM(tex, mType, eTxLightStaticShadowMapAtlas, 0x21, 0, eTxLightmapStaticShadows);
+			NEXTENUM(tex, mType, eTxLightStaticShadowMap, 0x22, 0, eTxLightStaticShadowMapAtlas);
+			NEXTENUM(tex, mType, eTxPrefilteredEnvCubeMapHDRScaled, 0x23, 0, eTxLightStaticShadowMap);
+			NEXTENUM(tex, mType, eTxLightStaticShadowVolume, 0x24, 0, eTxPrefilteredEnvCubeMapHDRScaled);
+			NEXTENUM(tex, mType, eTxLightmapAtlas, 0x25, 0, eTxLightStaticShadowVolume);
+			NEXTENUM(tex, mType, eTxNormalXYMap, 0x26, 0, eTxLightmapAtlas);
+			NEXTENUM(tex, mType, eTxLightmapFlatAtlas, 0x27, 0, eTxNormalXYMap);
+			NEXTENUM(tex, mType, eTxLookupXY, 0x28, 0, eTxLightmapFlatAtlas);
+			NEXTENUM(tex, mType, eTxObjectNormalMap, 0x29, 0, eTxLookupXY);
+			NEXTMEM2(tex, mSwizzle, T3Texture, swizzle, 0, mType);
+			NEXTMEM2(tex, mSpecularGlossExponent, T3Texture, float, 0, mSwizzle);
+			NEXTMEM2(tex, mHDRLightmapScale, T3Texture, float, 0, mSpecularGlossExponent);
+			NEXTMEM2(tex, mToonGradientCutoff, T3Texture, float, 0, mHDRLightmapScale);
+			NEXTMEM2(tex, mAlphaMode, T3Texture, long, 0, mToonGradientCutoff);
+			FIRSTENUM(tex, mAlphaMode, eTxAlphaUnkown, -1, 0);
+			NEXTENUM(tex, mAlphaMode, eTxNoAlpha, 0, 0, eTxAlphaUnkown);
+			NEXTENUM(tex, mAlphaMode, eTxAlphaTest, 1, 0, eTxNoAlpha);
+			NEXTENUM(tex, mAlphaMode, eTxAlphaBlend, 2, 0, eTxAlphaTest);
+			NEXTMEM2(tex, mColorMode, T3Texture, long, 0, mAlphaMode);
+			FIRSTENUM(tex, mColorMode, eTxColorUnknown, -1, 0);
+			NEXTENUM(tex, mColorMode, eTxColorFull, 0, 0, eTxColorUnknown);
+			NEXTENUM(tex, mColorMode, eTxColorBlack, 1, 0, eTxColorFull);
+			NEXTENUM(tex, mColorMode, eTxColorGrayscale, 2, 0, eTxColorBlack);
+			NEXTENUM(tex, mColorMode, eTxColorGrayscaleAlpha, 3, 0, eTxColorGrayscale);
+			NEXTMEM2(tex, mUVOffset, T3Texture, vec2, 0, mColorMode);
+			NEXTMEM2(tex, mUVScale, T3Texture, vec2, 0, mUVOffset);
+			NEXTMEM2(tex, mNumMipLevelsAllocated, T3Texture, long, MetaFlag::MetaFlag_MetaSerializeDisable, mUVScale);
+			NEXTMEM2(tex, mNumSurfacesRequested, T3Texture, long, MetaFlag::MetaFlag_MetaSerializeDisable, mNumMipLevelsAllocated);
+			NEXTMEM2(tex, mNumSurfacesRequired, T3Texture, long, MetaFlag::MetaFlag_MetaSerializeDisable, mNumSurfacesRequested);
+			NEXTMEM2(tex, mNumSurfacesLoaded, T3Texture, long, MetaFlag::MetaFlag_MetaSerializeDisable, mNumSurfacesRequired);
+			NEXTMEM2(tex, mArrayFrameNames, T3Texture, DCArray_Symbol, 0, mNumSurfacesLoaded);
+			NEXTMEM2(tex, mToonRegions, T3Texture, DCArray_T3ToonGradientRegion, MetaFlag::MetaFlag_EditorHide, mArrayFrameNames);
+			ADDFLAGS(tex_mToonRegions, MetaFlag::MetaFlag_EditorHide);
+			SERIALIZER(tex, T3Texture);
+			ADD(tex);
+
+			DEFINET2(theader, T3Texture::StreamHeader);
+			FIRSTMEM2(theader, mRegionCount, T3Texture::StreamHeader, long, 0);
+			NEXTMEM2(theader, mAuxDataCount, T3Texture::StreamHeader, long, 0, mRegionCount);
+			NEXTMEM2(theader, mTotalDataSize, T3Texture::StreamHeader, long, 0, mAuxDataCount);
+			ADD(theader);
+
+			DEFINET2(rsh, T3Texture::RegionStreamHeader);
+			FIRSTMEM2(rsh, mFaceIndex, T3Texture::RegionStreamHeader, long, 0);
+			NEXTMEM2(rsh, mMipIndex, T3Texture::RegionStreamHeader, long, 0, mFaceIndex);
+			NEXTMEM2(rsh, mMipCount, T3Texture::RegionStreamHeader, long, 0, mMipIndex);
+			NEXTMEM2(rsh, mDataSize, T3Texture::RegionStreamHeader, long, 0, mMipCount);
+			NEXTMEM2(rsh, mPitch, T3Texture::RegionStreamHeader, long, 0, mDataSize);
+			NEXTMEM2(rsh, mSlicePitch, T3Texture::RegionStreamHeader, long, 0, mPitch);
+			ADD(rsh);
+
+			DEFINET2(aux, T3Texture::AuxilaryData);
+			FIRSTMEM2(aux, mType, T3Texture::AuxilaryData, symbol, 0);
+			NEXTMEM2(aux, mData, T3Texture::AuxilaryData, bb, 0, mType);
+			ADD(aux);
 
 		}
 		Initialize2();

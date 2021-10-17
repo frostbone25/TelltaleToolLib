@@ -10,6 +10,7 @@
 
 bool DataStream::Copy(DataStream* pDst, unsigned __int64 pDstOffset, unsigned __int64 pSrcOffset, unsigned __int64 size) {
 	static char _CopyBuf[0x10000];
+	if (pDst == this)return true;
 	if (!pDst || pSrcOffset + size > GetSize() || mMode != DataStreamMode::eMode_Read
 		|| pDst->mMode != DataStreamMode::eMode_Write)return false;
 	SetPosition(pSrcOffset, DataStreamSeekType::eSeekType_Begin);

@@ -5,12 +5,16 @@
 
 
 #include "Meta.hpp"
+#include <algorithm>
+#include "HashDB/HashDB.h"
 #include <typeinfo>
 #include <bit>
+#include "Types/DCArray.h"
 
 i32 sMetaTypesCount = 0;
 MetaClassDescription* spFirstMetaClassDescription = NULL;
 char Symbol::smSymbolBuffer[sizeof(u64) * 2 + 1];//1byte= 2 hex chars
+std::vector<const char*> sMetaFileExtensions;
 
 void SerializedVersionInfo::RetrieveVersionInfo(const char* versFileName, DataStream* stream) {
 	MetaStream meta(versFileName);
@@ -156,6 +160,23 @@ void MetaStream::_WriteHeader() {
 	}
 }
 
+void MetaStream::SwitchToMode(MetaStreamMode newMode, DataStream* newStream) {
+	if (mMode == MetaStreamMode::eMetaStream_Closed|| newMode == mMode||!newStream)return;
+	if (mpReadWriteStream&&mpReadWriteStream!=newStream)
+		delete mpReadWriteStream;
+	mSection[0].mpStream = newStream;
+	if (mSection[1].mpStream)
+		delete mSection[1].mpStream;
+	mSection[1].mpStream = NULL;
+	if (mSection[2].mpStream)
+		delete mSection[2].mpStream;
+	mSection[2].mpStream = NULL;
+	if (mSection[3].mpStream)
+		delete mSection[3].mpStream;
+	mSection[3].mpStream = NULL;
+	Open(newStream, newMode, { 0 });
+}
+
 bool MetaStream::_ReadHeader(DataStream* stream, u64 completeStreamSize,
 	u64* pOutBytesNeeded) {
 	if (!stream->IsRead())return false;
@@ -187,7 +208,7 @@ bool MetaStream::_ReadHeader(DataStream* stream, u64 completeStreamSize,
 			debug_ &= 0x7FFFFFFF;
 		}
 		if (async_ & 0x80000000) {
-			mSection[2].mbCompressed = true;
+			mSection[3].mbCompressed = true;
 			async_ &= 0x7FFFFFFF;
 			//asyncsomething = 8 * (async_ >> 12);
 		}
@@ -635,6 +656,7 @@ i64 MetaStream::ReadData(void* bytes, u32 size) {
 }
 
 int MetaStream::serialize_bytes(void* bytes, u32 size) {
+	if (!bytes&&size)return eMetaOp_Fail;
 	return mMode == MetaStreamMode::eMetaStream_Read ? ReadData(bytes, size) : WriteData(bytes, size);
 }
 
@@ -664,7 +686,7 @@ bool MetaStream::_SetSection(SectionType s) {
 		return true;
 	}
 	if (!sect.mbEnable || mMode != MetaStreamMode::eMetaStream_Write)return false;
-	sect.mpStream = new DataStreamMemory(0x0ui64, 0x40000ui64);
+	sect.mpStream = new DataStreamMemory(0x0ui64, 0x4000ui64);
 	mCurrentSection = s;
 	return true;
 }
@@ -697,13 +719,9 @@ bool MetaStream::Attach(DataStream* stream, MetaStreamMode mode, MetaStreamParam
 		for (int i = 1; i <= 3; i++) {//for each section (default,async,debug)
 			SectionInfo& currentSect = mSection[i];
 			if (currentSect.mCompressedSize) {
-				//mSection[0].mpStream->SetPosition(offset, DataStreamSeekType::eSeekType_Begin);
 				currentSect.mpStream = mSection[0].mpStream->GetSubStream(offset, currentSect.mCompressedSize);
 				if (currentSect.mbCompressed) {
 					throw "COMPRESSED SECTION! NEED TO LOOK AT THIS FILE AND IMPL";
-					//datastreamcontainer::read is called here. I think this function
-					//does some sort of decompression? todo. this is found in most 
-					//save game files like estore epage etc
 					//currentSect.mStreamOffset = 0;//notice this! stream offset is zero.
 					//uncompressed sects the offset is the current file offset, but has 0 here because the stream is a seperate
 					//decompressed stream
@@ -763,6 +781,7 @@ u64 MetaStream::Close() {
 				mSection[i].mbEnable = true;
 			}
 		}
+		mMode = MetaStreamMode::eMetaStream_Closed;
 		return completeStreamSize;
 	}
 	return 0;
@@ -885,6 +904,9 @@ void MetaClassDescription::Insert() {
 		spFirstMetaClassDescription = this;
 	}
 	this->mFlags.mFlags |= MetaFlag::Internal_MetaFlag_Initialized;
+	if (mpExt) {
+		sMetaFileExtensions.push_back(mpExt);
+	}
 }
 
 void MetaClassDescription::Initialize(const char* typeInfoName) {
@@ -1192,36 +1214,36 @@ METAOP_FUNC_IMPL(SerializeAsync) {
 		SerializedVersionInfo* ver = SerializedVersionInfo::RetrieveCompiledVersionInfo(pObjDescription);
 		if(ver&&!pObjDescription->mbIsIntrinsic)stream->AddVersion(ver);
 		MetaSerializeAccel* accel = pObjDescription->mpSerializeAccel;
-if (!accel)accel = MetaSerialize_GenerateAccel(pObjDescription);
-if (accel && accel->mpFunctionAsync) {
-	int i = 0;
-	bool blocked = false;
-	while (true) {
-		if (!accel[i].mpFunctionAsync)break;
-		MetaSerializeAccel a = accel[i];
-		if (a.mpMemberDesc->mFlags & (int)MetaFlag::MetaFlag_MetaSerializeBlockingDisabled
-			|| a.mpMemberDesc->mpMemberDesc->mFlags.mFlags & (int)MetaFlag::MetaFlag_MetaSerializeBlockingDisabled) {
-			blocked = false;
+		if (!accel)accel = MetaSerialize_GenerateAccel(pObjDescription);
+		if (accel && accel->mpFunctionAsync) {
+			int i = 0;
+			bool blocked = false;
+			while (true) {
+				if (!accel[i].mpFunctionAsync)break;
+				MetaSerializeAccel a = accel[i];
+				if (a.mpMemberDesc->mFlags & (int)MetaFlag::MetaFlag_MetaSerializeBlockingDisabled
+					|| a.mpMemberDesc->mpMemberDesc->mFlags.mFlags & (int)MetaFlag::MetaFlag_MetaSerializeBlockingDisabled) {
+					blocked = false;
+				}
+				else {
+					stream->BeginBlock();
+					blocked = true;
+				}
+				stream->BeginObject(a.mpMemberDesc->mpName, NULL);
+				MetaOpResult result = a.mpFunctionAsync(((char*)pObj) + a.mpMemberDesc->mOffset,
+					a.mpMemberDesc->mpMemberDesc, a.mpMemberDesc, pUserData);
+				stream->EndObject(a.mpMemberDesc->mpName);
+				if (blocked)
+					stream->EndBlock();
+				if (result != MetaOpResult::eMetaOp_Succeed)break;
+				i++;
+			}
 		}
-		else {
-			stream->BeginBlock();
-			blocked = true;
+		if (pContextDescription && pContextDescription->mpName) {
+			stream->EndObject(pContextDescription->mpName);
 		}
-		stream->BeginObject(a.mpMemberDesc->mpName, NULL);
-		MetaOpResult result = a.mpFunctionAsync(((char*)pObj) + a.mpMemberDesc->mOffset,
-			a.mpMemberDesc->mpMemberDesc, a.mpMemberDesc, pUserData);
-		stream->EndObject(a.mpMemberDesc->mpName);
-		if (blocked)
-			stream->EndBlock();
-		if (result != MetaOpResult::eMetaOp_Succeed)break;
-		i++;
-	}
-}
-if (pContextDescription && pContextDescription->mpName) {
-	stream->EndObject(pContextDescription->mpName);
-}
-else stream->EndAnonObject(NULL);
-return eMetaOp_Succeed;
+		else stream->EndAnonObject(NULL);
+		return eMetaOp_Succeed;
 	}
 	//if (!(stream->mRuntimeFlags.mFlags & (int)MetaStream::RuntimeFlags::eStreamIsCompiledVersion)) {}
 	SerializedVersionInfo* ver = SerializedVersionInfo::RetrieveCompiledVersionInfo(pObjDescription);
@@ -1286,9 +1308,10 @@ METAOP_FUNC_IMPL(SerializedVersionInfo) {
 			if (i->mFlags & 1)continue;//flag 1 = metaflags:: dont seralized etc
 			SerializedVersionInfo::MemberDesc member;
 			member.mSize = i->mpMemberDesc->mClassSize;
+			member.mbBlocked = true;
 			member.mTypeNameSymbolCrc = i->mpMemberDesc->mHash;
 			member.mVersionCrc = SerializedVersionInfo::RetrieveCompiledVersionInfo(i->mpMemberDesc)->mVersionCrc;
-			member.mbBlocked = !i->mpMemberDesc->mbIsIntrinsic;
+			//member.mbBlocked = !i->mpMemberDesc->mbIsIntrinsic;
 			if (((bool)(i->mpMemberDesc->mFlags.mFlags & (int)MetaFlag_MetaSerializeBlockingDisabled))){
 				member.mbBlocked = false;
 			}
@@ -1307,4 +1330,54 @@ METAOP_FUNC_IMPL(SerializedVersionInfo) {
 		}
 	}
 	return MetaOpResult::eMetaOp_Succeed;
+}
+
+String FindSymbolName(const Symbol& m, HashDatabase::Page*& outpageref) {
+	String _NF = "<NotFound:";
+	static const String _E = "<Empty>";
+	if (m.GetCRC() == 0)return _E;
+	HashDatabase* db = TelltaleToolLib_GetGlobalHashDatabase();
+	if (!db) {
+		_NF += m.CRCAsCstr();
+		_NF += ">";
+		return _NF;
+	}
+	HashDatabase::Page* page = NULL;
+	String pagen = "Files_";
+	const std::vector<const char*>* extensions = &sMetaFileExtensions;
+	String ret;
+	String gameid = sBlowfishKeys[sSetKeyIndex].game_id;
+	if (outpageref) {
+		page = outpageref;
+		db->FindEntry(page, m.GetCRC(), &ret);
+		if (ret.size()) {
+			return ret;
+		}
+	}
+	else {
+		for (int i = 0; i < extensions->size(); i++) {
+			pagen += extensions->operator[](i);
+			pagen += '_';
+			std::transform(gameid.begin(), gameid.end(), gameid.begin(), ::toupper);
+			pagen += gameid;
+			page = db->FindPage(pagen.c_str());
+			if (!page) {
+				pagen = "Files_";
+				continue;
+			}
+			db->FindEntry(page, m.GetCRC(), &ret);
+			if (ret.size()) {
+				outpageref = page;
+				return ret;
+			}
+			pagen = "Files_";
+		}
+	}
+	_NF += m.CRCAsCstr();
+	_NF += ">";
+	return _NF;
+}
+
+const std::vector<const char*>* GetMetaFileExtensions() {
+	return &sMetaFileExtensions;
 }

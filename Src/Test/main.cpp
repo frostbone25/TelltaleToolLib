@@ -26,7 +26,7 @@ void run_write() {
 		Handle<PropertySet> testValue = CreateHandle<PropertySet>("ReferencedProp.prop");
 		prop.AddProperty("Test Prop - Reference", &testValue);
 
-		MetaOpResult result = PerformMetaSerializeFull(&meta, &prop);
+		MetaOpResult result = PerformMetaSerializeAsync(&meta, &prop);
 		printf("Result: %d\n", result);
 
 	}
@@ -50,7 +50,7 @@ void run() {
 		print_version_info(&meta);
 
 		PropertySet prop;
-		MetaOpResult result = PerformMetaSerializeFull(&meta, &prop);
+		MetaOpResult result = PerformMetaSerializeAsync(&meta, &prop);
 		printf("Result: %d\n", result);
 
 	}

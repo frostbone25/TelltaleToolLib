@@ -21,6 +21,7 @@
     <ClCompile Include="Src\Zlib\trees.c" />
     <ClCompile Include="Src\Zlib\uncompr.c" />
     <ClCompile Include="Src\Zlib\zutil.c" />
+    <ClCompile Include="Src\Types\T3Texture.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Src\Blowfish.h" />
@@ -65,6 +66,9 @@
     <ClInclude Include="Src\Types\InputMapper.h" />
     <ClInclude Include="Src\Types\Scene.h" />
     <ClInclude Include="Src\Types\DlgSystemSettings.h" />
+    <ClInclude Include="Src\Types\EnlightenData.h" />
+    <ClInclude Include="Src\Types\SoundReverbDefinition.h" />
+    <ClInclude Include="Src\Types\T3Texture.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include=".gitattributes" />

@@ -25,4 +25,7 @@
 #include "AssetCollection.h"
 #include "InputMapper.h"
 #include "Scene.h"
+#include "EnlightenData.h"
+#include "SoundReverbDefinition.h"
+#include "T3Texture.h"
 #include "DlgSystemSettings.h"

@@ -122,11 +122,14 @@ u32 HashDatabase::NumPages() {
 }
 
 HashDatabase::~HashDatabase() {
-	if (this->db_stream)delete db_stream;
+	if (this->db_stream)
+		delete db_stream;
 	for (int i = 0; i < NumPages(); i++) {
 		delete[] PageAt(i)->pageName;
+		delete PageAt(i);
 	}
-	if (!this->db_pages)free(this->db_pages);
+	if (this->db_pages)
+		free(this->db_pages);
 	if (this->bufferedPage)
 		free(bufferedPage);
 }

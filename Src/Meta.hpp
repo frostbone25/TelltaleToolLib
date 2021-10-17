@@ -12,6 +12,7 @@
 #include <vector>
 #include <stack>
 #include "HashManager.h"
+#include "HashDB/HashDB.h"
 
 //set to false to disallow the debug section of meta stream files to be loaded. default true
 #define METASTREAM_ENABLE_DEBUG true
@@ -218,7 +219,7 @@ public:
 		eIsUndo = 0x4
 	};
 
-	enum class SectionType {
+	enum SectionType : int {
 		eSection_Header = 0x0,
 		eSection_Default = 0x1,
 		eSection_Debug = 0x2,
@@ -340,6 +341,8 @@ public:
 	virtual void serialize_uint64(u64*);
 	virtual void serialize_int8(char*);
 
+	virtual void SwitchToMode(MetaStreamMode newMode,DataStream* inputOrOutputStream);//by lib, a useful function
+
 	MetaStream(const char* Name);
 	~MetaStream();
 
@@ -425,6 +428,7 @@ template<typename T, typename U> constexpr size_t memberOffset(U T::* member)
 
 MetaClassDescription* GetMetaClassDescription(const char* typeInfoName);
 
+//would have used to be inclined getmetaaclassdescription functions, this would have had template specializations for all types.
 template<typename T>
 struct MetaClassDescription_Typed {
 
@@ -740,7 +744,7 @@ struct MetaClassDescription {
 	void* New();
 	void Construct(void*);
 	void CopyConstruct(void*, void*);
-	MetaClassDescription() : mbNameIsHeapAllocated(false), mbIsIntrinsic(false) {}
+	MetaClassDescription() : mbNameIsHeapAllocated(false), mbIsIntrinsic(false), mpExt(NULL) {}
 	~MetaClassDescription();
 	bool MatchesHash(u64 hash);
 	void GetDescriptionSymbol(Symbol*);
@@ -827,22 +831,114 @@ METAOP_FUNC_DEF(EquivalenceIntrinsicString);
 
 //There are more like Arithmetic, Comparison, Interpolate, but this library doesnt need them until needed.
 
+//Serialize or deserialize the given type. Use PerformMetaSerializeAsync which gets the meta class description for you.
+//If you are using this library not as a template library (but a compiled one) then use this!
 MetaOpResult PerformMetaSerializeFull(MetaStream* pStream, void* pObj, MetaClassDescription* pDesc);
 
-template<typename T> MetaOpResult PerformMetaSerializeFull(MetaStream* pStream, T* pObj) {
+template<typename T> MetaOpResult PerformMetaSerializeAsync(MetaStream* pStream, T* pObj) {
 	MetaClassDescription* desc = GetMetaClassDescription(typeid(T).name());
 	if (!desc || !pStream)return eMetaOp_Fail;
 	return PerformMetaSerializeFull(pStream, pObj, desc);
 }
 
+struct BinaryBuffer {
 
-//Doesnt work on string! This is deprecated. You should use serialize full
-template<typename T> MetaOpResult PerformMetaSerializeAsync(MetaStream* pStream, T* pObj) {
-	MetaClassDescription* pDesc = MetaClassDescription_Typed<T>::GetMetaClassDescription();
-	if (!pDesc)return eMetaOp_Fail;
-	MetaOperation async = pDesc->GetOperationSpecialization(74);
-	if (!async)async = Meta::MetaOperation_SerializeAsync;
-	return async(pObj, pDesc, NULL, pStream);
-}
+	char* mpData;
+	int mDataSize;
+
+	BinaryBuffer() : mpData(NULL), mDataSize(0) {}
+
+	~BinaryBuffer() {
+		if (mpData)
+			delete[] mpData;
+	}
+
+	bool SetData(int dataSize, const void* pData) {
+		if (mpData)
+			delete[] mpData;
+		if (dataSize > 0) {
+			mpData = (char*)operator new[](dataSize);
+			if (mpData) {
+				mDataSize = dataSize;
+				if (pData)
+					memmove(mpData, pData, mDataSize);
+				else
+					memset(mpData, 0, mDataSize);
+			}
+			else return false;
+		}
+		return true;
+	}
+
+	void Memset(char v) {
+		if (mpData)
+			memset(mpData, v, mDataSize);
+	}
+
+	void Swap(BinaryBuffer& other) {
+		char* my = mpData;
+		mpData = other.mpData;
+		other.mpData = my;
+	}
+
+	void Clear() {
+		if (mpData)
+			delete[] mpData;
+	}
+
+	bool AllocData(/*u64*/ int dataSize) {
+		if (mpData)
+			delete[] mpData;
+		if (dataSize > 0) {
+			mpData = (char*)operator new[](dataSize);
+			if (mpData) {
+				mDataSize = dataSize;
+			}
+			else return false;
+		}
+		return true;
+	}
+
+	BinaryBuffer(const BinaryBuffer& other) {
+		mpData = NULL;
+		mDataSize = 0;
+		SetData(other.mDataSize, other.mpData);
+	}
+
+	static MetaOpResult MetaOperation_SerializeAsync(void* pObj, MetaClassDescription* pObjDesc, 
+			MetaMemberDescription* pCtx, void* pUserData) {
+		MetaStream* stream = static_cast<MetaStream*>(pUserData);
+		BinaryBuffer* bb = static_cast<BinaryBuffer*>(pObj);
+		u32 size = bb->mDataSize;
+		stream->serialize_uint32(&size);
+		bb->mDataSize = size;
+		if (stream->mMode == MetaStreamMode::eMetaStream_Read) {
+			if (bb->mpData)
+				delete[] bb->mpData;
+			bb->mpData = new char[size];
+			if (!bb->mpData) {
+				stream->Advance(size);
+				return eMetaOp_OutOfMemory;
+			}
+			memset(bb->mpData, 0, size);
+		}
+		stream->serialize_bytes(bb->mpData, size);
+		return eMetaOp_Succeed;
+	}
+
+};
+
+/*
+* Tries to find the symbol name for the given symbol. Make sure the global hash database is set. This is will try search all pages in the 
+* current game set (using set blowfish key). This can be slow! If the value is found, the outpageref pointer is set to the page it was
+* found in in case you want to find more symbol names in that page. Returns <NotFound> if not found, or <Empty> if the CRC is 0.
+* Use once the library is initialized.
+*/
+String FindSymbolName(const Symbol&, HashDatabase::Page*& outpageref);
+
+/*
+* Gets the constant list of file extension strings that the library currently supports.
+*/
+const std::vector<const char*>* GetMetaFileExtensions();
 
 #endif
