@@ -16,13 +16,18 @@ It provides an API for opening and reading the files aswell as writing them. You
 
 ## IMPORTANT
 
-When loading TTARCH2 bundles, MAKE SURE to have 'oo2core_5_win64.dll' is in the same directory as the executable. Preferably this dll should be kept along side this library's DLL.
+When loading TTARCH2 bundles, MAKE SURE to have 'oo2core_5_win64.dll' is in the same directory as the executable. Preferably this dll should be kept along side this library's library.
 
-This library is designed for TWD: Definitive but games newer than Minecraft: Story Mode - Season Two (inclusive) are likely to be compatible (this is not guaranteed). This means most of the functions to read and write the files should be compatible. 
+This library is designed for TWD: Definitive but games newer than Batman: Season 1 (inclusive) are most likely to be compatible. This means most of the functions to read and write the files should be compatible. 
 Older games may work, but its not guarunteed and I suggest you stick to the ones that should work:
+Batman: The Telltale Series
+The Walking Dead: A New Frontier
+Guardians of the Galaxy: The Telltale Series
 Minecraft Story Mode: Season Two
 Batman: The Enemy Within
 The Walking Dead: Collection
 The Walking Dead: The Final Season
 
-Please also note this is a windows library! You could toggle values to make it for another platform however. But note that a lot of the code expects that the machine is in little endian! Reading .ttarch2 archives will fail unless in little endian. However, you can read normal telltale files (MetaStream ones) if its in big endian.
+Please also note this is a windows library! You could toggle values to make it for another platform however. But note that a lot of the code expects that the machine is in little endian! Reading .ttarch2 archives will fail unless in little endian.
+
+### IT IS IMPORTANT THAT YOU DO NOT LOAD FILES FROM GAMES BEFORE BATMAN SEASON 1 OTHERWISE UNDEFINED BEHAVIOUR WILL OCCUR!
