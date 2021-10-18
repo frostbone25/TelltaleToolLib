@@ -444,28 +444,7 @@ namespace TEditorCLI {
 }
 
 #include "../Meta.hpp"
-#include "../Types/T3Texture.h"
 #include "../HashDB/HashDB.h"
-
-void _Main()
-{
-	T3Texture data;
-	MetaStream meta = MetaStream(NULL);
-	meta.Open(_OpenDataStreamFromDisc("c:/users/lucas/downloads/ui_configurator_slide3_bg.d3dtx",
-		DataStreamMode::eMode_Read), MetaStreamMode::eMetaStream_Read, { 0 });
-
-	printf("Result: %d\n", PerformMetaSerializeAsync(&meta, &data));//TODO check data
-	printf("Name %s\n", data.mName.c_str());
-
-	meta.SwitchToMode(MetaStreamMode::eMetaStream_Write, _OpenDataStreamFromDisc("c:/users/lucas/desktop/out.d3dtx",
-		DataStreamMode::eMode_Write));
-
-	data.mPlatform.mVal = PlatformType::ePlatform_iPhone;
-
-	PerformMetaSerializeAsync(&meta, &data);
-	meta.Close();
-
-}
 
 struct _LeakSlave {
 	~_LeakSlave() {
@@ -473,22 +452,38 @@ struct _LeakSlave {
 	}
 };
 
+#include "../Types/TransitionMap.h"
+
 int main(int argn, char* argv[]) {
 
 	_LeakSlave _s;
 
 	{
-		TelltaleToolLib_Initialize("MC2");
+		TelltaleToolLib_Initialize("WDC");
 
-		//TelltaleToolLib_SetGlobalHashDatabaseFromStream(
-		//	_OpenDataStreamFromDisc("c:/users/lucas/desktop/My Stuff/Projects/HashDB Creator/LibTelltale DB/LibTelltale.HashDB",
-		//		DataStreamMode::eMode_Read));
+		TelltaleToolLib_SetGlobalHashDatabaseFromStream(
+			_OpenDataStreamFromDisc("c:/users/lucas/desktop/My Stuff/Projects/HashDB Creator/LibTelltale DB/LibTelltale.HashDB",
+				DataStreamMode::eMode_Read));
 
-		for(int i = 0; i < 1; i++)
-			_Main();
-
-		//TelltaleToolLib_SetGlobalHashDatabase(NULL);
-
+		TransitionMap data;
+		MetaStream meta(NULL);
+		meta.Open(_OpenDataStreamFromDisc("D:/Games/Telltale Archives/"
+			"The Walking Dead Definitive/angry.tmap", DataStreamMode::eMode_Read), MetaStreamMode::eMetaStream_Read, { 0 });
+		PerformMetaSerializeAsync(&meta, &data);
+		HashDatabase::Page* p = TelltaleToolLib_GetGlobalHashDatabase()->FindPage("AG-Bones");
+		for (int i = 0; i < data.mTransitionRemappers.GetSize(); i++) {
+			printf("%s\n", FindSymbolName(data.mTransitionRemappers[i].first, p).c_str());
+			KeyframedValue<float> info = data.mTransitionRemappers[i].second.mRemapper.mRemapKeys;
+			String s = "Not found";
+			TelltaleToolLib_GetGlobalHashDatabase()->FindEntry(NULL, info.mName.GetCRC(), &s);
+			printf("\tMin: %f, Max: %f, Flags: %d, Name: %s\n", info.mMinVal, info.mMaxVal, info.mFlags, 
+				s.c_str());
+			for (int x = 0; x < info.mSamples.GetSize(); x++) {
+				KeyframedValue<float>::Sample* sample = info.mSamples.mpStorage + x;
+				printf("\t\tRemap Keys: Time: %f, Interpolate: %d, Mode: %d, Value: %f\n", sample->mTime, sample->mbInterpolateToNextKey,
+					sample->mTangentMode, sample->mValue);
+			}
+		}
 	}
 
 	return 0;

@@ -58,6 +58,8 @@ struct MetaMemberDescription;
 class SerializedVersionInfo;
 class Symbol; 
 
+struct EnumBase {};
+
 const u32 EncrypedVersionHeaders[] = {
 	0x64AFDEAA,//version 3
 	0x64AFDEBB,//version 3 (encrypted MCOM)
@@ -417,13 +419,124 @@ public:
 		return eMetaOp_Succeed;
 	}
 
-	static const Symbol EmptySymbol;
+	static const Symbol kEmptySymbol;
+	static const Symbol kTransitionMapKey;
+	static const Symbol kAnimGroupArmLeft;
+	static const Symbol kAnimGroupArmRight;
+	static const Symbol kAnimGroupBodyLower;
+	static const Symbol kAnimGroupBodyUpper;
+	static const Symbol kAnimGroupBrowLeft;
+	static const Symbol kAnimGroupBrowRight;
+	static const Symbol kAnimGroupBrows;
+	static const Symbol kAnimGroupCheekLeft;
+	static const Symbol kAnimGroupCheekRight;
+	static const Symbol kAnimGroupCheeks;
+	static const Symbol kAnimGroupExtra;
+	static const Symbol kAnimGroupEyeLids;
+	static const Symbol kAnimGroupEyes;
+	static const Symbol kAnimGroupFace;
+	static const Symbol kAnimGroupFingersLeft;
+	static const Symbol kAnimGroupFingersRight;
+	static const Symbol kAnimGroupFootLeft;
+	static const Symbol kAnimGroupFootRight;
+	static const Symbol kAnimGroupHair;
+	static const Symbol kAnimGroupHandRight;
+	static const Symbol kAnimGroupHandLeft;
+	static const Symbol kAnimGroupHead;
+	static const Symbol kAnimGroupIndexFLeft;
+	static const Symbol kAnimGroupIndexFRight;
+	static const Symbol kAnimGroupLegLeft;
+	static const Symbol kAnimGroupLegRight;
+	static const Symbol kAnimGroupMouth;
+	static const Symbol kAnimGroupNeck;
+	static const Symbol kAnimGroupRoot;
+	static const Symbol kAnimGroupShoulderLeft;
+	static const Symbol kAnimGroupShoulderRight;
+	static const Symbol kAnimGroupGroupSkirt;
+	static const Symbol kAnimGroupGroupTail;
+	static const Symbol kAnimGroupThumbLeft;
+	static const Symbol kAnimGroupThumbRight;
+
+	static const Symbol kPropKeyViewportOrigin;
+	static const Symbol kPropKeyViewportSize;
+	static const Symbol kPropKeyViewportCamera;
+	static const Symbol kPropKeyViewportRelative;
+	static const Symbol kPropKeyAllowInterpolation;
+	static const Symbol kBGMStartPos;
+
+	static const Symbol sAssertSymbol;
+	static const Symbol sAssertTimeStampSymbol;
+	static const Symbol sAssertFileSymbol;
+	static const Symbol sAssertLineSymbol;
+	static const Symbol sGeneralSymbol;
+	static const Symbol sChoreSymbol;
+	static const Symbol sLuaSymbol;
+	static const Symbol sGraphicsSymbol;
+	static const Symbol sDialogSymbol;
+	static const Symbol sAudioSymbol;
+	static const Symbol sQtSymbol;//telltale use qt in the tool!!!
+	static const Symbol sExportSymbol;
+	static const Symbol sCoreSymbol;
+
+	static const Symbol kPropKeySource;
+	static const Symbol kPropKeyWidth;
+	static const Symbol kPropKeyHeight;
+	static const Symbol kPropKeyPause;
+	static const Symbol kPropKeyVolume;
+	static const Symbol kPropKeyMediaTimeout;
+	static const Symbol kPropKeyVolumeMaster;
+	static const Symbol kPropKeyVolumeMusic;
+	static const Symbol kPropKeyVolumeSound;
+	static const Symbol kPropKeyVolumeVoice;
+	static const Symbol kPropKeyMuteVoices;
+	static const Symbol kPropKeyVolumeAmbient;
+	static const Symbol kPropKeyMixMaster;
+	static const Symbol kPropKeyMixMusic;
+	static const Symbol kPropKeyMixSound;
+	static const Symbol kPropKeyMixVoice;
+	static const Symbol kPropKeyMixAmbient;
+	static const Symbol kPropKeySoundMode;
+	static const Symbol kCompressAnimations;
+	static const Symbol kEncryptMetaStreams;
+	static const Symbol kPropKeyROMRuntimeLoad;
+	static const Symbol kPropKeyROMErrorDialogResource;
+	static const Symbol kPropKeyROMErrorTitle;
+	static const Symbol kPropKeyROMErrorMessage;
+	static const Symbol kPropKeyROMPackSubDir;
+	static const Symbol kPropKeyTextMinSec;
+	static const Symbol kPropKeyTextSecPerLetter;
+	static const Symbol kPropKeyUserSpaceAsArchive;
+	static const Symbol kPropKeyDisableDevFolders;
+	static const Symbol kPropKeyUsageOS;
+	static const Symbol kPropKeyUsageCPU;
+	static const Symbol kPropKeyUsageGPU;
+	static const Symbol kPropKeyUsageDeviceType;
+	static const Symbol kPropKeyUsageDeviceModel;
+	static const Symbol kPropKeyUsageDeviceName;
+	static const Symbol kPropKeyUsageLaunchCount;
+	static const Symbol kPropKeyUsageShutdownCount;
+	static const Symbol kPropKeyUsageSessionExecutionTime;
+	static const Symbol kPropKeyUsageTotalExecutionTime;
+	static const Symbol kChoreAgentGroupFilterIncludeNonSkeleton;
+	static const Symbol kPropOpenLocalizations;
+	static const Symbol kHDScreenShotResolution;
+	static const Symbol kBlocking;
+	static const Symbol kBlockingOffset;
+	static const Symbol kBlockingOffsetContribution;
+	static const Symbol kResourceNameSuffix;
+	static const Symbol kLookAtBlockingAnimation;
+	static const Symbol kLookAtBlockingOffsetAnimation;
+	static const Symbol kLookAtBlockingOffsetContributionAnimation;
 
 };
 
 template<typename T, typename U> constexpr size_t memberOffset(U T::* member)
 {
 	return (char*)&((T*)nullptr->*member) - (char*)nullptr;
+}
+
+template<typename Base, typename Derived> constexpr size_t parentOffset() {
+	return (reinterpret_cast<char*>(static_cast<Base*>(reinterpret_cast<Derived*>(0x10000000))) - reinterpret_cast<char*>(0x10000000));
 }
 
 MetaClassDescription* GetMetaClassDescription(const char* typeInfoName);

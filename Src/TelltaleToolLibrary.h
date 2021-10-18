@@ -72,10 +72,19 @@ enum MetaClassDescriptionParam {
 	eMCDP_SerializeAccel = 9, //stores 8 bytes (ptr)
 };
 
+typedef void (*DumpClassInfoF)(const char* const _Fmt, const char* _ParamA, const char* _ParamB);
+
+void _PrintfDumper(const char* const _Fmt, const char* _ParamA, const char* _ParamB);
+
 /*
 * Gets the version of the TelltaleTool library as a string.
 */
 _TTToolLib_Exp const char* TelltaleToolLib_GetVersion();
+
+/*
+* Dumps class information in a tabbed format
+*/
+_TTToolLib_Exp void TelltaleToolLib_DumpClassInfo(DumpClassInfoF _Dumper);
 
 /*
 * Makes the type name of the given string pointer to one which is ready to be hashed. 

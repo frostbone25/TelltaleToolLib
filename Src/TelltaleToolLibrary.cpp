@@ -294,3 +294,39 @@ void TelltaleToolLib_MakeInternalTypeName(char** _StringPtr) {
     free(*_StringPtr);
     *_StringPtr = nbuf;
 }
+
+void _PrintfDumper(const char* const _Fmt, const char* _ParamA, const char* _ParamB) {
+    if (_ParamA && _ParamB) {
+        printf(_Fmt, _ParamA, _ParamB);
+    }
+    else if (_ParamA) {
+        printf(_Fmt, _ParamA);
+    }
+    else {
+        printf(_Fmt);
+    }
+}
+
+
+void printMembers(int tabs, MetaMemberDescription* mem, DumpClassInfoF _Dumper) {
+    while (mem) {
+        for (int i = 0; i < tabs; i++)
+            _Dumper("\t", NULL, NULL);
+        _Dumper("[%s] %s\n", mem->mpMemberDesc->mpTypeInfoName, mem->mpName);
+        if (mem->mpMemberDesc->mpFirstMember)
+            printMembers(tabs + 1, mem->mpMemberDesc->mpFirstMember,_Dumper);
+        mem = mem->mpNextMember;
+    }
+}
+
+void TelltaleToolLib_DumpClassInfo(DumpClassInfoF _Dumper) {
+    MetaClassDescription* clazz = TelltaleToolLib_GetFirstMetaClassDescription();
+    for (int i = 0; i < TelltaleToolLib_GetMetaTypesCount(); i++) {
+        _Dumper("Class: %s\n", clazz->mpTypeInfoName,NULL);
+        if (clazz->mpFirstMember) {
+            printMembers(1, clazz->mpFirstMember,_Dumper);
+        }
+        TelltaleToolLib_GetNextMetaClassDescription(&clazz);
+        _Dumper("\n\n",NULL,NULL);
+    }
+}

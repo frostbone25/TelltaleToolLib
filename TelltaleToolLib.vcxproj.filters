@@ -69,6 +69,15 @@
     <ClInclude Include="Src\Types\EnlightenData.h" />
     <ClInclude Include="Src\Types\SoundReverbDefinition.h" />
     <ClInclude Include="Src\Types\T3Texture.h" />
+    <ClInclude Include="Src\Types\LocalizationRegistry.h" />
+    <ClInclude Include="Src\Types\LanguageLookupMap.h" />
+    <ClInclude Include="Src\Types\Dialog.h" />
+    <ClInclude Include="Src\Types\ToolProps.h" />
+    <ClInclude Include="Src\Types\TransitionMap.h" />
+    <ClInclude Include="Src\Types\KeyframedValue.h" />
+    <ClInclude Include="Src\Types\AnimatedValueInterface.h" />
+    <ClInclude Include="Src\Types\WalkBoxes.h" />
+    <ClInclude Include="Src\Types\SoundFootsteps.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include=".gitattributes" />

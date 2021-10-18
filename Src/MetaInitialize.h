@@ -169,6 +169,7 @@ meta_##parent##_##memberNameInStruct##.mpMemberDesc = &meta_##typeDesc##;\
 meta_##parent##_##memberNameInStruct##.mFlags |= flags;\
 meta_##parent##_##previousMember##.mpNextMember =& meta_##parent##_##memberNameInStruct##;
 
+
 #define FIRSTMEM(parent, namestr, memberNameInStruct, pathToMember, typeDesc, flags) \
 DEFINEM(parent, memberNameInStruct);\
 meta_##parent##_##memberNameInStruct##.mpName = namestr;\
@@ -258,6 +259,46 @@ meta_##name##_##opName.mpOpFn = fun;
 MetaOperationDescription::ID; meta_##Parent##_##ID.mpOpFn = Func; meta_##Parent##_##ID.mpNext = NULL;
 
 #define SEP ,
+
+#define DEFINEANMVALUEI(_name, _Ty) DEFINET2(anmi_##_name##, AnimatedValueInterface<_Ty>);\
+DEFINEM(anmi_##_name##, base);\
+meta_anmi_##_name##_base.mpName = "Baseclass_AnimationValueInterfaceBase";\
+meta_anmi_##_name##_base.mpMemberDesc = &meta_anminterface;\
+meta_anmi_##_name##_base.mOffset = memberOffset(&AnimatedValueInterface<_Ty>::AnimationValueInterfaceBase::mName);\
+meta_anmi_##_name##.mpFirstMember = &meta_anmi_##_name##_base;\
+ADD(anmi_##_name##);
+
+#define DEFINEKEYFRAMEDVALUE(_name,_Ty,_TyMetaVar) \
+DEFINET2(kfv_##_name##_sample, KeyframedValue<_Ty>::Sample);\
+FIRSTMEM2(kfv_##_name##_sample, mTime, KeyframedValue<_Ty>::Sample, float, 0);\
+NEXTMEM2(kfv_##_name##_sample, mbInterpolateToNextKey, KeyframedValue<_Ty>::Sample, bool, 0, mTime);\
+NEXTMEM2(kfv_##_name##_sample, mTangentMode, KeyframedValue<_Ty>::Sample, long, 0, mbInterpolateToNextKey);\
+FIRSTENUM(kfv_##_name##_sample, mTangentMode, eTangentUnknown, 0, 0);\
+NEXTENUM(kfv_##_name##_sample, mTangentMode, eTangentStepped, 1, 0, eTangentUnknown);\
+NEXTENUM(kfv_##_name##_sample, mTangentMode, eTangentKnot, 2, 0, eTangentStepped);\
+NEXTENUM(kfv_##_name##_sample, mTangentMode, eTangentSmooth, 3, 0, eTangentKnot);\
+NEXTENUM(kfv_##_name##_sample, mTangentMode, eTangentFlat, 4, 0, eTangentSmooth);\
+NEXTMEM2(kfv_##_name##_sample, mValue, KeyframedValue<_Ty>::Sample, _TyMetaVar, 0, mTangentMode);\
+NEXTMEM2(kfv_##_name##_sample, mRecipTimeToNextSample, KeyframedValue<_Ty>::Sample, float, 0x2021, mValue);\
+ADD(kfv_##_name##_sample);\
+DEFINEDCARRAY2(KeyframedValue<_Ty>::Sample, kfv_##_name##_sample);\
+DEFINEANMVALUEI(_name, _Ty);\
+DEFINET2(kfv_##_name##, KeyframedValue<_Ty>);\
+DEFINEM(kfv_##_name##, animatedvalueinterface);\
+meta_kfv_##_name##_animatedvalueinterface.mpName = "Baseclass_AnimatedValueInterface<T>";\
+meta_kfv_##_name##_animatedvalueinterface.mpMemberDesc = &meta_anmi_##_name##;\
+meta_kfv_##_name##_animatedvalueinterface.mOffset = memberOffset(&KeyframedValue<_Ty>::\
+	AnimatedValueInterface<_Ty>::AnimationValueInterfaceBase::mName);\
+DEFINEM(kfv_##_name##, keyframedvalueinterface);\
+meta_kfv_##_name##_keyframedvalueinterface.mpName = "Baseclass_KeyframedValueInterface";\
+meta_kfv_##_name##_keyframedvalueinterface.mpMemberDesc = &meta_keyframedvalueinterface;\
+meta_kfv_##_name##_keyframedvalueinterface.mOffset = parentOffset<KeyframedValueInterface, KeyframedValue<_Ty>>();\
+meta_kfv_##_name##_animatedvalueinterface.mpNextMember = &meta_kfv_##_name##_keyframedvalueinterface;\
+meta_kfv_##_name##.mpFirstMember = &meta_kfv_##_name##_animatedvalueinterface;\
+NEXTMEM2(kfv_##_name##, mMinVal, KeyframedValue<_Ty>, _TyMetaVar, 0, animatedvalueinterface);\
+NEXTMEM2(kfv_##_name##, mMaxVal, KeyframedValue<_Ty>, _TyMetaVar, 0, mMinVal);\
+NEXTMEM2(kfv_##_name##, mSamples, KeyframedValue<_Ty>, DCArray_kfv_##_name##_sample, 0, mMaxVal);\
+ADD(kfv_##_name##);
 
 namespace MetaInit {
 
@@ -705,6 +746,7 @@ namespace MetaInit {
 			DEFINEMAP(Symbol, String, Symbol::CompareCRC);
 			DEFINEMAP(Symbol, Symbol, Symbol::CompareCRC);
 			DEFINEMAP(Symbol, float, Symbol::CompareCRC);
+			DEFINEMAP(Symbol, int, Symbol::CompareCRC);
 			DEFINEMAP(String, int, std::less<String>);
 			DEFINEMAP(int, Symbol, std::less<int>);
 			DEFINEMAP(int, int, std::less<int>);
@@ -1105,6 +1147,15 @@ namespace MetaInit {
 			NEXTMEM2(reverb, mfDensity, SoundReverbDefinition, float, 0, mfDiffusion);
 			ADD(reverb);
 
+			DEFINET2(anminterface, AnimationValueInterfaceBase);
+			FIRSTMEM2(anminterface, mName, AnimationValueInterfaceBase, symbol, 0);
+			NEXTMEM2(anminterface, mFlags, AnimationValueInterfaceBase, long, 0, mName);
+			ADD(anminterface);
+
+			DEFINET2(keyframedvalueinterface, KeyframedValueInterface);
+			ADDFLAGS(keyframedvalueinterface, MetaFlag::MetaFlag_MetaSerializeDisable | MetaFlag::MetaFlag_SkipObjectState);
+			ADD(keyframedvalueinterface);
+
 			DEFINET2(sampler, T3SamplerStateBlock);
 			FIRSTMEM2(sampler, mData, T3SamplerStateBlock, long, 0);
 			ADD(sampler);
@@ -1364,6 +1415,65 @@ namespace MetaInit {
 			FIRSTMEM2(aux, mType, T3Texture::AuxilaryData, symbol, 0);
 			NEXTMEM2(aux, mData, T3Texture::AuxilaryData, bb, 0, mType);
 			ADD(aux);
+
+			DEFINET2(locreg, LocalizationRegistry);
+			EXT(locreg, locreg);
+			FIRSTMEM2(locreg, mFlagIndexMap, LocalizationRegistry, Map_Symbol_int, 0);
+			NEXTMEM2(locreg, mFlagIndexMapReverse, LocalizationRegistry, Map_int_Symbol, 0, mFlagIndexMap);
+			NEXTMEM2(locreg, mToolProps, LocalizationRegistry, tp, 0, mFlagIndexMapReverse);
+			ADD(locreg);
+
+			DEFINEHANDLE(dlg, Dlg);
+
+			DEFINET2(dlgset, LanguageLookupMap::DlgIDSet);
+			FIRSTMEM2(dlgset, mIDRange, LanguageLookupMap::DlgIDSet, rangeuint, 0);
+			NEXTMEM2(dlgset, mAdditionalIDs, LanguageLookupMap::DlgIDSet, Set_u32, 0, mIDRange);
+			NEXTMEM2(dlgset, mhDlg, LanguageLookupMap::DlgIDSet, Handledlg, 0, mAdditionalIDs);
+			ADD(dlgset);
+
+			DEFINEDCARRAY2(LanguageLookupMap::DlgIDSet, dlgsetarr);
+
+			DEFINET2(llm, LanguageLookupMap);
+			EXT(llm, llm);
+			FIRSTMEM2(llm, mIDSets, LanguageLookupMap, DCArray_dlgsetarr, 0);
+			ADD(llm);
+
+			DEFINEKEYFRAMEDVALUE(float, float, float);
+
+			DEFINET2(trm, TransitionRemapper);
+			FIRSTMEM2(trm, mRemapKeys, TransitionRemapper, kfv_float, 0);
+			ADD(trm);
+
+			DEFINET2(tmi, TransitionMap::TransitionMapInfo);
+			FIRSTMEM2(tmi, mRemapper, TransitionMap::TransitionMapInfo, trm, 0);
+			ADD(tmi);
+
+			DEFINEMAP2(Symbol, TransitionMap::TransitionMapInfo, symbol, tmapinfo, Symbol::CompareCRC);
+
+			DEFINET2(tmap, TransitionMap);
+			EXT(tmap, tmap);
+			FIRSTMEM2(tmap, mTransitionRemappers, TransitionMap, Map_symbol_tmapinfo, 0);
+			ADD(tmap);
+
+			DEFINET2(enumbase, EnumBase);
+			ADDFLAGS(enumbase, 0x21);
+			ADD(enumbase);
+
+			DEFINET2(soundmat, SoundFootsteps::EnumMaterial);
+			ADDFLAGS(soundmat, 0x8008);
+			FIRSTMEM2(soundmat, mVal, SoundFootsteps::EnumMaterial, long, 0x40);
+			//TODO enums, And enum base may have a block size read before it SO FIX THAT
+			DEFINEM(soundmat, base);
+			meta_soundmat_base.mpName = "Baseclass_EnumBase";
+			meta_soundmat_base.mOffset = 0;
+			meta_soundmat_base.mpMemberDesc = &meta_enumbase;
+			meta_soundmat_mVal.mpNextMember = &meta_soundmat_base;
+			ADD(soundmat);
+
+			DEFINET2(wbox, WalkBoxes);
+			EXT(wbox, wbox);
+			FIRSTMEM2(wbox, mName, WalkBoxes, string, 0);
+			ADD(wbox);
 
 		}
 		Initialize2();

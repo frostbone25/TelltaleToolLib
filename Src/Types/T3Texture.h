@@ -6,7 +6,7 @@
 #ifndef _D3DTX
 #define _D3DTX
 
-#include "PropertySet.h"
+#include "ToolProps.h"
 #include "../TelltaleToolLibrary.h"
 #include "List.h"
 #include "../Meta.hpp"
@@ -116,27 +116,6 @@ enum PlatformType {
 
 struct EnumPlatformType {
 	PlatformType mVal;
-};
-
-struct ToolProps {
-	bool mbHasProps;
-	//in the engine there would be more members here (probably PropertySet mProps) but its built as the runtime engine, not the tool.
-
-	static MetaOpResult MetaOperation_SerializeAsync(void* pObj, MetaClassDescription* pObjDesc, MetaMemberDescription* pCtx,
-		void* pUserData) {
-		MetaStream* stream = static_cast<MetaStream*>(pUserData);
-		ToolProps* props = static_cast<ToolProps*>(pObj);
-		if (stream->mMode == MetaStreamMode::eMetaStream_Write) {
-			props->mbHasProps = false;//we are not in the tool engine, runtime engine. would normally be a #ifdef COMPILING_AS_TOOL etc
-		}
-		stream->serialize_bool(&props->mbHasProps);
-		if (props->mbHasProps) {
-			PropertySet prop;
-			PerformMetaSerializeAsync(stream, &prop);
-		}
-		return eMetaOp_Succeed;
-	}
-
 };
 
 enum T3SurfaceFormat {

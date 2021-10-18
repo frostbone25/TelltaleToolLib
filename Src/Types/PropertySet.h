@@ -89,6 +89,11 @@ struct PropertyValue {
 class PropertySet {
 public:
 
+	static inline const char* kPropEntered = "Trigger Entered Callback";
+	static inline const char* kPropExited = "Trigger Exited Callback";
+	static inline const char* kPropTargetName = "Trigger Target Name";
+	static inline const char* kPropEnabled = "Trigger Enabled";
+
 	enum eClearContext {
 		eClearContext_DEFAULT = 0,
 		eClearContext_FOR_DESTRUCTOR = 1
