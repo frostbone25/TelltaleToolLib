@@ -107,6 +107,7 @@ public:
 				mpStorage[i].~T();
 			}
 			Resize(from_index-mSize);
+			mSize -= (mSize-from_index);
 		}
 	}
 

@@ -78,6 +78,11 @@
     <ClInclude Include="Src\Types\AnimatedValueInterface.h" />
     <ClInclude Include="Src\Types\WalkBoxes.h" />
     <ClInclude Include="Src\Types\SoundFootsteps.h" />
+    <ClInclude Include="Src\Types\SoundEventBankMap.h" />
+    <ClInclude Include="Src\Types\StyleGuide.h" />
+    <ClInclude Include="Src\Types\AnimOrChore.h" />
+    <ClInclude Include="Src\Types\Animation.h" />
+    <ClInclude Include="Src\Types\Chore.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include=".gitattributes" />

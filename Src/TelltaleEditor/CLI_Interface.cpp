@@ -452,7 +452,7 @@ struct _LeakSlave {
 	}
 };
 
-#include "../Types/TransitionMap.h"
+#include "../Types/WalkBoxes.h"
 
 int main(int argn, char* argv[]) {
 
@@ -465,25 +465,15 @@ int main(int argn, char* argv[]) {
 			_OpenDataStreamFromDisc("c:/users/lucas/desktop/My Stuff/Projects/HashDB Creator/LibTelltale DB/LibTelltale.HashDB",
 				DataStreamMode::eMode_Read));
 
-		TransitionMap data;
+		WalkBoxes data;
 		MetaStream meta(NULL);
 		meta.Open(_OpenDataStreamFromDisc("D:/Games/Telltale Archives/"
-			"The Walking Dead Definitive/angry.tmap", DataStreamMode::eMode_Read), MetaStreamMode::eMetaStream_Read, { 0 });
+			"The Walking Dead Definitive/adv_woodsTower.wbox", DataStreamMode::eMode_Read), MetaStreamMode::eMetaStream_Read, { 0 });
 		PerformMetaSerializeAsync(&meta, &data);
-		HashDatabase::Page* p = TelltaleToolLib_GetGlobalHashDatabase()->FindPage("AG-Bones");
-		for (int i = 0; i < data.mTransitionRemappers.GetSize(); i++) {
-			printf("%s\n", FindSymbolName(data.mTransitionRemappers[i].first, p).c_str());
-			KeyframedValue<float> info = data.mTransitionRemappers[i].second.mRemapper.mRemapKeys;
-			String s = "Not found";
-			TelltaleToolLib_GetGlobalHashDatabase()->FindEntry(NULL, info.mName.GetCRC(), &s);
-			printf("\tMin: %f, Max: %f, Flags: %d, Name: %s\n", info.mMinVal, info.mMaxVal, info.mFlags, 
-				s.c_str());
-			for (int x = 0; x < info.mSamples.GetSize(); x++) {
-				KeyframedValue<float>::Sample* sample = info.mSamples.mpStorage + x;
-				printf("\t\tRemap Keys: Time: %f, Interpolate: %d, Mode: %d, Value: %f\n", sample->mTime, sample->mbInterpolateToNextKey,
-					sample->mTangentMode, sample->mValue);
-			}
-		}
+		printf("Name: %s %d %d %d %d\n", data.mName.c_str(), data.mNormals.mSize, data.mVerts.mSize, data.mQuads.mSize,data.mTris.mSize);
+		meta.SwitchToMode(MetaStreamMode::eMetaStream_Write, _OpenDataStreamFromDisc(
+			"c:/users/lucas/desktop/o.wbox", DataStreamMode::eMode_Write));
+		PerformMetaSerializeAsync(&meta, &data);
 	}
 
 	return 0;

@@ -161,7 +161,10 @@
     <ClInclude Include="Src\Types\ActorAgentMapper.h" />
     <ClInclude Include="Src\Types\AgentMap.h" />
     <ClInclude Include="Src\Types\AnimatedValueInterface.h" />
+    <ClInclude Include="Src\Types\Animation.h" />
+    <ClInclude Include="Src\Types\AnimOrChore.h" />
     <ClInclude Include="Src\Types\AssetCollection.h" />
+    <ClInclude Include="Src\Types\Chore.h" />
     <ClInclude Include="Src\Types\Container.h" />
     <ClInclude Include="Src\Types\DCArray.h" />
     <ClInclude Include="Src\Types\Deque.h" />
@@ -186,8 +189,10 @@
     <ClInclude Include="Src\Types\Set.h" />
     <ClInclude Include="Src\Types\Skeleton.h" />
     <ClInclude Include="Src\Types\SoundBusSystem.h" />
+    <ClInclude Include="Src\Types\SoundEventBankMap.h" />
     <ClInclude Include="Src\Types\SoundFootsteps.h" />
     <ClInclude Include="Src\Types\SoundReverbDefinition.h" />
+    <ClInclude Include="Src\Types\StyleGuide.h" />
     <ClInclude Include="Src\Types\T3Texture.h" />
     <ClInclude Include="Src\Types\ToolProps.h" />
     <ClInclude Include="Src\Types\TRange.h" />

@@ -111,11 +111,11 @@ meta_Set_##type##.Insert();
 
 #define ADDFLAGS(name, flags) meta_##name.mFlags |= flags
 
-#define DEFINESARRAY_(_Ty,type,count) DEFINET(sarray_##type##_##count##, SArray<_Ty>);\
-meta_sarray_##type##_##count##.Initialize(typeid(SArray<_Ty>));\
-METAOP_CUSTOM(sarray_##type##_##count, eMetaOpSerializeAsync, SArray<_Ty>::MetaOperation_SerializeAsync);\
+#define DEFINESARRAY_(_Ty,type,count) DEFINET(sarray_##type##_##count##, SArray<_Ty SEP count>);\
+meta_sarray_##type##_##count##.Initialize(typeid(SArray<_Ty SEP count>));\
+METAOP_CUSTOM(sarray_##type##_##count, eMetaOpSerializeAsync, SArray<_Ty SEP count>::MetaOperation_SerializeAsync);\
 meta_sarray_##type##_##count##.InstallSpecializedMetaOperation(&meta_sarray_##type##_##count##_eMetaOpSerializeAsync);\
-METAOP_CUSTOM(sarray_##type##_##count, eMetaOpSerializeMain, SArray<_Ty>::MetaOperation_SerializeMain);\
+METAOP_CUSTOM(sarray_##type##_##count, eMetaOpSerializeMain, SArray<_Ty SEP count>::MetaOperation_SerializeMain);\
 meta_sarray_##type##_##count##.InstallSpecializedMetaOperation(&meta_sarray_##type##_##count##_eMetaOpSerializeMain);\
 DEFINEM(sarray_##type##_##count##,baseclass);\
 meta_sarray_##type##_##count##.mpFirstMember = &meta_sarray_##type##_##count##_baseclass;\
@@ -204,6 +204,18 @@ meta_##parent##_##child##.mpEnumDescriptions = &meta_##parent##_##child##_##enum
 
 #define NEXTENUM(parent,child,enumName, enumIndex, flags, previous) static MetaEnumDescription meta_##parent##_##child##_##enumName##;\
 meta_##parent##_##child##_##enumName##.mpEnumName = #enumName;\
+meta_##parent##_##child##_##enumName##.mEnumIntValue = enumIndex;\
+meta_##parent##_##child##_##enumName##.mFlags |= flags;\
+meta_##parent##_##child##_##previous.mpNext = &meta_##parent##_##child##_##enumName##;
+
+#define FIRSTENUM2(parent,child,enumNameStr, enumName, enumIndex, flags) static MetaEnumDescription meta_##parent##_##child##_##enumName##;\
+meta_##parent##_##child##_##enumName##.mpEnumName = enumNameStr;\
+meta_##parent##_##child##_##enumName##.mEnumIntValue = enumIndex;\
+meta_##parent##_##child##_##enumName##.mFlags |= flags;\
+meta_##parent##_##child##.mpEnumDescriptions = &meta_##parent##_##child##_##enumName##;
+
+#define NEXTENUM2(parent,child,enumNameStr, enumName, enumIndex, flags, previous) static MetaEnumDescription meta_##parent##_##child##_##enumName##;\
+meta_##parent##_##child##_##enumName##.mpEnumName = enumNameStr;\
 meta_##parent##_##child##_##enumName##.mEnumIntValue = enumIndex;\
 meta_##parent##_##child##_##enumName##.mFlags |= flags;\
 meta_##parent##_##child##_##previous.mpNext = &meta_##parent##_##child##_##enumName##;
@@ -724,7 +736,7 @@ namespace MetaInit {
 			DEFINESARRAY(i32, 3);
 			DEFINESARRAY(float, 9);
 			DEFINESARRAY(float, 3);
-			DEFINESARRAY_(TRange<float> SEP 3, rangefloat, 3);
+			DEFINESARRAY_(TRange<float>, rangefloat, 3);
 			DEFINEDCARRAY(i32);
 			DEFINEDCARRAY(u16);
 			DEFINEDCARRAY(u64);
@@ -1462,7 +1474,24 @@ namespace MetaInit {
 			DEFINET2(soundmat, SoundFootsteps::EnumMaterial);
 			ADDFLAGS(soundmat, 0x8008);
 			FIRSTMEM2(soundmat, mVal, SoundFootsteps::EnumMaterial, long, 0x40);
-			//TODO enums, And enum base may have a block size read before it SO FIX THAT
+			FIRSTENUM(soundmat, mVal, Default, SoundFootsteps::Default, 0);
+			NEXTENUM(soundmat, mVal, Carpet, 2, 0, Default);
+			NEXTENUM(soundmat, mVal, Concrete, 3, 0, Carpet);
+			NEXTENUM2(soundmat, mVal,"Concrete (Wet)", Concrete_Wet, 4, 0, Concrete);
+			NEXTENUM2(soundmat, mVal, "Dirt", Dirt, 5, 0, Concrete_Wet);
+			NEXTENUM2(soundmat, mVal, "Grass", Grass, 6, 0, Dirt);
+			NEXTENUM2(soundmat, mVal, "Grass (Tall)", Grass_Tall, 7, 0, Grass);
+			NEXTENUM2(soundmat, mVal, "Gravel", Gravel, 8, 0, Grass_Tall);
+			NEXTENUM2(soundmat, mVal, "Leaves", Leaves, 9, 0, Gravel);
+			NEXTENUM2(soundmat, mVal, "Linoleum", Linoleum, 10, 0, Leaves);
+			NEXTENUM2(soundmat, mVal, "Metal (Thick)", Metal_Thick, 11, 0, Linoleum);
+			NEXTENUM2(soundmat, mVal, "Metal (Thin)", Metal_Thin, 12, 0, Metal_Thick);
+			NEXTENUM2(soundmat, mVal, "Mud", Mud, 13, 0,Metal_Thin);
+			NEXTENUM2(soundmat, mVal, "Puddle", Puddle, 14, 0,  Mud);
+			NEXTENUM2(soundmat, mVal, "Sand", Sand, 15, 0, Puddle);
+			NEXTENUM2(soundmat, mVal, "Snow", Snow, 16, 0, Sand);
+			NEXTENUM2(soundmat, mVal, "Tile (Hard)", Tile_Hard, 17, 0, Snow);
+			NEXTENUM2(soundmat, mVal, "Wood", Wood, 18, 0, Tile_Hard);
 			DEFINEM(soundmat, base);
 			meta_soundmat_base.mpName = "Baseclass_EnumBase";
 			meta_soundmat_base.mOffset = 0;
@@ -1470,10 +1499,67 @@ namespace MetaInit {
 			meta_soundmat_mVal.mpNextMember = &meta_soundmat_base;
 			ADD(soundmat);
 
+			DEFINET2(wboxedge, WalkBoxes::Edge);
+			FIRSTMEM2(wboxedge, mV1, WalkBoxes::Edge, long, 0);
+			NEXTMEM2(wboxedge, mV2, WalkBoxes::Edge, long, 0, mV1);
+			NEXTMEM2(wboxedge, mEdgeDest, WalkBoxes::Edge, long, 0, mV2);
+			NEXTMEM2(wboxedge, mEdgeDestEdge, WalkBoxes::Edge, long, 0, mEdgeDest);
+			NEXTMEM2(wboxedge, mEdgeDir, WalkBoxes::Edge, long, 0, mEdgeDestEdge);
+			NEXTMEM2(wboxedge, mMaxRadius, WalkBoxes::Edge, float, 0, mEdgeDir);
+			ADD(wboxedge);
+
+			DEFINET2(wboxquad, WalkBoxes::Quad);
+			FIRSTMEM2(wboxquad, mVerts, WalkBoxes::Quad, sarray_i32_4, 0);
+			ADD(wboxquad);
+
+			DEFINET2(wboxvert, WalkBoxes::Vert);
+			FIRSTMEM2(wboxvert, mFlags, WalkBoxes::Vert, flags, 0);
+			NEXTMEM2(wboxvert, mPos, WalkBoxes::Vert, vec3, 0, mFlags);
+			ADD(wboxvert);
+
+			DEFINESARRAY_(WalkBoxes::Edge, wboxedge, 3);
+
+			DEFINET2(wboxtri, WalkBoxes::Tri);
+			FIRSTMEM2(wboxtri, mFootstepMaterial, WalkBoxes::Tri, soundmat, 0);
+			NEXTMEM2(wboxtri, mFlags, WalkBoxes::Tri, flags, 0, mFootstepMaterial);
+			NEXTMEM2(wboxtri, mNormal, WalkBoxes::Tri, long, 0, mFlags);
+			NEXTMEM2(wboxtri, mQuadBuddy, WalkBoxes::Tri, long, 0, mNormal);
+			NEXTMEM2(wboxtri, mMaxRadius, WalkBoxes::Tri, float, 0, mQuadBuddy);
+			NEXTMEM2(wboxtri, mVerts, WalkBoxes::Tri, sarray_i32_3, 0, mMaxRadius);
+			NEXTMEM2(wboxtri, mEdgeInfo, WalkBoxes::Tri, sarray_wboxedge_3, 0, mVerts);
+			NEXTMEM2(wboxtri, mVertOffsets, WalkBoxes::Tri, sarray_i32_3, 0, mEdgeInfo);
+			NEXTMEM2(wboxtri, mVertScales, WalkBoxes::Tri, sarray_float_3, 0, mVertOffsets);
+			ADD(wboxtri);
+
+			DEFINEDCARRAY2(WalkBoxes::Tri, tri);
+			DEFINEDCARRAY2(WalkBoxes::Vert, vert);
+			DEFINEDCARRAY2(WalkBoxes::Quad, quad);
+			DEFINEDCARRAY2(Vector3, vec3);
+
 			DEFINET2(wbox, WalkBoxes);
 			EXT(wbox, wbox);
+			SERIALIZER(wbox, WalkBoxes);
 			FIRSTMEM2(wbox, mName, WalkBoxes, string, 0);
+			NEXTMEM2(wbox, mTris, WalkBoxes, DCArray_tri, 0, mName);
+			NEXTMEM2(wbox, mVerts, WalkBoxes, DCArray_vert, 0, mTris);
+			NEXTMEM2(wbox, mNormals, WalkBoxes, DCArray_vec3, 0, mVerts);
+			NEXTMEM2(wbox, mQuads, WalkBoxes, DCArray_quad, 0x20, mNormals);
 			ADD(wbox);
+
+			DEFINET2(sebmp, SoundEventBankMap);
+			EXT(sebmp, soundeventbankmap);
+			FIRSTMEM2(sebmp, mBankMap, SoundEventBankMap, Map_String_dcarraystring,0);
+			NEXTMEM2(sebmp, mbLoadAllBanksGlobally, SoundEventBankMap, bool, 0, mBankMap);
+			ADD(sebmp);
+
+			DEFINEHANDLE(hanm, Animation);
+			DEFINEHANDLE(hchore, Chore);
+			
+			DEFINET2(animorchore, AnimOrChore);
+			ADDFLAGS(animorchore, MetaFlag::MetaFlag_PlaceInAddPropMenu);
+			FIRSTMEM2(animorchore, mhAnim, AnimOrChore, Handlehanm, 0);
+			NEXTMEM2(animorchore, mhChore, AnimOrChore, Handlehchore, 0, mhAnim);
+			ADD(animorchore);
 
 		}
 		Initialize2();
