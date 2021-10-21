@@ -394,7 +394,7 @@ public:
 	INLINE void SetCRC(u64 crc) { mCrc64 = crc; }
 
 	Symbol& Concat(const String& tName) {
-		mCrc64 = CRC64_CaseInsensitive(0, tName.c_str());
+		mCrc64 = CRC64_CaseInsensitive(mCrc64, tName.c_str());
 		return *this;
 	}
 
