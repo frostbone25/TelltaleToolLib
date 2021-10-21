@@ -467,13 +467,8 @@ int main(int argn, char* argv[]) {
 
 		WalkBoxes data;
 		MetaStream meta(NULL);
-		meta.Open(_OpenDataStreamFromDisc("D:/Games/Telltale Archives/"
-			"The Walking Dead Definitive/adv_woodsTower.wbox", DataStreamMode::eMode_Read), MetaStreamMode::eMetaStream_Read, { 0 });
-		PerformMetaSerializeAsync(&meta, &data);
-		printf("Name: %s %d %d %d %d\n", data.mName.c_str(), data.mNormals.mSize, data.mVerts.mSize, data.mQuads.mSize,data.mTris.mSize);
-		meta.SwitchToMode(MetaStreamMode::eMetaStream_Write, _OpenDataStreamFromDisc(
-			"c:/users/lucas/desktop/o.wbox", DataStreamMode::eMode_Write));
-		PerformMetaSerializeAsync(&meta, &data);
+		
+		_TTTLib_PrintMetaClasses();
 	}
 
 	return 0;

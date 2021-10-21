@@ -1561,6 +1561,8 @@ namespace MetaInit {
 			NEXTMEM2(animorchore, mhChore, AnimOrChore, Handlehchore, 0, mhAnim);
 			ADD(animorchore);
 
+
+
 		}
 		Initialize2();
 		Initialize3();

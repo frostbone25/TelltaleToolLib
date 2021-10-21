@@ -7,6 +7,7 @@
 template<typename T>
 struct TRange {
 	T min, max;
+
 };
 
 //Types the Telltale Tool implements

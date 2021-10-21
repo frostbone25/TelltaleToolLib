@@ -371,6 +371,16 @@ public:
 		return ret;
 	}
 
+	bool ExistsKey(const Symbol& pKeyName, bool pSearchParents) {
+		for (int i = 0; i < mKeyMap.GetSize(); i++) {
+			if (mKeyMap[i].mKeyName == pKeyName)
+				return true;
+		}
+		if (pSearchParents) {
+
+		}
+		return false;
+	}
 
 	template<typename T> u32 GetNumPropertiesOfTypeT() {
 		MetaClassDescription* desc = GetMetaClassDescription(typeid(T).name());

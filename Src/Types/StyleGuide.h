@@ -10,13 +10,51 @@
 #include "TRange.h"
 #include "DCArray.h"
 #include "HandleObjectInfo.h"
+#include "PropertySet.h"
 #include "TransitionMap.h"
 #include "List.h"
 #include "AnimOrChore.h"
 
+constexpr Symbol styleIdlesOnKey{ 0x225F4A10E80B37AD };
+constexpr Symbol styleBaseIdleKey{ 0x1DB0F9232E38E12F };
+constexpr Symbol styleIdleKey1{ 0x16637976BEE9313D };
+constexpr Symbol styleGuideKey1{ 0x3A19C2CC84E6A163 };
+constexpr Symbol styleIdleKey2{ 0x0E630E104C6B0DA01 };
+constexpr Symbol styleGuideKey2{ 0x8BA4000EFA24BABE };
+constexpr Symbol styleIdleKey3{ 0x0A4C000EF6F5AEC92 };
+constexpr Symbol styleGuideKey3{ 0x0C954E1E553CE8C2D };
+constexpr Symbol styleIdleKey4{ 0x2AE244969B265BF8 };
+constexpr Symbol styleGuideKey4{ 0x4776A59CA7B23B47 };
+constexpr Symbol styleIdleKey5{ 0x6812A57D32CC6D6B };
+constexpr Symbol styleGuideKey5{ 0x58644770E580DD4 };
+constexpr Symbol styleUser1Key{ 0x0BCE3F22B573AE08F };
+constexpr Symbol styleUser2Key{ 0x7BF2D017AD04BB3A };
+constexpr Symbol styleUser3Key{ 0x390231FC04EE8DA9 };
+constexpr Symbol styleUser4Key{ 0x0B7207585F0923AC3 };
+constexpr Symbol styleUser5Key{ 0x0F5D0946E59780C50 };
 
 struct ActingOverridablePropOwner {
 	Flags mSerializationFlags;
+	PropertySet* mpOverridableValues;
+	Handle<PropertySet> mhParent;
+
+	ActingOverridablePropOwner() : mpOverridableValues(NULL) {}
+
+	ActingOverridablePropOwner(Handle<PropertySet>& pHandle){
+		mhParent = pHandle;
+		mpOverridableValues = NULL;
+	}
+
+	~ActingOverridablePropOwner() {
+		if (mpOverridableValues)
+			delete mpOverridableValues;
+	}
+
+	void CreateOverridableValuesPropertySet(bool pAddParents) {
+		if (!this->mpOverridableValues) {
+			mpOverridableValues = new PropertySet();
+		}
+	}
 
 	static METAOP_FUNC_IMPL__(SerializeAsync) {
 		MetaStream* meta = static_cast<MetaStream*>(pUserData);
