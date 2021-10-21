@@ -127,8 +127,17 @@ public:
 			mObj = OpenDataStreamFromDisc(filepath, mode);
 		}
 		else {
-			mAccessLock.SetResult(JobResult::eJobResult_Failed);
-			return;
+			MetaClassDescription* typeClass = TelltaleToolLib_FindMetaClassDescription(type, true);
+			if (!typeClass) {
+				mAccessLock.SetResult(JobResult::eJobResult_Failed);
+				return;
+			}
+			FuncNew func = (FuncNew)typeClass->mpVTable[VTableFunction::eVTableNew];
+			if (!func) {
+				mAccessLock.SetResult(JobResult::eJobResult_Failed);
+				return;
+			}
+			mObj = func();
 		}
 		mAccessLock.SetResult(mObj ? JobResult::eJobResult_Succeeded : JobResult::eJobResult_OutOfMemory);
 	}
@@ -328,6 +337,35 @@ public:
 
 };
 
+class Job_MetaSerialize : public Job {
+public:
+	Job_MetaSerialize() { mbProgressStatAvailable = false; }
+
+	MetaOpResult mResult;
+
+	void PerformOperation(void* pInput) override {
+		MetaStream* stream = *static_cast<MetaStream**>(pInput);
+		void* obj = *static_cast<void**>((void*)((char*)pInput + 8));
+		const char* type = *static_cast<const char**>((void*)((char*)pInput + 16));
+		bool by_ext = *static_cast<bool*>((void*)((char*)pInput + 24));
+		IFFAIL(stream);
+		IFFAIL(obj);
+		IFFAIL(type);
+		MetaClassDescription* clazz = TelltaleToolLib_FindMetaClassDescription(type, by_ext);
+		if (!clazz) {
+			FAIL;
+			return;
+		}
+		mResult = PerformMetaSerializeFull(stream, obj, clazz);
+		SUCCEED;
+	}
+
+	void* GetOutput() override {
+		return (void*)mResult;
+	}
+
+};
+
 class Job_ReadTTArchive2 : public Job {
 public:
 	Job_ReadTTArchive2() { mbProgressStatAvailable = true; }
@@ -387,6 +425,7 @@ enum JobOp : int {
 	eCloseMetaStream,
 	eReadArchive,
 	eWriteArchive,
+	eMetaSerialize
 };
 
 Job* DispatchJob(JobOp op, void* pInput) {
@@ -394,6 +433,9 @@ Job* DispatchJob(JobOp op, void* pInput) {
 	switch (op) {
 	case JobOp::eCreateObject:
 		jobptr = new Job_CreateObject;
+		break;
+	case JobOp::eMetaSerialize:
+		jobptr = new Job_MetaSerialize;
 		break;
 	case JobOp::eDeleteObject:
 		jobptr = new Job_DeleteObject;
