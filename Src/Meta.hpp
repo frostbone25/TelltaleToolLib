@@ -110,14 +110,42 @@ namespace UID {
 	struct __declspec(align(8)) Owner {
 		idT miUniqueID;
 
-		Owner() : miUniqueID(0){}
+		Owner() : miUniqueID(-1){}
+
+		Owner(Generator& gen) {
+			miUniqueID = gen.GetNextUniqueID(true);
+		}
 
 	};
 
 	struct __declspec(align(8)) Generator {
 		idT miNextUniqueID;
 
-		Generator() : miNextUniqueID(0) {}
+		Generator() : miNextUniqueID(1) {}
+
+		static idT UninitID() {
+			return 0xFFFFFFFF;
+		}
+
+		inline void Reset() {
+			miNextUniqueID = 1;
+		}
+
+		inline bool ValidID(idT id) {
+			return id >= 1 && id < this->miNextUniqueID;
+		}
+
+		inline idT GetNextUniqueID(bool bIncrement) {
+			idT _t = miNextUniqueID;
+			if (miNextUniqueID == 0xFFFFFFFF) {
+				miNextUniqueID = 1;
+				_t = 1;
+			}
+			else if (bIncrement)
+				miNextUniqueID++;
+			return _t;
+		}
+
 	};
 
 };

@@ -161,6 +161,15 @@ meta_Deque_##type##_baseclass.mFlags |= (int)MetaFlag::MetaFlag_BaseClass;\
 meta_Deque_##type##.InstallSpecializedMetaOperation(&meta_Deque_##type##_eMetaOpSerializeAsync);\
 meta_Deque_##type##.Insert();
 
+#define NEXTMEM1(parent, namestr, memberNameInStruct, memberAlias, pathToMember, typeDesc, flags, previousMember) \
+DEFINEM(parent, memberNameInStruct);\
+meta_##parent##_##memberNameInStruct##.mpName = namestr;\
+meta_##parent##_##memberNameInStruct##.mOffset = memberOffset(&##pathToMember##::##memberAlias##);\
+meta_##parent##_##memberNameInStruct##.mpMemberDesc = &meta_##typeDesc##;\
+meta_##parent##_##memberNameInStruct##.mFlags |= flags;\
+meta_##parent##_##previousMember##.mpNextMember =& meta_##parent##_##memberNameInStruct##;
+
+
 #define NEXTMEM(parent, namestr, memberNameInStruct, pathToMember, typeDesc, flags, previousMember) \
 DEFINEM(parent, memberNameInStruct);\
 meta_##parent##_##memberNameInStruct##.mpName = namestr;\
@@ -1561,7 +1570,124 @@ namespace MetaInit {
 			NEXTMEM2(animorchore, mhChore, AnimOrChore, Handlehchore, 0, mhAnim);
 			ADD(animorchore);
 
+			DEFINET2(resgroups, ResourceGroups);
+			ADDFLAGS(resgroups, MetaFlag::MetaFlag_EditorHide);
+			FIRSTMEM2(resgroups, mGroups, ResourceGroups, Map_Symbol_float,0);
+			ADD(resgroups);
 
+			DEFINET2(propo, ActingOverridablePropOwner);
+			FIRSTMEM2(propo, mSerializationFlags, ActingOverridablePropOwner, flags, 0);
+			SERIALIZER(propo, ActingOverridablePropOwner);
+			ADD(propo);
+
+			DEFINET2(tanmode, EnumeTangentModes);
+			FIRSTMEM2(tanmode, mVal, EnumeTangentModes, long, 0);
+			FIRSTENUM(tanmode, mVal, eTangentUnknown, eTangentUnknown, 0);
+			NEXTENUM(tanmode, mVal, eTangentStepped, eTangentStepped, 0,eTangentUnknown);
+			NEXTENUM(tanmode, mVal, eTangentKnot, eTangentKnot, 0, eTangentStepped);
+			NEXTENUM(tanmode, mVal, eTangentSmooth, eTangentSmooth, 0, eTangentKnot);
+			NEXTENUM(tanmode, mVal, eTangentFlat, eTangentFlat, 0, eTangentSmooth);
+			NEXTMEM(tanmode, "Baseclass_EnumBase", mVal,
+				EnumeTangentModes, enumbase, 0, mVal);
+			ADD(tanmode);
+
+			DEFINET2(actres, ActingResource);
+			FIRSTMEM(actres, "Baseclass_ActingOverridablePropOwner", mSerializationFlags, ActingResource, propo, 0);
+			NEXTMEM2(actres, mResource, ActingResource, animorchore, MetaFlag::MetaFlag_EditorHide, mSerializationFlags);
+			NEXTMEM2(actres, mValidIntensityRange, ActingResource, rangef, 0, mResource);
+			ADD(actres);
+
+			DEFINET2(actdur, ActingPalette::EnumActiveDuring);
+			ADDFLAGS(actdur, 0x8008);
+			FIRSTMEM2(actdur, mVal, ActingPalette::EnumActiveDuring, long, 0);
+			FIRSTENUM(actdur, mVal, always, ActingPalette::ActiveDuring::always, 0);
+			NEXTENUM(actdur, mVal, talking, ActingPalette::ActiveDuring::talking, 0,always);
+			NEXTENUM(actdur, mVal, listening, ActingPalette::ActiveDuring::listening, 0, talking);
+			NEXTMEM1(actdur, "Baseclass_EnumBase", BASE_CLASS, mVal,
+				ActingPalette::EnumActiveDuring, enumbase, 0, mVal);
+			ADD(actdur);
+
+			DEFINET2(actrun1, ActingAccentPalette::EnumOverrun);
+			ADDFLAGS(actrun1, 0x8008);
+			FIRSTMEM2(actrun1, mVal, ActingAccentPalette::EnumOverrun, long, 0);
+			FIRSTENUM(actrun1, mVal, disallowed, ActingAccentPalette::Overrun::disallowed, 0);
+			NEXTENUM(actrun1, mVal, allowed, ActingAccentPalette::Overrun::allowed, 0, disallowed);
+			NEXTMEM1(actrun1, "Baseclass_EnumBase", BASE_CLASS, mVal,
+				ActingAccentPalette::EnumOverrun, enumbase, 0, mVal);
+			ADD(actrun1);
+
+			DEFINET2(actrun, ActingPalette::EnumOverrun);
+			ADDFLAGS(actrun, 0x8008);
+			FIRSTMEM2(actrun, mVal, ActingPalette::EnumOverrun, long, 0);
+			FIRSTENUM(actrun, mVal, disallowed, ActingPalette::Overrun::disallowed, 0);
+			NEXTENUM(actrun, mVal, allowed, ActingPalette::Overrun::allowed, 0, disallowed);
+			NEXTMEM1(actrun, "Baseclass_EnumBase", BASE_CLASS, mVal,
+				ActingPalette::EnumOverrun, enumbase, 0, mVal);
+			ADD(actrun);
+
+			DEFINET2(actrel, ActingPalette::EnumEndRelativeTo);
+			ADDFLAGS(actrel, 0x8008);
+			FIRSTMEM2(actrel, mVal, ActingPalette::EnumEndRelativeTo, long, 0);
+			FIRSTENUM(actrel, mVal, beginning, ActingPalette::EndRelativeTo::beginning, 0);
+			NEXTENUM(actrel, mVal, end, ActingPalette::EndRelativeTo::end, 0, beginning);
+			NEXTENUM(actrel, mVal, transition, ActingPalette::EndRelativeTo::transition, 0, end);
+			NEXTMEM1(actrel, "Baseclass_EnumBase", BASE_CLASS, mVal,
+				ActingPalette::EnumEndRelativeTo, enumbase, 0, mVal);
+			ADD(actrel);
+
+			DEFINET2(aresp, ActingResource*);
+			ADD(aresp);
+			DEFINEDCARRAY2(ActingResource*, actresp);
+
+			DEFINET2(actp, ActingPalette);
+			FIRSTMEM(actp, "Baseclass_ActingOverridablePropOwner", mSerializationFlags, ActingPalette, propo, 0x10);
+			NEXTMEM(actp, "Baseclass_UID::Owner", miUniqueID, ActingPalette, uidowner, 0x10, mSerializationFlags);
+			SERIALIZER(actp, ActingPalette);
+			NEXTMEM2(actp, mName, ActingPalette, string, 0x20, miUniqueID);
+			NEXTMEM2(actp, mActiveDuring, ActingPalette, actdur, 0, mName);
+			NEXTMEM2(actp, mTimeBetweenActions, ActingPalette, rangef, 0, mActiveDuring);
+			NEXTMEM2(actp, mFirstActionDelayRange, ActingPalette, rangef, 0, mTimeBetweenActions);
+			NEXTMEM2(actp, mSpilloutBufPreRange, ActingPalette, rangef, 0x20, mFirstActionDelayRange);
+			NEXTMEM2(actp, mSpilloutBufPostRange, ActingPalette, rangef, 0, mSpilloutBufPreRange);
+			NEXTMEM2(actp, mLatestStartOffsetRange, ActingPalette, rangef, 0, mSpilloutBufPostRange);
+			NEXTMEM2(actp, mValidIntensityRange, ActingPalette, rangef, 0, mLatestStartOffsetRange);
+			NEXTMEM2(actp, mResourcePtrs, ActingPalette, DCArray_actresp, 0x21, mValidIntensityRange);
+			NEXTMEM2(actp, mGroupMembershipUID, ActingPalette, long, 0x20, mResourcePtrs);
+			NEXTMEM2(actp, mFlags, ActingPalette, flags, 0x20, mGroupMembershipUID);
+			NEXTMEM2(actp, mFirstActionEndRel, ActingPalette, actrel, 0, mFlags);
+			NEXTMEM2(actp, mEndOffsetRel, ActingPalette, actrel, 0, mFirstActionEndRel);
+			NEXTMEM2(actp, mLatestStartOffsetRel, ActingPalette, actrel, 0, mEndOffsetRel);
+			NEXTMEM2(actp, mOverrunAllowed, ActingPalette, actrun, 0, mLatestStartOffsetRel);
+			NEXTMEM2(actp, mMoodOverrunAllowed, ActingPalette, actrun, 0, mOverrunAllowed);
+			NEXTMEM2(actp, mDisableAct, ActingPalette, bool, 0, mMoodOverrunAllowed);
+			NEXTMEM2(actp, mJunket, ActingPalette, long, 0, mDisableAct);
+			ADD(actp);
+
+
+			DEFINET2(actap, ActingAccentPalette);
+			ADDFLAGS(actap, 0x40);
+			SERIALIZER(actap, ActingAccentPalette);
+			FIRSTMEM(actap, "Baseclass_ActingOverridablePropOwner", mSerializationFlags, ActingAccentPalette, propo, 0x10);
+			NEXTMEM(actap, "Baseclass_UID::Owner", miUniqueID, ActingAccentPalette, uidowner, 0x10, mSerializationFlags);
+			NEXTMEM2(actap, mName, ActingAccentPalette, string, 0, miUniqueID);
+			NEXTMEM2(actap, mStartOffsetRange, ActingAccentPalette, rangef, 0, mName);
+			NEXTMEM2(actap, mMoodOverrunAllowed, ActingAccentPalette, actrun1, 0, mStartOffsetRange);
+			NEXTMEM2(actap, mDisableAct, ActingAccentPalette, bool, 0, mMoodOverrunAllowed);
+			NEXTMEM2(actap, mValidIntensityRange, ActingAccentPalette, rangef, 0, mDisableAct);
+			NEXTMEM2(actap, mSpilloutBufPostRange, ActingAccentPalette, rangef, 0, mValidIntensityRange);
+			NEXTMEM2(actap, mRandomChance, ActingAccentPalette, float, 0, mSpilloutBufPostRange);
+			NEXTMEM2(actap, mTrackID, ActingAccentPalette, long, 0, mRandomChance);
+			FIRSTENUM2(actap, mTrackID, "Body", Body, 1, 0);
+			NEXTENUM2(actap, mTrackID, "Face", Face, 2, 0, Body);
+			NEXTENUM2(actap, mTrackID, "Head 1", Head1, 3, 0, Face);
+			NEXTENUM2(actap, mTrackID, "Head 2", Head2, 4, 0, Head1);
+			NEXTMEM2(actap, mResourcePtrs, ActingAccentPalette, DCArray_actresp, 0x21, mTrackID);
+			NEXTMEM2(actap, mGroupMembershipUID, ActingAccentPalette, long, 0x20, mResourcePtrs);
+			NEXTMEM2(actap, mFlags, ActingAccentPalette, flags, 0x20, mGroupMembershipUID);
+			NEXTMEM2(actap, mVersion, ActingAccentPalette, long, 0x20, mFlags);
+			ADD(actap);
+
+			//
 
 		}
 		Initialize2();

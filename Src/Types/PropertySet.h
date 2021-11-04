@@ -42,8 +42,7 @@ struct PropertyValue {
 		ClearData();
 		mpDataDescription = pDescription;
 		if (!(pDescription->mpVTable[0]) || !(pDescription->mpVTable[2]) || !(pDescription->mpVTable[3])) {
-			printf("BAD ERROR: COULD NOT ADD TYPE TO PROP. THIS TYPE (%s) SHOULD NOT BE IN A .PROP!!!\n",pDescription->mpTypeInfoName);
-			throw "TYPE ATTEMPED TO BE ADDED TO PROP WHICH SHOULD NOT BE THERE!";
+			TelltaleToolLib_RaiseError("Tried to add an abstract class as a property set value", ErrorSeverity::ERR);
 			return;
 		}
 		mpValue = operator new(pDescription->mClassSize);
@@ -349,6 +348,24 @@ public:
 		return NULL;
 	}
 
+	void* GetProperty(const Symbol & KeyName) {
+		u64 crc = KeyName.GetCRC();
+		for (auto it = mKeyMap.begin(); it != mKeyMap.end(); it++) {
+			if (it->mKeyName.GetCRC() == crc)
+				return it->mValue.mpValue;
+		}
+		return NULL;
+	}
+
+	template<typename T> T* GetProperty(const Symbol& KeyName) {
+		u64 crc = KeyName.GetCRC();
+		for (auto it = mKeyMap.begin(); it != mKeyMap.end(); it++) {
+			if (it->mKeyName.GetCRC() == crc)
+				return it->mValue.CastValue<T>();
+		}
+		return NULL;
+	}
+
 	template<typename T> T* GetProperty(const char* keyName) {
 		u64 crc = CRC64_CaseInsensitive(0, keyName);
 		for (auto it = mKeyMap.begin(); it != mKeyMap.end(); it++) {
@@ -377,7 +394,8 @@ public:
 				return true;
 		}
 		if (pSearchParents) {
-
+			TelltaleToolLib_RaiseError("Cannot search parents,"
+			" cannot load external file", ErrorSeverity::NOTIFY);
 		}
 		return false;
 	}
@@ -393,6 +411,13 @@ public:
 		KeyInfo k;
 		k.mKeyName = CRC64_CaseInsensitive(0, keyName);
 		k.mValue.SetData(value, desc);
+		mKeyMap.AddElement(0, NULL, &k);
+	}
+
+	void CreateKey(const Symbol& KeyName, MetaClassDescription* pDesc) {
+		KeyInfo k;
+		k.mValue.SetData(NULL, pDesc);
+		k.mKeyName = KeyName;
 		mKeyMap.AddElement(0, NULL, &k);
 	}
 

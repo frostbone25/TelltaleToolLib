@@ -21,7 +21,7 @@ enum eTangentModes : int {
 
 };
 
-struct EnumeTangentMode {
+struct EnumeTangentModes : public EnumBase {
 	eTangentModes mVal;
 };
 
