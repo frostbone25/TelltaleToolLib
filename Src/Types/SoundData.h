@@ -3,9 +3,13 @@
 // the engine and require that if you use this code or library, you give credit to me and
 // the amazing Telltale Games.
 
+#ifndef _SOUNDDATA
+#define _SOUNDDATA
 
 #include "../Meta.hpp"
 
 struct SoundData {
 
 };
+
+#endif
