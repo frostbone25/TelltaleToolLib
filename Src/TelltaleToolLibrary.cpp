@@ -178,7 +178,11 @@ MetaClassDescription* TelltaleToolLib_FindMetaClassDescription_ByHash(u64 pHash)
 MetaClassDescription* TelltaleToolLib_FindMetaClassDescription(const char* pStr, bool pIsName) {
     if (pIsName) {
         u64 crc = CRC64_CaseInsensitive(0, pStr);
+<<<<<<< HEAD
         for (MetaClassDescription* i = TelltaleToolLib_GetFirstMetaClassDescription(); i;) {
+=======
+        for (MetaClassDescription* i = TelltaleToolLib_GetFirstMetaClassDescription(); i;) {          
+>>>>>>> 7dddb432bc7297cffe7b7206597ddb0202699596
             if (i->mHash == crc)
                 return i;
             TelltaleToolLib_GetNextMetaClassDescription(&i);
@@ -190,7 +194,11 @@ MetaClassDescription* TelltaleToolLib_FindMetaClassDescription(const char* pStr,
                 TelltaleToolLib_GetNextMetaClassDescription(&i);
                 continue;
             }
+<<<<<<< HEAD
             if (!_stricmp(pStr, i->mpExt))
+=======
+            if (!_stricmp(pStr,i->mpExt))
+>>>>>>> 7dddb432bc7297cffe7b7206597ddb0202699596
                 return i;
             TelltaleToolLib_GetNextMetaClassDescription(&i);
         }

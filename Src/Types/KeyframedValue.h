@@ -21,7 +21,11 @@ enum eTangentModes : int {
 
 };
 
+<<<<<<< HEAD
 struct EnumeTangentModes {
+=======
+struct EnumeTangentModes : public EnumBase {
+>>>>>>> 7dddb432bc7297cffe7b7206597ddb0202699596
 	eTangentModes mVal;
 };
 

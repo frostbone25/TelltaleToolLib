@@ -37,6 +37,8 @@
 
 #define _TTToolLib_Exp extern "C" __declspec(dllexport)
 
+#define _TTTLib_PrintMetaClasses() TelltaleToolLib_DumpClassInfo(_PrintfDumper)
+
 typedef std::make_unsigned<__int64>::type u64;
 typedef std::make_unsigned<__int32>::type u32;
 typedef std::make_unsigned<__int16>::type u16;
