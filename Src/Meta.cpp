@@ -221,7 +221,7 @@ void MetaStream::_WriteHeader() {
 	u32 magic;
 	if (mStreamVersion == 6 || mStreamVersion == 5) {//MSV5 and MSV6 are the same in serialized form. dont know why they needed MSV6,
 		//MSV5 was the same lol, thinking its something backend. would need to look into a MSV5 game executable but dont have any pbds for 'em
-		magic = GetMetaMagic(6);
+		magic = GetMetaMagic(mStreamVersion);
 		serialize_uint32(&magic);
 
 		u32 default_ = mSection[(int)SectionType::
@@ -263,10 +263,10 @@ void MetaStream::_WriteHeader() {
 		}
 	}
 	else {
-		const char* errmsg = "Cannot write header with version %d, not supported yet.";
+		const char* errmsg = "Cannot write meta stream with version %d: Only version 5 & 6 are writable with this library";
 		char endbuf[sizeof(errmsg)+30];
 		sprintf(endbuf, errmsg, mStreamVersion);
-		throw endbuf;
+		TelltaleToolLib_RaiseError(errmsg, ErrorSeverity::ERR);
 	}
 }
 
@@ -817,7 +817,8 @@ bool MetaStream::Attach(DataStream* stream, MetaStreamMode mode, MetaStreamParam
 	this->mMode = mode;
 	this->mpReadWriteStream = stream;
 	if (mode != MetaStreamMode::eMetaStream_Read) {
-		this->mStreamVersion = 6;//MSV6
+		if(!mStreamVersion)
+			this->mStreamVersion = 6;//MSV6
 		mParams = params;
 		mSection[0].mpStream = stream;
 		_SetSection(MetaStream::SectionType::eSection_Default);
@@ -1331,21 +1332,23 @@ METAOP_FUNC_IMPL(SerializeAsync) {
 			while (true) {
 				if (!accel[i].mpFunctionAsync)break;
 				MetaSerializeAccel a = accel[i];
-				if (a.mpMemberDesc->mFlags & (int)MetaFlag::MetaFlag_MetaSerializeBlockingDisabled
-					|| a.mpMemberDesc->mpMemberDesc->mFlags.mFlags & (int)MetaFlag::MetaFlag_MetaSerializeBlockingDisabled) {
-					blocked = false;
+				if (!(a.mpMemberDesc->mMinMetaVersion != -1 && a.mpMemberDesc->mMinMetaVersion > stream->mStreamVersion)) {
+					if (a.mpMemberDesc->mFlags & (int)MetaFlag::MetaFlag_MetaSerializeBlockingDisabled
+						|| a.mpMemberDesc->mpMemberDesc->mFlags.mFlags & (int)MetaFlag::MetaFlag_MetaSerializeBlockingDisabled) {
+						blocked = false;
+					}
+					else {
+						stream->BeginBlock();
+						blocked = true;
+					}
+					stream->BeginObject(a.mpMemberDesc->mpName, NULL);
+					MetaOpResult result = a.mpFunctionAsync(((char*)pObj) + a.mpMemberDesc->mOffset,
+						a.mpMemberDesc->mpMemberDesc, a.mpMemberDesc, pUserData);
+					stream->EndObject(a.mpMemberDesc->mpName);
+					if (blocked)
+						stream->EndBlock();
+					if (result != MetaOpResult::eMetaOp_Succeed)break;
 				}
-				else {
-					stream->BeginBlock();
-					blocked = true;
-				}
-				stream->BeginObject(a.mpMemberDesc->mpName, NULL);
-				MetaOpResult result = a.mpFunctionAsync(((char*)pObj) + a.mpMemberDesc->mOffset,
-					a.mpMemberDesc->mpMemberDesc, a.mpMemberDesc, pUserData);
-				stream->EndObject(a.mpMemberDesc->mpName);
-				if (blocked)
-					stream->EndBlock();
-				if (result != MetaOpResult::eMetaOp_Succeed)break;
 				i++;
 			}
 		}
@@ -1362,12 +1365,15 @@ METAOP_FUNC_IMPL(SerializeAsync) {
 		SerializedVersionInfo::MemberDesc desc = ver->mMembers[i];
 		MetaMemberDescription* member = pObjDescription->GetMemberDescription(&(ver->mMembers[i].mName));
 		bool disable = member->mFlags & 1 || member->mpMemberDesc && member->mpMemberDesc->mFlags.mFlags & 1;
+		if (member->mMinMetaVersion != -1 && member->mMinMetaVersion > stream->mStreamVersion)
+			disable = true;
 		if (disable)continue;
 		if (!member)break;
 		if (desc.mbBlocked)
 			stream->BeginBlock();
 		MetaOperation serasync = member->mpMemberDesc->GetOperationSpecialization(74);
 		MetaOpResult r;
+
 		if (serasync) {
 			r = serasync(((char*)pObj) + member->mOffset, member->mpMemberDesc, member, pUserData);
 		}

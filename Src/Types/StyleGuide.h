@@ -61,7 +61,7 @@ struct ActingOverridablePropOwner {
 
 	void CreateOverridableValuesPropertySet() {
 		if (!this->mpOverridableValues) {
-			mpOverridableValues = new PropertySet();
+			mpOverridableValues = new PropertySet;
 		}
 	}
 
@@ -281,7 +281,7 @@ struct ActingOverridablePropOwner {
 		u32 header = kHeader;//header which cant be a prop version
 		data->mSerializationFlags.mFlags = 0;
 		if (!data->mpOverridableValues || !data->mpOverridableValues->GetNumKeys())
-			data->mSerializationFlags.mFlags &= 1u;
+			data->mSerializationFlags.mFlags |= 1u;
 		u64 pos = meta->GetPos();
 		MetaClassDescription* clazz = TelltaleToolLib_FindMetaClassDescription("long", true);
 		if (!clazz)
@@ -526,6 +526,13 @@ struct ActingPaletteGroup : public UID::Owner {
 	float mRandomAutoMin;
 	float mRandomAutoMax;
 
+	ActingPaletteGroup() {
+		mName = String("New Palette Group");
+		mWeight = 1.0f;
+		mIdleTransitionTimeOverride = -1.0f;
+		mIdleTransitionKind.mVal = IdleTransition::transitionLinear;
+	}
+
 	static METAOP_FUNC_IMPL__(SerializeAsync) {
 		//MetaStream* meta = static_cast<MetaStream*>(pUserData);
 		//ActingPaletteGroup* data = static_cast<ActingPaletteGroup*>(pObj);
@@ -584,7 +591,8 @@ struct ActingPaletteClass : public UID::Generator, public UID::Owner, public Act
 		MetaStream* meta = static_cast<MetaStream*>(pUserData);
 		ActingPaletteClass* data = static_cast<ActingPaletteClass*>(pObj);
 		MetaStreamMode mode = meta->mMode;
-		if (mode == MetaStreamMode::eMetaStream_Write) {
+		if (mode == MetaStreamMode::eMetaStream_Write 
+			&& data->mAccentPalettePtrs.GetSize()) {
 			data->mFlags |= 3;
 		}
 		MetaOpResult result = Meta::MetaOperation_SerializeAsync(pObj,
@@ -654,7 +662,6 @@ struct ActingPaletteClass : public UID::Generator, public UID::Owner, public Act
 		}
 		return eMetaOp_Succeed;
 	}
-
 };
 
 constexpr const char* strUserClassName = "__uSeR_pAl_cLaSS___";
@@ -667,6 +674,13 @@ struct StyleGuide : public UID::Generator, public ActingOverridablePropOwner {
 	Flags mFlags;
 	DCArray<ActingPaletteClass> mPaletteClasses;
 	long mDefPaletteClassIndex;
+
+	StyleGuide() {
+		mDefPaletteClassID = UID::Generator::msUninitID;
+		mDefPaletteClassIndex = -1;
+		mFlags.mFlags = 0;
+		mbGeneratesLookAts = true;
+	}
 
 	~StyleGuide() {
 		for (int i = 0; i < mPaletteClassPtrs.GetSize(); i++)

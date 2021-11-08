@@ -136,12 +136,24 @@ MetaClassDescription* TelltaleToolLib_FindMetaClassDescription_ByHash(u64 pHash)
 }
 
 MetaClassDescription* TelltaleToolLib_FindMetaClassDescription(const char* pStr, bool pIsName) {
-    for (MetaClassDescription* i = TelltaleToolLib_GetFirstMetaClassDescription(); i;) {
-        if (!i->mpExt && !pIsName) {//stfu:(cba
+    if (pIsName) {
+        u64 crc = CRC64_CaseInsensitive(0, pStr);
+        for (MetaClassDescription* i = TelltaleToolLib_GetFirstMetaClassDescription(); i;) {          
+            if (i->mHash == crc)
+                return i;
             TelltaleToolLib_GetNextMetaClassDescription(&i);
-            continue;
-        }else if (!_stricmp(pStr, pIsName ? i->mpTypeInfoName : i->mpExt))return i;
-        TelltaleToolLib_GetNextMetaClassDescription(&i);
+        }
+    }
+    else {
+        for (MetaClassDescription* i = TelltaleToolLib_GetFirstMetaClassDescription(); i;) {
+            if (!i->mpExt) {//stfu:(cba
+                TelltaleToolLib_GetNextMetaClassDescription(&i);
+                continue;
+            }
+            if (!_stricmp(pStr,i->mpExt))
+                return i;
+            TelltaleToolLib_GetNextMetaClassDescription(&i);
+        }
     }
     return NULL;
 }

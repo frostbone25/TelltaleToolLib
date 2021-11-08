@@ -107,18 +107,8 @@ enum MetaOpResult {
 namespace UID {
 	typedef int idT;
 	
-	struct __declspec(align(8)) Owner {
-		idT miUniqueID;
-
-		Owner() : miUniqueID(-1){}
-
-		Owner(Generator& gen) {
-			miUniqueID = gen.GetNextUniqueID(true);
-		}
-
-	};
-
 	struct __declspec(align(8)) Generator {
+		static constexpr idT msUninitID = -1;
 		idT miNextUniqueID;
 
 		Generator() : miNextUniqueID(1) {}
@@ -144,6 +134,16 @@ namespace UID {
 			else if (bIncrement)
 				miNextUniqueID++;
 			return _t;
+		}
+	};
+
+	struct __declspec(align(8)) Owner {
+		idT miUniqueID;
+
+		Owner() : miUniqueID(-1){}
+
+		Owner(Generator& gen) {
+			miUniqueID = gen.GetNextUniqueID(true);
 		}
 
 	};
@@ -559,10 +559,10 @@ public:
 
 };
 
-template<typename T, typename U> constexpr size_t memberOffset(U T::* member)
+/*template<typename T, typename U> constexpr size_t memberOffset(U T::* member)
 {
 	return (char*)&((T*)nullptr->*member) - (char*)nullptr;
-}
+}*/
 
 template<typename Base, typename Derived> constexpr size_t parentOffset() {
 	return (reinterpret_cast<char*>(static_cast<Base*>(reinterpret_cast<Derived*>(0x10000000))) - reinterpret_cast<char*>(0x10000000));
@@ -942,6 +942,10 @@ struct MetaMemberDescription {
 		MetaFlagDescription* mpFlagDescriptions;
 	};
 	MetaClassDescription* mpMemberDesc;
+	i32 mMinMetaVersion;//by lib for other game support
+	MetaMemberDescription() {
+		mMinMetaVersion = -1;
+	}
 	~MetaMemberDescription();
 };
 

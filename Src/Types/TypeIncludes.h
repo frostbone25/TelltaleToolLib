@@ -43,3 +43,4 @@
 #include "LocalizationRegistry.h"
 #include "LanguageLookupMap.h"
 #include "DlgSystemSettings.h"
+#include "LanguageDatabase.h"

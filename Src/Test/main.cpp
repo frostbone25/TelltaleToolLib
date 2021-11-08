@@ -40,17 +40,19 @@ void print_version_info(MetaStream* meta) {
 	}
 }
 
+#include "../Types/StyleGuide.h"
+
 void run() {
-	DataStream* stream = OpenDataStreamFromDisc("Src/Test/in.prop", READ);
+	DataStream* stream = OpenDataStreamFromDisc("Src/Test/REUBEN.style", READ);
 
 	{
-		MetaStream meta("aprop.prop");
+		MetaStream meta("REUBEN.style");
 		meta.Open(stream, MetaStreamMode::eMetaStream_Read, { 0 });
 
 		print_version_info(&meta);
 
-		PropertySet prop;
-		MetaOpResult result = PerformMetaSerializeAsync(&meta, &prop);
+		StyleGuide style;
+		MetaOpResult result = PerformMetaSerializeAsync(&meta, &style);
 		printf("Result: %d\n", result);
 
 	}
@@ -81,8 +83,9 @@ void run_ttarch2() {
 }
 
 int _RunTestMain(int argn, char** argv) {
-	TelltaleToolLib_Initialize("MC2");
+	TelltaleToolLib_Initialize("MCSM");
 
+	run();
 
 	printf("Done!");
 	_CrtDumpMemoryLeaks();

@@ -163,6 +163,15 @@ public:
 	//memory references (eMemory). not implemented in this lib but useful to know for loaded .props 
 	HandleObjectInfo mHOI;
 
+	PropertySet() {
+		this->mKeyMap = Set<KeyInfo>();
+		mParentList = List<ParentInfo>();
+		mPropVersion = 0;
+		mPropertyFlags.mFlags = 0;
+		mHOI.mFlags.mFlags = 0;
+		mHOI.mObjectName.SetCRC(0);
+	}
+
 	static MetaOpResult MetaOperation_SerializeAsync(void* pObj, MetaClassDescription* pDesc, MetaMemberDescription* pCtx, void* pUserData) {
 		if (!pUserData || !pDesc || !pObj)return eMetaOp_Fail;
 		MetaStream* stream = static_cast<MetaStream*>(pUserData);
@@ -178,7 +187,7 @@ public:
 		if ((result = ::Meta::MetaOperation_SerializeAsync(pObj, pDesc, pCtx, pUserData)) != eMetaOp_Succeed)return result;
 		if (prop->mPropVersion > 2)
 			prop->mPropVersion = 1;
-		if (stream->mMode == MetaStreamMode::eMetaStream_Read)
+		/*if (stream->mMode == MetaStreamMode::eMetaStream_Read)
 			prop->mPropertyFlags &= 0xFDFF7FFF;
 		if (flag1)
 			prop->mPropertyFlags |= 0x1000;
@@ -187,7 +196,7 @@ public:
 		if (flag2)
 			prop->mPropertyFlags |= 0x2000;
 		else
-			prop->mPropertyFlags |= 0xFFFFDFFF;
+			prop->mPropertyFlags |= 0xFFFFDFFF;*/
 		stream->BeginBlock();
 		u32 parents = prop->mParentList.GetSize();
 		stream->serialize_uint32(&parents);

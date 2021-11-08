@@ -452,23 +452,28 @@ struct _LeakSlave {
 	}
 };
 
-#include "../Types/WalkBoxes.h"
+#include "../Types/StyleGuide.h"
 
 int main(int argn, char* argv[]) {
 
 	_LeakSlave _s;
 
 	{
-		TelltaleToolLib_Initialize("WDC");
+		TelltaleToolLib_Initialize("MCSM");
 
-		TelltaleToolLib_SetGlobalHashDatabaseFromStream(
-			_OpenDataStreamFromDisc("c:/users/lucas/desktop/My Stuff/Projects/HashDB Creator/LibTelltale DB/LibTelltale.HashDB",
-				DataStreamMode::eMode_Read));
+		//TelltaleToolLib_SetGlobalHashDatabaseFromStream(
+		//	_OpenDataStreamFromDisc("c:/users/lucas/desktop/My Stuff/Projects/HashDB Creator/LibTelltale DB/LibTelltale.HashDB",
+		//		DataStreamMode::eMode_Read));
 
-		WalkBoxes data;
-		MetaStream meta(NULL);
-		
-		_TTTLib_PrintMetaClasses();
+		DataStream* stream = OpenDataStreamFromDisc("Src/Test/AXEL-BODY.style", READ);
+
+		{
+			MetaStream meta("AXEL-BODY.style");
+			meta.Open(stream, MetaStreamMode::eMetaStream_Read, { 0 });
+
+			
+		}
+
 	}
 
 	return 0;
