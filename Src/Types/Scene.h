@@ -21,6 +21,12 @@ struct Scene {//only included whats serialized and needed. this is a very very b
 		String mAgentName;
 		PropertySet mAgentSceneProps;
 		//if in future i add a serialize async func then update scene serialize
+
+		AgentInfo() {
+			mpAgent = NULL;
+			mAgentName = String("New Agent");
+		}
+
 	};
 
 	//these 2 are not serialized

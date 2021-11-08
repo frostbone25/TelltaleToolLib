@@ -3,6 +3,9 @@
 // the engine and require that if you use this code or library, you give credit to me and
 // the amazing Telltale Games.
 
-struct Rect /*synonymous with doing : public tagRECT from the WIN32 API (compiler would see them as identical!)*/{
-	int left, top, right, bottom;
+
+#include "../Meta.hpp"
+
+struct SoundData {
+
 };

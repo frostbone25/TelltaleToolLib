@@ -5,7 +5,7 @@
 #ifndef _TTToolLib
 #define _TTToolLib
 
-#define _VERSION "5.8"
+#define _VERSION "5.9.2"
 
 //PLEASE NOTE: THIS LIBRARY IS DESIGNED ONLY FOR LITTLE ENDIAN SYSTEMS. IF YOUR TELLTALE FILES ARE IN BIG ENDIAN AND THE SYSTEM IS BIG ENDIAN
 //THEN YOU SHOULD BE OK. BUT TELLTALE FILES ARE NORMALLY IN LITTLE ENDIAN.
@@ -50,6 +50,8 @@ struct Flags;
 template<typename T> class Ptr;
 struct MetaClassDescription;
 struct MetaMemberDescription;
+enum MetaOpResult;
+class MetaStream;
 
 enum MetaMemberDescriptionParam {
 	eMMDP_Name = 1,//stores 8 bytes (ptr)
@@ -188,8 +190,8 @@ _TTToolLib_Exp char* TelltaleToolLib_Alloc_GetFixed8BytePointerBuffer();
 //These next two family of functions return a buffer allocated with MALLOC! So use FREE. Returns NULL if a problem occurred.
 //These only work for LUA files.
 
-_TTToolLib_Exp u8* TelltaleToolLib_EncryptScript(u8* data, u32 size);
-_TTToolLib_Exp u8* TelltaleToolLib_DecryptScript(u8* data, u32 size);
+_TTToolLib_Exp u8* TelltaleToolLib_EncryptScript(u8* data, u32 size, u32* outsize);
+_TTToolLib_Exp u8* TelltaleToolLib_DecryptScript(u8* data, u32 size, u32* outsize);
 
 //These next two family of functions return a buffer allocated with MALLOC! So use FREE. Returns NULL if a problem occurred.
 //These only work for LENC files.
@@ -211,6 +213,12 @@ _TTToolLib_Exp void TelltaleToolLib_SetGlobalHashDatabase(HashDatabase*);
 * is deleted by the library so DONT DELETE IT!
 */
 _TTToolLib_Exp void TelltaleToolLib_SetGlobalHashDatabaseFromStream(DataStream*);
+
+/*
+* Gets the game index of the given game id. This is used to match when a game is released with others. Used internally make sure the 
+* current file is being read correctly with the correct version range
+*/
+_TTToolLib_Exp i32 TelltaleToolLib_GetGameKeyIndex(const char* pGameID);
 
 /*
 * Gets the global hash database, or NULL if its not been set.
@@ -237,6 +245,9 @@ typedef void (*ErrorCallbackF)(const char* _Msg, ErrorSeverity _Severity);
 _TTToolLib_Exp void TelltaleToolLib_SetErrorCallback(ErrorCallbackF _Func);
 
 _TTToolLib_Exp void TelltaleToolLib_RaiseError(const char* _Msg, ErrorSeverity _S);
+
+_TTToolLib_Exp MetaOpResult
+TelltaleToolLib_PerformMetaSerialize(MetaClassDescription* pObjectDescription, void* pObject, MetaStream* pUserData);
 
 extern bool sInitialized;
 

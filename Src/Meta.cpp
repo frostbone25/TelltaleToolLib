@@ -154,7 +154,7 @@ void SerializedVersionInfo::RetrieveVersionInfo(const char* versFileName, DataSt
 		for (int x = 0; x < members; x++) {
 			SerializedVersionInfo::MemberDesc desc;
 			meta.serialize_String(&desc.mName);
-			if(i == 1)
+			if (i == 1)
 				meta.serialize_uint64(&desc.mTypeNameSymbolCrc);
 			else {
 				String str;
@@ -221,7 +221,7 @@ void MetaStream::_WriteHeader() {
 	u32 magic;
 	if (mStreamVersion == 6 || mStreamVersion == 5) {//MSV5 and MSV6 are the same in serialized form. dont know why they needed MSV6,
 		//MSV5 was the same lol, thinking its something backend. would need to look into a MSV5 game executable but dont have any pbds for 'em
-		magic = GetMetaMagic(6);
+		magic = GetMetaMagic(mStreamVersion);
 		serialize_uint32(&magic);
 
 		u32 default_ = mSection[(int)SectionType::
@@ -263,16 +263,16 @@ void MetaStream::_WriteHeader() {
 		}
 	}
 	else {
-		const char* errmsg = "Cannot write header with version %d, not supported yet.";
-		char endbuf[sizeof(errmsg)+30];
+		const char* errmsg = "Cannot write meta stream with version %d: Only version 5 & 6 are writable with this library";
+		char endbuf[sizeof(errmsg) + 30];
 		sprintf(endbuf, errmsg, mStreamVersion);
-		throw endbuf;
+		TelltaleToolLib_RaiseError(errmsg, ErrorSeverity::ERR);
 	}
 }
 
 void MetaStream::SwitchToMode(MetaStreamMode newMode, DataStream* newStream) {
-	if (mMode == MetaStreamMode::eMetaStream_Closed|| newMode == mMode||!newStream)return;
-	if (mpReadWriteStream&&mpReadWriteStream!=newStream)
+	if (mMode == MetaStreamMode::eMetaStream_Closed || newMode == mMode || !newStream)return;
+	if (mpReadWriteStream && mpReadWriteStream != newStream)
 		delete mpReadWriteStream;
 	mSection[0].mpStream = newStream;
 	if (mSection[1].mpStream)
@@ -298,13 +298,13 @@ bool MetaStream::_ReadHeader(DataStream* stream, u64 completeStreamSize,
 	mVersionInfo.clear();
 	serialize_uint32(&versionmagic);
 	if (versionmagic == GetMetaMagic(1) ||
-		versionmagic == GetMetaMagic(2)){//MBIN, MTRE
+		versionmagic == GetMetaMagic(2)) {//MBIN, MTRE
 		mStreamVersion = versionmagic == GetMetaMagic(2) ? 3 : 1;
 	}
 	else if (versionmagic == GetMetaMagic(4) || versionmagic == GetMetaMagic(6) || versionmagic == GetMetaMagic(5)) {//MSV4,5,6
-		u32 default_=0, debug_, async_;
+		u32 default_ = 0, debug_, async_;
 		mStreamVersion = versionmagic == GetMetaMagic(4) ? 4 : versionmagic == GetMetaMagic(5) ? 5 : 6;
-		if (mStreamVersion >= 5) 
+		if (mStreamVersion >= 5)
 			serialize_uint32(&default_);
 		serialize_uint32(&debug_);
 		serialize_uint32(&async_);
@@ -342,9 +342,9 @@ bool MetaStream::_ReadHeader(DataStream* stream, u64 completeStreamSize,
 		else if (versionmagic == EncrypedVersionHeaders[0]) {
 			mStreamVersion = 3;
 		}
-		else if (versionmagic == EncrypedVersionHeaders[2] || 
-				versionmagic == EncrypedVersionHeaders[3] ||
-				versionmagic == EncrypedVersionHeaders[4]) {
+		else if (versionmagic == EncrypedVersionHeaders[2] ||
+			versionmagic == EncrypedVersionHeaders[3] ||
+			versionmagic == EncrypedVersionHeaders[4]) {
 			mStreamVersion = 2;
 		}
 		if (!mStreamVersion)return false;
@@ -365,7 +365,7 @@ VersionInfo:
 			else {
 				String typeName;
 				serialize_String(&typeName);
-				char* buf = (char*)calloc(1, typeName.size()+1);
+				char* buf = (char*)calloc(1, typeName.size() + 1);
 				if (!buf)return false;
 				memcpy(buf, typeName.c_str(), typeName.size());
 				TelltaleToolLib_MakeInternalTypeName(&buf);
@@ -376,16 +376,16 @@ VersionInfo:
 			}
 			serialize_uint32(&verinfo.mVersionCrc);
 			MetaClassDescription* desc = TelltaleToolLib_FindMetaClassDescription_ByHash(verinfo.mTypeSymbolCrc);
-			if(desc)SerializedVersionInfo::RetrieveCompiledVersionInfo(desc);
-			if (!desc || !desc->mpCompiledVersionSerializedVersionInfo || 
-					verinfo.mVersionCrc != desc->mpCompiledVersionSerializedVersionInfo->mVersionCrc)
+			if (desc)SerializedVersionInfo::RetrieveCompiledVersionInfo(desc);
+			if (!desc || !desc->mpCompiledVersionSerializedVersionInfo ||
+				verinfo.mVersionCrc != desc->mpCompiledVersionSerializedVersionInfo->mVersionCrc)
 				isCompiled = false;
 			mVersionInfo.push_back(verinfo);
 		}
 	}
 	mSection[0].mCompressedSize = GetPos();
 	if (mStreamVersion <= 3) {//MBIN,MBES,MTRE,MCOM (unsectioned streams)
-		if(encryptstream)mSection[0].mCompressedSize -= 4;
+		if (encryptstream)mSection[0].mCompressedSize -= 4;
 		mSection[1].mCompressedSize = stream->GetSize() - mSection[0].mCompressedSize;
 		mSection[2].mCompressedSize = 0;
 		mSection[3].mCompressedSize = 0;
@@ -464,7 +464,7 @@ SerializedVersionInfo* SerializedVersionInfo::RetrieveCompiledVersionInfo(MetaCl
 }
 
 i64 MetaStream::BeginObject(Symbol* name, MetaClassDescription* pDesc, MetaMemberDescription* pContext) {
-	if (!(pDesc->mFlags.mFlags & MetaFlag::MetaFlag_MetaSerializeBlockingDisabled) 
+	if (!(pDesc->mFlags.mFlags & MetaFlag::MetaFlag_MetaSerializeBlockingDisabled)
 		&& !(pContext->mFlags & MetaFlag::MetaFlag_MetaSerializeBlockingDisabled))
 		BeginBlock();
 	return 0;
@@ -499,7 +499,7 @@ void MetaStream::EndBlock() {
 		serialize_uint32(&blocklen);
 		SetPos(currentpos);
 	}
-	else if(GetPos() != b.mBlockLength){
+	else if (GetPos() != b.mBlockLength) {
 		SetPos(b.mBlockLength);
 	}
 	sect.mBlockInfo.pop();
@@ -516,7 +516,7 @@ MetaVersionInfo* MetaStream::GetStreamVersion(u64 typeSymbolCrc) {//could use au
 	return NULL;
 }
 
-MetaVersionInfo* MetaStream::GetStreamVersion(MetaClassDescription *d) { return GetStreamVersion(d->mHash); };
+MetaVersionInfo* MetaStream::GetStreamVersion(MetaClassDescription* d) { return GetStreamVersion(d->mHash); };
 
 void MetaStream::SetPos(u64 pos) {
 	mSection[(int)mCurrentSection].mpStream->SetPosition(pos, DataStreamSeekType::eSeekType_Begin);
@@ -740,7 +740,7 @@ void MetaStream::serialize_String(String* param) {
 			free(tempbuffer);
 		}
 	}
-	else if(size) {
+	else if (size) {
 		WriteData((void*)param->c_str(), size);
 	}
 }
@@ -766,7 +766,7 @@ i64 MetaStream::ReadData(void* bytes, u32 size) {
 }
 
 int MetaStream::serialize_bytes(void* bytes, u32 size) {
-	if (!bytes&&size)return eMetaOp_Fail;
+	if (!bytes && size)return eMetaOp_Fail;
 	return mMode == MetaStreamMode::eMetaStream_Read ? ReadData(bytes, size) : WriteData(bytes, size);
 }
 
@@ -806,7 +806,7 @@ MetaStream::~MetaStream() {
 	if (mpReadWriteStream) {
 		if (mpReadWriteStream != mSection[0].mpStream)
 			delete mSection[0].mpStream;
-		if(!mbDontDeleteStream)
+		if (!mbDontDeleteStream)
 			delete mpReadWriteStream;
 	}
 }
@@ -817,14 +817,15 @@ bool MetaStream::Attach(DataStream* stream, MetaStreamMode mode, MetaStreamParam
 	this->mMode = mode;
 	this->mpReadWriteStream = stream;
 	if (mode != MetaStreamMode::eMetaStream_Read) {
-		this->mStreamVersion = 6;//MSV6
+		if (!mStreamVersion)
+			this->mStreamVersion = 6;//MSV6
 		mParams = params;
 		mSection[0].mpStream = stream;
 		_SetSection(MetaStream::SectionType::eSection_Default);
 		return true;
 	}
 	u64 completeStreamSize = stream->GetSize();
-	if (_ReadHeader(stream, completeStreamSize,NULL)) {
+	if (_ReadHeader(stream, completeStreamSize, NULL)) {
 		u64 offset = mSection[0].mCompressedSize;
 		for (int i = 1; i <= 3; i++) {//for each section (default,async,debug)
 			SectionInfo& currentSect = mSection[i];
@@ -866,7 +867,7 @@ u64 MetaStream::Close() {
 		if (mMode == MetaStreamMode::eMetaStream_Read && !mbErrored) {
 			completeStreamSize = mSection[0].mpStream->GetSize();
 			for (int i = 1; i <= 3; i++) {
-				if(mSection[i].mpStream)
+				if (mSection[i].mpStream)
 					completeStreamSize += mSection[i].mpStream->GetSize();
 			}
 		}
@@ -955,7 +956,7 @@ void* MetaClassDescription::CastToBase(const void* pObj, MetaClassDescription* p
 	if (mem) {
 		while (true) {
 			if (mem->mFlags & MetaFlag::MetaFlag_BaseClass) {
-				if(result=mem->mpMemberDesc->CastToBase(&((char*)pObj)[mem->mOffset], pBaseClassDesc))
+				if (result = mem->mpMemberDesc->CastToBase(&((char*)pObj)[mem->mOffset], pBaseClassDesc))
 					return result;
 			}
 		}
@@ -1151,7 +1152,7 @@ MetaSerializeAccel* MetaSerialize_GenerateAccel(MetaClassDescription* pObj) {
 			toserialize++;
 	} while (member);
 	if (toserialize > 0) {
-		MetaSerializeAccel* accels = new MetaSerializeAccel[toserialize+1i64];
+		MetaSerializeAccel* accels = new MetaSerializeAccel[toserialize + 1i64];
 		MetaSerializeAccel* first = accels;
 		member = pObj->mpFirstMember;
 		do {
@@ -1182,7 +1183,7 @@ METAOP_FUNC_IMPL(SerializeMain) {
 	if (accelerated || ((accelerated = MetaSerialize_GenerateAccel(pObjDescription)) != NULL)) {
 		while (true) {
 			if (!accelerated->mpFunctionMain)return eMetaOp_Succeed;//nothing to serialize
-			MetaOpResult result = accelerated->mpFunctionMain(&((char*)pObj)[accelerated->mpMemberDesc->mOffset], 
+			MetaOpResult result = accelerated->mpFunctionMain(&((char*)pObj)[accelerated->mpMemberDesc->mOffset],
 				accelerated->mpMemberDesc->mpMemberDesc, accelerated->mpMemberDesc, pUserData);
 			if (result != eMetaOp_Succeed)return result;
 			accelerated++;
@@ -1311,18 +1312,18 @@ METAOP_FUNC_IMPL__(SerializeIntrinsicAsyncString) {
 
 //pObj = object to serialize, pUserData = metastream
 METAOP_FUNC_IMPL(SerializeAsync) {
-	if(!pObjDescription)return eMetaOp_Fail;
+	if (!pObjDescription)return eMetaOp_Fail;
 	if (pObjDescription->mFlags.mFlags & (int)MetaFlag::MetaFlag_MetaSerializeDisable ||
 		pContextDescription && pContextDescription->mFlags & (int)MetaFlag::MetaFlag_MetaSerializeDisable)
 		return eMetaOp_Invalid;
 	MetaStream* stream = static_cast<MetaStream*>(pUserData);
 	if (pContextDescription && pContextDescription->mpName) {
-		stream->BeginObject(pContextDescription->mpName,NULL);
+		stream->BeginObject(pContextDescription->mpName, NULL);
 	}
 	else stream->BeginAnonObject(NULL);
 	if (stream->mMode == MetaStreamMode::eMetaStream_Write) {
 		SerializedVersionInfo* ver = SerializedVersionInfo::RetrieveCompiledVersionInfo(pObjDescription);
-		if(ver&&!pObjDescription->mbIsIntrinsic)stream->AddVersion(ver);
+		if (ver && !pObjDescription->mbIsIntrinsic)stream->AddVersion(ver);
 		MetaSerializeAccel* accel = pObjDescription->mpSerializeAccel;
 		if (!accel)accel = MetaSerialize_GenerateAccel(pObjDescription);
 		if (accel && accel->mpFunctionAsync) {
@@ -1331,21 +1332,28 @@ METAOP_FUNC_IMPL(SerializeAsync) {
 			while (true) {
 				if (!accel[i].mpFunctionAsync)break;
 				MetaSerializeAccel a = accel[i];
-				if (a.mpMemberDesc->mFlags & (int)MetaFlag::MetaFlag_MetaSerializeBlockingDisabled
-					|| a.mpMemberDesc->mpMemberDesc->mFlags.mFlags & (int)MetaFlag::MetaFlag_MetaSerializeBlockingDisabled) {
-					blocked = false;
+				bool allow = true;
+				if (a.mpMemberDesc->mGameIndexVersionRange.min != -1)
+					allow = sSetKeyIndex >= a.mpMemberDesc->mGameIndexVersionRange.min;
+				if (a.mpMemberDesc->mGameIndexVersionRange.max != -1) 
+					allow = a.mpMemberDesc->mGameIndexVersionRange.max >= sSetKeyIndex;
+				if (allow && (!(a.mpMemberDesc->mMinMetaVersion != -1 && a.mpMemberDesc->mMinMetaVersion > stream->mStreamVersion))) {
+					if (a.mpMemberDesc->mFlags & (int)MetaFlag::MetaFlag_MetaSerializeBlockingDisabled
+						|| a.mpMemberDesc->mpMemberDesc->mFlags.mFlags & (int)MetaFlag::MetaFlag_MetaSerializeBlockingDisabled) {
+						blocked = false;
+					}
+					else {
+						stream->BeginBlock();
+						blocked = true;
+					}
+					stream->BeginObject(a.mpMemberDesc->mpName, NULL);
+					MetaOpResult result = a.mpFunctionAsync(((char*)pObj) + a.mpMemberDesc->mOffset,
+						a.mpMemberDesc->mpMemberDesc, a.mpMemberDesc, pUserData);
+					stream->EndObject(a.mpMemberDesc->mpName);
+					if (blocked)
+						stream->EndBlock();
+					if (result != MetaOpResult::eMetaOp_Succeed)break;
 				}
-				else {
-					stream->BeginBlock();
-					blocked = true;
-				}
-				stream->BeginObject(a.mpMemberDesc->mpName, NULL);
-				MetaOpResult result = a.mpFunctionAsync(((char*)pObj) + a.mpMemberDesc->mOffset,
-					a.mpMemberDesc->mpMemberDesc, a.mpMemberDesc, pUserData);
-				stream->EndObject(a.mpMemberDesc->mpName);
-				if (blocked)
-					stream->EndBlock();
-				if (result != MetaOpResult::eMetaOp_Succeed)break;
 				i++;
 			}
 		}
@@ -1362,12 +1370,19 @@ METAOP_FUNC_IMPL(SerializeAsync) {
 		SerializedVersionInfo::MemberDesc desc = ver->mMembers[i];
 		MetaMemberDescription* member = pObjDescription->GetMemberDescription(&(ver->mMembers[i].mName));
 		bool disable = member->mFlags & 1 || member->mpMemberDesc && member->mpMemberDesc->mFlags.mFlags & 1;
+		if (member->mMinMetaVersion != -1 && member->mMinMetaVersion > stream->mStreamVersion)
+			disable = true;
+		if (member->mGameIndexVersionRange.min != -1)
+			disable = !(sSetKeyIndex >= member->mGameIndexVersionRange.min);
+		if (member->mGameIndexVersionRange.max != -1)
+			disable = !(member->mGameIndexVersionRange.max >= sSetKeyIndex);
 		if (disable)continue;
 		if (!member)break;
 		if (desc.mbBlocked)
 			stream->BeginBlock();
 		MetaOperation serasync = member->mpMemberDesc->GetOperationSpecialization(74);
 		MetaOpResult r;
+
 		if (serasync) {
 			r = serasync(((char*)pObj) + member->mOffset, member->mpMemberDesc, member, pUserData);
 		}
@@ -1422,7 +1437,7 @@ METAOP_FUNC_IMPL(SerializedVersionInfo) {
 			member.mTypeNameSymbolCrc = i->mpMemberDesc->mHash;
 			member.mVersionCrc = SerializedVersionInfo::RetrieveCompiledVersionInfo(i->mpMemberDesc)->mVersionCrc;
 			//member.mbBlocked = !i->mpMemberDesc->mbIsIntrinsic;
-			if (((bool)(i->mpMemberDesc->mFlags.mFlags & (int)MetaFlag_MetaSerializeBlockingDisabled))){
+			if (((bool)(i->mpMemberDesc->mFlags.mFlags & (int)MetaFlag_MetaSerializeBlockingDisabled))) {
 				member.mbBlocked = false;
 			}
 			if (((bool)(i->mFlags & (int)MetaFlag_MetaSerializeBlockingDisabled))) {

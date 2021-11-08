@@ -21,7 +21,7 @@ enum eTangentModes : int {
 
 };
 
-struct EnumeTangentMode {
+struct EnumeTangentModes {
 	eTangentModes mVal;
 };
 
@@ -31,7 +31,7 @@ struct KeyframedValue : public KeyframedValueInterface , public AnimatedValueInt
 	struct Sample {
 		float mTime, mRecipTimeToNextSample;
 		bool mbInterpolateToNextKey;
-		EnumeTangentMode mTangentMode;
+		EnumeTangentModes mTangentMode;
 		T mValue;
 	};
 

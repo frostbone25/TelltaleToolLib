@@ -177,7 +177,10 @@
     <ClInclude Include="Src\TelltaleToolLibrary.h" />
     <ClInclude Include="Src\Types\InputMapper.h" />
     <ClInclude Include="Src\Types\KeyframedValue.h" />
+    <ClInclude Include="Src\Types\LanguageDatabase.h" />
+    <ClInclude Include="Src\Types\LanguageDB.h" />
     <ClInclude Include="Src\Types\LanguageLookupMap.h" />
+    <ClInclude Include="Src\Types\LanguageRegister.h" />
     <ClInclude Include="Src\Types\List.h" />
     <ClInclude Include="Src\Types\LocalizationRegistry.h" />
     <ClInclude Include="Src\Types\Map.h" />
@@ -189,6 +192,7 @@
     <ClInclude Include="Src\Types\Set.h" />
     <ClInclude Include="Src\Types\Skeleton.h" />
     <ClInclude Include="Src\Types\SoundBusSystem.h" />
+    <ClInclude Include="Src\Types\SoundData.h" />
     <ClInclude Include="Src\Types\SoundEventBankMap.h" />
     <ClInclude Include="Src\Types\SoundFootsteps.h" />
     <ClInclude Include="Src\Types\SoundReverbDefinition.h" />

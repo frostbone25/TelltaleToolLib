@@ -161,10 +161,19 @@ meta_Deque_##type##_baseclass.mFlags |= (int)MetaFlag::MetaFlag_BaseClass;\
 meta_Deque_##type##.InstallSpecializedMetaOperation(&meta_Deque_##type##_eMetaOpSerializeAsync);\
 meta_Deque_##type##.Insert();
 
+#define NEXTMEM1(parent, namestr, memberNameInStruct, memberAlias, pathToMember, typeDesc, flags, previousMember) \
+DEFINEM(parent, memberNameInStruct);\
+meta_##parent##_##memberNameInStruct##.mpName = namestr;\
+meta_##parent##_##memberNameInStruct##.mOffset = offsetof(pathToMember,memberAlias);\
+meta_##parent##_##memberNameInStruct##.mpMemberDesc = &meta_##typeDesc##;\
+meta_##parent##_##memberNameInStruct##.mFlags |= flags;\
+meta_##parent##_##previousMember##.mpNextMember =& meta_##parent##_##memberNameInStruct##;
+
+
 #define NEXTMEM(parent, namestr, memberNameInStruct, pathToMember, typeDesc, flags, previousMember) \
 DEFINEM(parent, memberNameInStruct);\
 meta_##parent##_##memberNameInStruct##.mpName = namestr;\
-meta_##parent##_##memberNameInStruct##.mOffset = memberOffset(&##pathToMember##::##memberNameInStruct##);\
+meta_##parent##_##memberNameInStruct##.mOffset = offsetof(pathToMember,memberNameInStruct);\
 meta_##parent##_##memberNameInStruct##.mpMemberDesc = &meta_##typeDesc##;\
 meta_##parent##_##memberNameInStruct##.mFlags |= flags;\
 meta_##parent##_##previousMember##.mpNextMember =& meta_##parent##_##memberNameInStruct##;
@@ -173,7 +182,7 @@ meta_##parent##_##previousMember##.mpNextMember =& meta_##parent##_##memberNameI
 #define FIRSTMEM(parent, namestr, memberNameInStruct, pathToMember, typeDesc, flags) \
 DEFINEM(parent, memberNameInStruct);\
 meta_##parent##_##memberNameInStruct##.mpName = namestr;\
-meta_##parent##_##memberNameInStruct##.mOffset = memberOffset(&##pathToMember##::##memberNameInStruct##);\
+meta_##parent##_##memberNameInStruct##.mOffset = offsetof(pathToMember,memberNameInStruct);\
 meta_##parent##_##memberNameInStruct##.mpMemberDesc = &meta_##typeDesc##;\
 meta_##parent##_##memberNameInStruct##.mFlags |= flags;\
 meta_##parent##.mpFirstMember = &meta_##parent##_##memberNameInStruct##;
@@ -276,7 +285,7 @@ MetaOperationDescription::ID; meta_##Parent##_##ID.mpOpFn = Func; meta_##Parent#
 DEFINEM(anmi_##_name##, base);\
 meta_anmi_##_name##_base.mpName = "Baseclass_AnimationValueInterfaceBase";\
 meta_anmi_##_name##_base.mpMemberDesc = &meta_anminterface;\
-meta_anmi_##_name##_base.mOffset = memberOffset(&AnimatedValueInterface<_Ty>::AnimationValueInterfaceBase::mName);\
+meta_anmi_##_name##_base.mOffset = offsetof(AnimatedValueInterface<_Ty>::AnimationValueInterfaceBase,mName);\
 meta_anmi_##_name##.mpFirstMember = &meta_anmi_##_name##_base;\
 ADD(anmi_##_name##);
 
@@ -299,12 +308,11 @@ DEFINET2(kfv_##_name##, KeyframedValue<_Ty>);\
 DEFINEM(kfv_##_name##, animatedvalueinterface);\
 meta_kfv_##_name##_animatedvalueinterface.mpName = "Baseclass_AnimatedValueInterface<T>";\
 meta_kfv_##_name##_animatedvalueinterface.mpMemberDesc = &meta_anmi_##_name##;\
-meta_kfv_##_name##_animatedvalueinterface.mOffset = memberOffset(&KeyframedValue<_Ty>::\
-	AnimatedValueInterface<_Ty>::AnimationValueInterfaceBase::mName);\
+meta_kfv_##_name##_animatedvalueinterface.mOffset = offsetof(KeyframedValue<_Ty>,mName);\
 DEFINEM(kfv_##_name##, keyframedvalueinterface);\
 meta_kfv_##_name##_keyframedvalueinterface.mpName = "Baseclass_KeyframedValueInterface";\
 meta_kfv_##_name##_keyframedvalueinterface.mpMemberDesc = &meta_keyframedvalueinterface;\
-meta_kfv_##_name##_keyframedvalueinterface.mOffset = parentOffset<KeyframedValueInterface, KeyframedValue<_Ty>>();\
+meta_kfv_##_name##_keyframedvalueinterface.mOffset = 0;\
 meta_kfv_##_name##_animatedvalueinterface.mpNextMember = &meta_kfv_##_name##_keyframedvalueinterface;\
 meta_kfv_##_name##.mpFirstMember = &meta_kfv_##_name##_animatedvalueinterface;\
 NEXTMEM2(kfv_##_name##, mMinVal, KeyframedValue<_Ty>, _TyMetaVar, 0, animatedvalueinterface);\
@@ -419,7 +427,7 @@ namespace MetaInit {
 			meta_flags_mFlags.mpName = "mFlags";
 			meta_flags_mFlags.mFlags |= MetaFlag::MetaFlag_MetaSerializeBlockingDisabled;
 			meta_flags_mFlags.mpMemberDesc = &meta_long;
-			meta_flags_mFlags.mOffset = memberOffset(&Flags::mFlags);
+			meta_flags_mFlags.mOffset = offsetof(Flags, mFlags);
 			meta_flags.mpFirstMember = &meta_flags_mFlags;
 			meta_flags.mFlags.mFlags |= MetaFlag::MetaFlag_MetaSerializeBlockingDisabled;
 			meta_flags.Insert();
@@ -436,7 +444,7 @@ namespace MetaInit {
 			DEFINEM(ztest, mZTestType);
 			meta_ztest_mZTestType.mpName = "mZTestType";
 			meta_ztest_mZTestType.mpMemberDesc = &meta_long;
-			meta_ztest_mZTestType.mOffset = memberOffset(&ZTestFunction::mZTestType);
+			meta_ztest_mZTestType.mOffset = offsetof(ZTestFunction, mZTestType);
 			meta_ztest.mpFirstMember = &meta_ztest_mZTestType;
 			meta_ztest.Insert();
 			DEFINET(uidowner, UID::Owner)
@@ -444,7 +452,7 @@ namespace MetaInit {
 			DEFINEM(uidowner, miUniqueID);
 			meta_uidowner_miUniqueID.mpName = "miUniqueID";
 			meta_uidowner_miUniqueID.mpMemberDesc = &meta_long;
-			meta_uidowner_miUniqueID.mOffset = memberOffset(&UID::Owner::miUniqueID);
+			meta_uidowner_miUniqueID.mOffset = offsetof(UID::Owner, miUniqueID);
 			meta_uidowner.mFlags |= MetaFlag_EditorHide;
 			meta_uidowner.mpFirstMember = &meta_uidowner_miUniqueID;
 			meta_uidowner.Insert();
@@ -456,7 +464,7 @@ namespace MetaInit {
 			DEFINEM(uidgen, miNextUniqueID);
 			meta_uidgen_miNextUniqueID.mpName = "miNextUniqueID";
 			meta_uidgen_miNextUniqueID.mpMemberDesc = &meta_long;
-			meta_uidgen_miNextUniqueID.mOffset = memberOffset(&UID::Generator::miNextUniqueID);
+			meta_uidgen_miNextUniqueID.mOffset = offsetof(UID::Generator, miNextUniqueID);
 			meta_uidgen.mpFirstMember = &meta_uidgen_miNextUniqueID;
 			meta_uidgen.Insert();
 
@@ -471,12 +479,12 @@ namespace MetaInit {
 			DEFINEM(t3vsdb, numverts);
 			meta_t3vsdb.mpFirstMember = &meta_t3vsdb_numverts;
 			meta_t3vsdb_numverts.mpName = "mNumVerts";
-			meta_t3vsdb_numverts.mOffset = memberOffset(&T3VertexSampleDataBase::mNumVerts);
+			meta_t3vsdb_numverts.mOffset = offsetof(T3VertexSampleDataBase, mNumVerts);
 			meta_t3vsdb_numverts.mpMemberDesc = &meta_long;
 
 			DEFINEM(t3vsdb, vertsize);
 			meta_t3vsdb_vertsize.mpName = "mVertSize";
-			meta_t3vsdb_vertsize.mOffset = memberOffset(&T3VertexSampleDataBase::mVertSize);
+			meta_t3vsdb_vertsize.mOffset = offsetof(T3VertexSampleDataBase, mVertSize);
 			meta_t3vsdb_vertsize.mpMemberDesc = &meta_long;
 			meta_t3vsdb_numverts.mpNextMember = &meta_t3vsdb_vertsize;
 
@@ -525,11 +533,11 @@ namespace MetaInit {
 			meta_rangeuint.mFlags |= 6;//blocking disabled, add to prop menu
 			DEFINEM(rangeuint, max);
 			meta_rangeuint_max.mpName = "max";
-			meta_rangeuint_max.mOffset = memberOffset(&TRange<unsigned int>::max);
+			meta_rangeuint_max.mOffset = offsetof(TRange<unsigned int>, max);
 			meta_rangeuint_max.mpMemberDesc = &meta___uint32;
 			DEFINEM(rangeuint, min);
 			meta_rangeuint_min.mpName = "min";
-			meta_rangeuint_min.mOffset = memberOffset(&TRange<unsigned int>::min);
+			meta_rangeuint_min.mOffset = offsetof(TRange<unsigned int>, min);
 			meta_rangeuint_min.mpMemberDesc = &meta___uint32;
 			meta_rangeuint_min.mpNextMember = &meta_rangeuint_max;
 			meta_rangeuint.mpFirstMember = &meta_rangeuint_min;
@@ -540,11 +548,11 @@ namespace MetaInit {
 			meta_rangef.mFlags |= 6;//blocking disabled, add to prop menu
 			DEFINEM(rangef, max);
 			meta_rangef_max.mpName = "max";
-			meta_rangef_max.mOffset = memberOffset(&TRange<float>::max);
+			meta_rangef_max.mOffset = offsetof(TRange<float>, max);
 			meta_rangef_max.mpMemberDesc = &meta_float;
 			DEFINEM(rangef, min);
 			meta_rangef_min.mpName = "min";
-			meta_rangef_min.mOffset = memberOffset(&TRange<float>::min);
+			meta_rangef_min.mOffset = offsetof(TRange<float>, min);
 			meta_rangef_min.mpMemberDesc = &meta_float;
 			meta_rangef_min.mpNextMember = &meta_rangef_max;
 			meta_rangef.mpFirstMember = &meta_rangef_min;
@@ -634,11 +642,11 @@ namespace MetaInit {
 			DEFINEM(transform, trans);
 			meta_transform_trans.mpName = "mTrans";
 			meta_transform_trans.mpMemberDesc = &meta_vec3;
-			meta_transform_trans.mOffset = memberOffset(&Transform::mTrans);
+			meta_transform_trans.mOffset = offsetof(Transform, mTrans);
 			DEFINEM(transform, rot);
 			meta_transform_rot.mpName = "mRot";
 			meta_transform_rot.mpMemberDesc = &meta_quat;
-			meta_transform_rot.mOffset = memberOffset(&Transform::mRot);
+			meta_transform_rot.mOffset = offsetof(Transform, mRot);
 			meta_transform_rot.mpNextMember = &meta_transform_trans;
 			meta_transform.mpFirstMember = &meta_transform_rot;
 			meta_transform.Insert();
@@ -646,24 +654,24 @@ namespace MetaInit {
 			DEFINET(rect, Rect);
 			meta_rect.Initialize(typeid(Rect));
 			meta_rect.mFlags |= (int)MetaFlag::MetaFlag_MetaSerializeBlockingDisabled;
-			DEFINEM(rect,bottom);
+			DEFINEM(rect, bottom);
 			meta_rect_bottom.mpName = "bottom";
 			meta_rect_bottom.mpMemberDesc = &meta_long;
-			meta_rect_bottom.mOffset = memberOffset(&Rect::bottom);
+			meta_rect_bottom.mOffset = offsetof(Rect, bottom);
 			DEFINEM(rect, top);
 			meta_rect_top.mpName = "top";
 			meta_rect_top.mpMemberDesc = &meta_long;
-			meta_rect_top.mOffset = memberOffset(&Rect::top);
+			meta_rect_top.mOffset = offsetof(Rect, top);
 			meta_rect_top.mpNextMember = &meta_rect_bottom;
 			DEFINEM(rect, right);
 			meta_rect_right.mpName = "right";
 			meta_rect_right.mpMemberDesc = &meta_long;
-			meta_rect_right.mOffset = memberOffset(&Rect::right);
+			meta_rect_right.mOffset = offsetof(Rect, right);
 			meta_rect_right.mpNextMember = &meta_rect_top;
 			DEFINEM(rect, left);
 			meta_rect_left.mpName = "left";
 			meta_rect_left.mpMemberDesc = &meta_long;
-			meta_rect_left.mOffset = memberOffset(&Rect::left);
+			meta_rect_left.mOffset = offsetof(Rect, left);
 			meta_rect.mpFirstMember = &meta_rect_left;
 			meta_rect_left.mpNextMember = &meta_rect_right;
 			meta_rect.Insert();
@@ -671,11 +679,11 @@ namespace MetaInit {
 			DEFINET(sphere, Sphere);
 			meta_sphere.Initialize(typeid(Sphere));
 			DEFINEM(sphere, radius);
-			meta_sphere_radius.mOffset = memberOffset(&Sphere::mRadius);
+			meta_sphere_radius.mOffset = offsetof(Sphere, mRadius);
 			meta_sphere_radius.mpName = "mRadius";
 			meta_sphere_radius.mpMemberDesc = &meta_float;
 			DEFINEM(sphere, center);
-			meta_sphere_center.mOffset = memberOffset(&Sphere::mCenter);
+			meta_sphere_center.mOffset = offsetof(Sphere, mCenter);
 			meta_sphere_center.mpName = "mCenter";
 			meta_sphere_center.mpMemberDesc = &meta_vec3;
 			meta_sphere_center.mpNextMember = &meta_sphere_radius;
@@ -686,21 +694,21 @@ namespace MetaInit {
 			meta_color.Initialize(typeid(Color));
 			DEFINEM(color, alpha);
 			meta_color_alpha.mpName = "a";
-			meta_color_alpha.mOffset = memberOffset(&Color::a);
+			meta_color_alpha.mOffset = offsetof(Color, a);
 			meta_color_alpha.mpMemberDesc = &meta_float;
 			DEFINEM(color, b);
 			meta_color_b.mpName = "b";
-			meta_color_b.mOffset = memberOffset(&Color::b);
+			meta_color_b.mOffset = offsetof(Color, b);
 			meta_color_b.mpMemberDesc = &meta_float;
 			meta_color_b.mpNextMember = &meta_color_alpha;
 			DEFINEM(color, g);
 			meta_color_g.mpName = "g";
-			meta_color_g.mOffset = memberOffset(&Color::g);
+			meta_color_g.mOffset = offsetof(Color, g);
 			meta_color_g.mpMemberDesc = &meta_float;
 			meta_color_g.mpNextMember = &meta_color_b;
 			DEFINEM(color, r);
 			meta_color_r.mpName = "r";
-			meta_color_r.mOffset = memberOffset(&Color::r);
+			meta_color_r.mOffset = offsetof(Color, r);
 			meta_color_r.mpMemberDesc = &meta_float;
 			meta_color_r.mpNextMember = &meta_color_g;
 			meta_color.mpFirstMember = &meta_color_r;
@@ -712,7 +720,7 @@ namespace MetaInit {
 			meta_propkeyinfo.Initialize(typeid(PropertySet::KeyInfo));
 			DEFINEM(propkeyinfo, value);
 			meta_propkeyinfo_value.mpName = "mValue";
-			meta_propkeyinfo_value.mOffset = memberOffset(&PropertySet::KeyInfo::mValue);
+			meta_propkeyinfo_value.mOffset = offsetof(PropertySet::KeyInfo, mValue);
 			meta_propkeyinfo_value.mFlags |= (int)MetaFlag::MetaFlag_EditorHide | (int)MetaFlag::MetaFlag_NoPanelCaption;
 			meta_propkeyinfo_value.mpMemberDesc = &meta_propvalue;
 			DEFINEM(propkeyinfo, flags);
@@ -720,11 +728,11 @@ namespace MetaInit {
 			meta_propkeyinfo_flags.mpName = "mFlags";
 			meta_propkeyinfo_flags.mpMemberDesc = &meta_flags;
 			meta_propkeyinfo_flags.mpNextMember = &meta_propkeyinfo_value;
-			meta_propkeyinfo_flags.mOffset = memberOffset(&PropertySet::KeyInfo::mFlags);
+			meta_propkeyinfo_flags.mOffset = offsetof(PropertySet::KeyInfo, mFlags);
 			DEFINEM(propkeyinfo, keyname);
 			meta_propkeyinfo_keyname.mFlags |= (int)MetaFlag::MetaFlag_EditorHide;
 			meta_propkeyinfo_keyname.mpName = "mKeyName";
-			meta_propkeyinfo_keyname.mOffset = memberOffset(&PropertySet::KeyInfo::mFlags);
+			meta_propkeyinfo_keyname.mOffset = offsetof(PropertySet::KeyInfo, mKeyName);
 			meta_propkeyinfo_keyname.mpNextMember = &meta_propkeyinfo_flags;
 			meta_propkeyinfo_keyname.mpMemberDesc = &meta_symbol;
 			meta_propkeyinfo.mpFirstMember = &meta_propkeyinfo_keyname;
@@ -769,7 +777,7 @@ namespace MetaInit {
 			DEFINEMAP2(int, Map<int SEP int SEP std::less<int>>, int, mapintint, std::less<int>);
 			DEFINEMAP(String, String, std::less<String>);
 			DEFINEMAP(int, bool, std::less<int>);
-			DEFINESET_(PropertySet::KeyInfo,keyinfo);
+			DEFINESET_(PropertySet::KeyInfo, keyinfo);
 			DEFINET(prop, PropertySet);
 			meta_prop.Initialize(typeid(PropertySet));
 			meta_prop.mpExt = "prop";
@@ -777,26 +785,26 @@ namespace MetaInit {
 			meta_prop.InstallSpecializedMetaOperation(&meta_prop_eMetaOpSerializeAsync);
 			DEFINEM(prop, version);
 			meta_prop_version.mpName = "mPropVersion";
-			meta_prop_version.mOffset = memberOffset(&PropertySet::mPropVersion);
+			meta_prop_version.mOffset = offsetof(PropertySet, mPropVersion);
 			meta_prop_version.mpMemberDesc = &meta_long;
 			meta_prop.mpFirstMember = &meta_prop_version;
 			DEFINEM(prop, flags);
 			meta_prop_flags.mpName = "mPropertyFlags";
 			meta_prop_flags.mpMemberDesc = &meta_flags;
-			meta_prop_flags.mOffset = memberOffset(&PropertySet::mPropertyFlags);
+			meta_prop_flags.mOffset = offsetof(PropertySet, mPropertyFlags);
 			meta_prop_version.mpNextMember = &meta_prop_flags;
 			DEFINEM(prop, keymap);
 			meta_prop_keymap.mpName = "mKeyMap";
 			meta_prop_keymap.mpMemberDesc = &meta_Set_keyinfo;
 			meta_prop_keymap.mFlags |= (int)MetaFlag::MetaFlag_MetaSerializeDisable;
-			meta_prop_keymap.mOffset = memberOffset(&PropertySet::mKeyMap);
+			meta_prop_keymap.mOffset = offsetof(PropertySet, mKeyMap);
 			meta_prop_flags.mpNextMember = &meta_prop_keymap;
 			meta_prop.Insert();
 
 			DEFINET(bc, BoneContraints);
 			meta_bc.Initialize(typeid(BoneContraints));
 			DEFINEM(bc, btype);
-			meta_bc_btype.mOffset = memberOffset(&BoneContraints::mBoneType);
+			meta_bc_btype.mOffset = offsetof(BoneContraints, mBoneType);
 			meta_bc_btype.mpName = "mBoneType";
 			meta_bc_btype.mpMemberDesc = &meta_long;
 			meta_bc_btype.mFlags |= MetaFlag::MetaFlag_EnumIntType;
@@ -810,13 +818,13 @@ namespace MetaInit {
 			DEFINEM(bc, axis);
 			meta_bc_btype.mpNextMember = &meta_bc_axis;
 			meta_bc_axis.mpName = "mHingeAxis";
-			meta_bc_axis.mOffset = memberOffset(&BoneContraints::mHingeAxis);
+			meta_bc_axis.mOffset = offsetof(BoneContraints, mHingeAxis);
 			meta_bc_axis.mFlags |= MetaFlag::MetaFlag_PlaceInAddPropMenu;
 			meta_bc_axis.mpMemberDesc = &meta_vec3;
 			DEFINEM(bc, range);
 			meta_bc_axis.mpNextMember = &meta_bc_range;
 			meta_bc_range.mpName = "mAxisRange";
-			meta_bc_range.mOffset = memberOffset(&BoneContraints::mAxisRange);
+			meta_bc_range.mOffset = offsetof(BoneContraints, mAxisRange);
 			meta_bc_range.mpMemberDesc = &meta_sarray_rangefloat_3;
 			meta_bc.mpFirstMember = &meta_bc_btype;
 			meta_bc.Insert();
@@ -825,90 +833,90 @@ namespace MetaInit {
 			meta_sklentry.Initialize(typeid(Skeleton::Entry));
 			DEFINEM(sklentry, flags);
 			meta_sklentry_flags.mpName = "mFlags";
-			meta_sklentry_flags.mpMemberDesc =& meta_flags;
-			meta_sklentry_flags.mOffset = memberOffset(&Skeleton::Entry::mFlags);
+			meta_sklentry_flags.mpMemberDesc = &meta_flags;
+			meta_sklentry_flags.mOffset = offsetof(Skeleton::Entry, mFlags);
 			DEFINEM(sklentry, constraints);
 			meta_sklentry_constraints.mpName = "mConstraints";
-			meta_sklentry_constraints.mpMemberDesc =& meta_bc;
-			meta_sklentry_constraints.mOffset = memberOffset(&Skeleton::Entry::mConstraints);
+			meta_sklentry_constraints.mpMemberDesc = &meta_bc;
+			meta_sklentry_constraints.mOffset = offsetof(Skeleton::Entry, mConstraints);
 			meta_sklentry_constraints.mpNextMember = &meta_sklentry_flags;
 			DEFINEM(sklentry, rgm);
 			meta_sklentry_rgm.mpName = "mResourceGroupMembership";
-			meta_sklentry_rgm.mOffset = memberOffset(&Skeleton::Entry::mResourceGroupMembership);
+			meta_sklentry_rgm.mOffset = offsetof(Skeleton::Entry, mResourceGroupMembership);
 			meta_sklentry_rgm.mpNextMember = &meta_sklentry_constraints;
 			meta_sklentry_rgm.mpMemberDesc = &meta_Map_Symbol_float;
 			DEFINEM(sklentry, ats);
 			meta_sklentry_ats.mpName = "mAnimTranslationScale";
-			meta_sklentry_ats.mOffset = memberOffset(&Skeleton::Entry::mAnimTranslationScale);
+			meta_sklentry_ats.mOffset = offsetof(Skeleton::Entry, mAnimTranslationScale);
 			meta_sklentry_ats.mpNextMember = &meta_sklentry_rgm;
 			meta_sklentry_ats.mpMemberDesc = &meta_vec3;
 			DEFINEM(sklentry, lts);
 			meta_sklentry_lts.mpName = "mLocalTranslationScale";
-			meta_sklentry_lts.mOffset = memberOffset(&Skeleton::Entry::mLocalTranslationScale);
+			meta_sklentry_lts.mOffset = offsetof(Skeleton::Entry, mLocalTranslationScale);
 			meta_sklentry_lts.mpNextMember = &meta_sklentry_ats;
 			meta_sklentry_lts.mpMemberDesc = &meta_vec3;
 			DEFINEM(sklentry, gts);
 			meta_sklentry_gts.mpName = "mGlobalTranslationScale";
-			meta_sklentry_gts.mOffset = memberOffset(&Skeleton::Entry::mGlobalTranslationScale);
+			meta_sklentry_gts.mOffset = offsetof(Skeleton::Entry, mGlobalTranslationScale);
 			meta_sklentry_gts.mpNextMember = &meta_sklentry_lts;
 			meta_sklentry_gts.mpMemberDesc = &meta_vec3;
 			DEFINEM(sklentry, restx);
 			meta_sklentry_restx.mpName = "mRestXForm";
-			meta_sklentry_restx.mOffset = memberOffset(&Skeleton::Entry::mRestXform);
+			meta_sklentry_restx.mOffset = offsetof(Skeleton::Entry, mRestXform);
 			meta_sklentry_restx.mpNextMember = &meta_sklentry_gts;
 			meta_sklentry_restx.mpMemberDesc = &meta_transform;
 			DEFINEM(sklentry, localq);
 			meta_sklentry_localq.mpName = "mLocalQuat";
-			meta_sklentry_localq.mOffset = memberOffset(&Skeleton::Entry::mLocalQuat);
+			meta_sklentry_localq.mOffset = offsetof(Skeleton::Entry, mLocalQuat);
 			meta_sklentry_localq.mpNextMember = &meta_sklentry_restx;
 			meta_sklentry_localq.mpMemberDesc = &meta_quat;
 			DEFINEM(sklentry, localp);
 			meta_sklentry_localp.mpName = "mLocalPos";
-			meta_sklentry_localp.mOffset = memberOffset(&Skeleton::Entry::mLocalPos);
+			meta_sklentry_localp.mOffset = offsetof(Skeleton::Entry, mLocalPos);
 			meta_sklentry_localp.mpNextMember = &meta_sklentry_localq;
 			meta_sklentry_localp.mpMemberDesc = &meta_vec3;
 			DEFINEM(sklentry, blen);
 			meta_sklentry_blen.mpName = "mBoneLength";
-			meta_sklentry_blen.mOffset = memberOffset(&Skeleton::Entry::mBoneLength);
+			meta_sklentry_blen.mOffset = offsetof(Skeleton::Entry, mBoneLength);
 			meta_sklentry_blen.mpNextMember = &meta_sklentry_localp;
 			meta_sklentry_blen.mpMemberDesc = &meta_float;
 			meta_sklentry_blen.mFlags |= MetaFlag::MetaFlag_MetaSerializeDisable;
 			DEFINEM(sklentry, mblen);
 			meta_sklentry_mblen.mpName = "mMirrorBoneIndex";
-			meta_sklentry_mblen.mOffset = memberOffset(&Skeleton::Entry::mMirrorBoneIndex);
+			meta_sklentry_mblen.mOffset = offsetof(Skeleton::Entry, mMirrorBoneIndex);
 			meta_sklentry_mblen.mpNextMember = &meta_sklentry_blen;
 			meta_sklentry_mblen.mpMemberDesc = &meta_long;
 			DEFINEM(sklentry, mbn);
 			meta_sklentry_mbn.mpName = "mMirrorBoneName";
-			meta_sklentry_mbn.mOffset = memberOffset(&Skeleton::Entry::mMirrorBoneName);
+			meta_sklentry_mbn.mOffset = offsetof(Skeleton::Entry, mMirrorBoneName);
 			meta_sklentry_mbn.mpNextMember = &meta_sklentry_mblen;
 			meta_sklentry_mbn.mpMemberDesc = &meta_symbol;
 			DEFINEM(sklentry, pi);
 			meta_sklentry_pi.mpName = "mParentIndex";
-			meta_sklentry_pi.mOffset = memberOffset(&Skeleton::Entry::mParentIndex);
+			meta_sklentry_pi.mOffset = offsetof(Skeleton::Entry, mParentIndex);
 			meta_sklentry_pi.mpNextMember = &meta_sklentry_mbn;
 			meta_sklentry_pi.mpMemberDesc = &meta_long;
 			DEFINEM(sklentry, pn);
 			meta_sklentry_pn.mpName = "mParentName";
-			meta_sklentry_pn.mOffset = memberOffset(&Skeleton::Entry::mParentName);
+			meta_sklentry_pn.mOffset = offsetof(Skeleton::Entry, mParentName);
 			meta_sklentry_pn.mpNextMember = &meta_sklentry_pi;
 			meta_sklentry_pn.mpMemberDesc = &meta_symbol;
 			DEFINEM(sklentry, jn);
 			meta_sklentry_jn.mpName = "mJointName";
-			meta_sklentry_jn.mOffset = memberOffset(&Skeleton::Entry::mJointName);
+			meta_sklentry_jn.mOffset = offsetof(Skeleton::Entry, mJointName);
 			meta_sklentry_jn.mpNextMember = &meta_sklentry_pn;
 			meta_sklentry_jn.mpMemberDesc = &meta_symbol;
 			meta_sklentry.mpFirstMember = &meta_sklentry_jn;
 			meta_sklentry.Insert();
 
-			DEFINEDCARRAY2(Skeleton::Entry,sklentry);
+			DEFINEDCARRAY2(Skeleton::Entry, sklentry);
 
 			DEFINET(skl, Skeleton);
 			meta_skl.Initialize(typeid(Skeleton));
 			meta_skl.mpExt = "skl";
 			DEFINEM(skl, entries);
 			meta_skl_entries.mpName = "mEntries";
-			meta_skl_entries.mOffset = memberOffset(&Skeleton::mEntries);
+			meta_skl_entries.mOffset = offsetof(Skeleton, mEntries);
 			meta_skl_entries.mpMemberDesc = &meta_DCArray_sklentry;
 			meta_skl.mpFirstMember = &meta_skl_entries;
 			meta_skl.Insert();
@@ -919,12 +927,12 @@ namespace MetaInit {
 			DEFINEM(aam, aam);
 			meta_aam_aam.mpName = "mActorAgentMap";
 			meta_aam_aam.mpMemberDesc = &meta_prop;
-			meta_aam_aam.mOffset = memberOffset(&ActorAgentMapper::mActorAgentMap);
+			meta_aam_aam.mOffset = offsetof(ActorAgentMapper, mActorAgentMap);
 			meta_aam.mpFirstMember = &meta_aam_aam;
 			DEFINEM(aam, aa);
 			meta_aam_aa.mpName = "mActionActors";
 			meta_aam_aa.mpMemberDesc = &meta_Set_String;
-			meta_aam_aa.mOffset = memberOffset(&ActorAgentMapper::mActionActors);
+			meta_aam_aa.mOffset = offsetof(ActorAgentMapper, mActionActors);
 			meta_aam_aam.mpNextMember = &meta_aam_aa;
 			meta_aam.Insert();
 
@@ -932,30 +940,30 @@ namespace MetaInit {
 			meta_amape.Initialize(typeid(AgentMap::AgentMapEntry));
 			DEFINEM(amape, name);
 			meta_amape_name.mpName = "mzName";
-			meta_amape_name.mOffset = memberOffset(&AgentMap::AgentMapEntry::mzName);
+			meta_amape_name.mOffset = offsetof(AgentMap::AgentMapEntry, mzName);
 			meta_amape_name.mpMemberDesc = &meta_string;
 
 			DEFINEM(amape, Actor);
 			meta_amape_Actor.mpName = "mzActor";
-			meta_amape_Actor.mOffset = memberOffset(&AgentMap::AgentMapEntry::mzActor);
+			meta_amape_Actor.mOffset = offsetof(AgentMap::AgentMapEntry, mzActor);
 			meta_amape_Actor.mpMemberDesc = &meta_string;
 			meta_amape_name.mpNextMember = &meta_amape_Actor;
 
 			DEFINEM(amape, name2);
 			meta_amape_name2.mpName = "mazModels";
-			meta_amape_name2.mOffset = memberOffset(&AgentMap::AgentMapEntry::mazModels);
+			meta_amape_name2.mOffset = offsetof(AgentMap::AgentMapEntry, mazModels);
 			meta_amape_name2.mpMemberDesc = &meta_Set_String;
 			meta_amape_Actor.mpNextMember = &meta_amape_name2;
-		
+
 			DEFINEM(amape, name3);
 			meta_amape_name3.mpName = "mazGuides";
-			meta_amape_name3.mOffset = memberOffset(&AgentMap::AgentMapEntry::mazGuides);
+			meta_amape_name3.mOffset = offsetof(AgentMap::AgentMapEntry, mazGuides);
 			meta_amape_name3.mpMemberDesc = &meta_Set_String;
 			meta_amape_name2.mpNextMember = &meta_amape_name3;
 
 			DEFINEM(amape, name4);
 			meta_amape_name4.mpName = "mazStyleIdles";
-			meta_amape_name4.mOffset = memberOffset(&AgentMap::AgentMapEntry::mazStyleIdles);
+			meta_amape_name4.mOffset = offsetof(AgentMap::AgentMapEntry, mazStyleIdles);
 			meta_amape_name4.mpMemberDesc = &meta_Set_String;
 			meta_amape_name3.mpNextMember = &meta_amape_name4;
 
@@ -969,7 +977,7 @@ namespace MetaInit {
 			meta_amap.mpExt = "amap";
 			DEFINEM(amap, agents);
 			meta_amap_agents.mpName = "maAgents";
-			meta_amap_agents.mOffset = memberOffset(&AgentMap::maAgents);
+			meta_amap_agents.mOffset = offsetof(AgentMap, maAgents);
 			meta_amap_agents.mpMemberDesc = &meta_Map_str_amape;
 			meta_amap.mpFirstMember = &meta_amap_agents;
 			meta_amap.Insert();
@@ -983,9 +991,9 @@ namespace MetaInit {
 			meta_acol_inc.mpMemberDesc = &meta_DCArray_String;
 			meta_acol_exl.mpMemberDesc = &meta_DCArray_String;
 			meta_acol_pre.mpMemberDesc = &meta_string;
-			meta_acol_inc.mOffset = memberOffset(&AssetCollection::mIncludeMasks);
-			meta_acol_exl.mOffset = memberOffset(&AssetCollection::mExcludeMasks);
-			meta_acol_pre.mOffset = memberOffset(&AssetCollection::mPreFilter);
+			meta_acol_inc.mOffset = offsetof(AssetCollection, mIncludeMasks);
+			meta_acol_exl.mOffset = offsetof(AssetCollection, mExcludeMasks);
+			meta_acol_pre.mOffset = offsetof(AssetCollection, mPreFilter);
 			meta_acol_inc.mpName = "mIncludeMasks";
 			meta_acol_exl.mpName = "mExcludeMasks";
 			meta_acol_pre.mpName = "mPreFilter";
@@ -996,7 +1004,7 @@ namespace MetaInit {
 			meta_acol.Insert();
 
 			DEFINEMAP2(String, SoundBusSystem::BusDescription, str, bd, std::less<String>);//we can define since it doesnt ref the mcd yet
-	
+
 			DEFINET(busd, SoundBusSystem::BusDescription);
 			meta_busd.Initialize(typeid(SoundBusSystem::BusDescription));
 			FIRSTMEM(busd, "fVolumedB", fVolumedB, SoundBusSystem::BusDescription, float, 0);
@@ -1014,12 +1022,12 @@ namespace MetaInit {
 			meta_bus.mpExt = "audiobus";
 			DEFINEM(bus, mbus);
 			meta_bus_mbus.mpName = "masterBus";
-			meta_bus_mbus.mOffset = memberOffset(&SoundBusSystem::BusHolder::masterBus);
+			meta_bus_mbus.mOffset = offsetof(SoundBusSystem::BusHolder, masterBus);
 			meta_bus_mbus.mpMemberDesc = &meta_busd;
 			DEFINEM(bus, am);
 			meta_bus_am.mpName = "assetMap";
 			meta_bus_mbus.mpNextMember = &meta_bus_am;
-			meta_bus_am.mOffset = memberOffset(&SoundBusSystem::BusHolder::assetMap);
+			meta_bus_am.mOffset = offsetof(SoundBusSystem::BusHolder, assetMap);
 			meta_bus_am.mpMemberDesc = &meta_Map_Symbol_Symbol;
 			meta_bus_am.mFlags |= MetaFlag::MetaFlag_EditorHide;
 			meta_bus.mpFirstMember = &meta_bus_mbus;
@@ -1210,7 +1218,7 @@ namespace MetaInit {
 
 			DEFINET2(swizzle, RenderSwizzleParams);
 			DEFINEM(RenderSwizzleParams, s0);
-			size_t start = memberOffset(&RenderSwizzleParams::mSwizzle);
+			size_t start = offsetof(RenderSwizzleParams, mSwizzle);
 			meta_RenderSwizzleParams_s0.mOffset = start + 0;
 			meta_RenderSwizzleParams_s0.mpName = "mSwizzle[0]";
 			meta_RenderSwizzleParams_s0.mpMemberDesc = &meta_char;
@@ -1327,7 +1335,7 @@ namespace MetaInit {
 			NEXTENUM(tex, mSurfaceGamma, eSurfaceGamma_sRGB, 1, 0, eSurfaceGamma_Linear);
 			NEXTMEM2(tex, mSurfaceMultisample, T3Texture, long, 0, mSurfaceGamma);
 			ADDFLAGS(tex_mSurfaceMultisample, MetaFlag::MetaFlag_EnumIntType);
-			FIRSTENUM(tex,mSurfaceMultisample, eSurfaceMultisample_None, 0, 0);
+			FIRSTENUM(tex, mSurfaceMultisample, eSurfaceMultisample_None, 0, 0);
 			NEXTENUM(tex, mSurfaceMultisample, eSurfaceMultisample_2x, 1, 0, eSurfaceMultisample_None);
 			NEXTENUM(tex, mSurfaceMultisample, eSurfaceMultisample_4x, 2, 0, eSurfaceMultisample_None);
 			NEXTENUM(tex, mSurfaceMultisample, eSurfaceMultisample_8x, 3, 0, eSurfaceMultisample_None);
@@ -1433,6 +1441,7 @@ namespace MetaInit {
 			FIRSTMEM2(locreg, mFlagIndexMap, LocalizationRegistry, Map_Symbol_int, 0);
 			NEXTMEM2(locreg, mFlagIndexMapReverse, LocalizationRegistry, Map_int_Symbol, 0, mFlagIndexMap);
 			NEXTMEM2(locreg, mToolProps, LocalizationRegistry, tp, 0, mFlagIndexMapReverse);
+			meta_locreg_mToolProps.mGameIndexVersionRange.min = TelltaleToolLib_GetGameKeyIndex("wdc");
 			ADD(locreg);
 
 			DEFINEHANDLE(dlg, Dlg);
@@ -1477,7 +1486,7 @@ namespace MetaInit {
 			FIRSTENUM(soundmat, mVal, Default, SoundFootsteps::Default, 0);
 			NEXTENUM(soundmat, mVal, Carpet, 2, 0, Default);
 			NEXTENUM(soundmat, mVal, Concrete, 3, 0, Carpet);
-			NEXTENUM2(soundmat, mVal,"Concrete (Wet)", Concrete_Wet, 4, 0, Concrete);
+			NEXTENUM2(soundmat, mVal, "Concrete (Wet)", Concrete_Wet, 4, 0, Concrete);
 			NEXTENUM2(soundmat, mVal, "Dirt", Dirt, 5, 0, Concrete_Wet);
 			NEXTENUM2(soundmat, mVal, "Grass", Grass, 6, 0, Dirt);
 			NEXTENUM2(soundmat, mVal, "Grass (Tall)", Grass_Tall, 7, 0, Grass);
@@ -1486,8 +1495,8 @@ namespace MetaInit {
 			NEXTENUM2(soundmat, mVal, "Linoleum", Linoleum, 10, 0, Leaves);
 			NEXTENUM2(soundmat, mVal, "Metal (Thick)", Metal_Thick, 11, 0, Linoleum);
 			NEXTENUM2(soundmat, mVal, "Metal (Thin)", Metal_Thin, 12, 0, Metal_Thick);
-			NEXTENUM2(soundmat, mVal, "Mud", Mud, 13, 0,Metal_Thin);
-			NEXTENUM2(soundmat, mVal, "Puddle", Puddle, 14, 0,  Mud);
+			NEXTENUM2(soundmat, mVal, "Mud", Mud, 13, 0, Metal_Thin);
+			NEXTENUM2(soundmat, mVal, "Puddle", Puddle, 14, 0, Mud);
 			NEXTENUM2(soundmat, mVal, "Sand", Sand, 15, 0, Puddle);
 			NEXTENUM2(soundmat, mVal, "Snow", Snow, 16, 0, Sand);
 			NEXTENUM2(soundmat, mVal, "Tile (Hard)", Tile_Hard, 17, 0, Snow);
@@ -1548,18 +1557,363 @@ namespace MetaInit {
 
 			DEFINET2(sebmp, SoundEventBankMap);
 			EXT(sebmp, soundeventbankmap);
-			FIRSTMEM2(sebmp, mBankMap, SoundEventBankMap, Map_String_dcarraystring,0);
+			FIRSTMEM2(sebmp, mBankMap, SoundEventBankMap, Map_String_dcarraystring, 0);
 			NEXTMEM2(sebmp, mbLoadAllBanksGlobally, SoundEventBankMap, bool, 0, mBankMap);
 			ADD(sebmp);
 
 			DEFINEHANDLE(hanm, Animation);
 			DEFINEHANDLE(hchore, Chore);
-			
+
 			DEFINET2(animorchore, AnimOrChore);
 			ADDFLAGS(animorchore, MetaFlag::MetaFlag_PlaceInAddPropMenu);
 			FIRSTMEM2(animorchore, mhAnim, AnimOrChore, Handlehanm, 0);
 			NEXTMEM2(animorchore, mhChore, AnimOrChore, Handlehchore, 0, mhAnim);
 			ADD(animorchore);
+
+			DEFINET2(resgroups, ResourceGroups);
+			ADDFLAGS(resgroups, MetaFlag::MetaFlag_EditorHide);
+			FIRSTMEM2(resgroups, mGroups, ResourceGroups, Map_Symbol_float, 0);
+			ADD(resgroups);
+
+			DEFINET2(propo, ActingOverridablePropOwner);
+			FIRSTMEM2(propo, mSerializationFlags, ActingOverridablePropOwner, flags, 0);
+			SERIALIZER(propo, ActingOverridablePropOwner);
+			ADD(propo);
+
+			DEFINET2(tanmode, EnumeTangentModes);
+			FIRSTMEM2(tanmode, mVal, EnumeTangentModes, long, 0);
+			FIRSTENUM(tanmode, mVal, eTangentUnknown, eTangentUnknown, 0);
+			NEXTENUM(tanmode, mVal, eTangentStepped, eTangentStepped, 0, eTangentUnknown);
+			NEXTENUM(tanmode, mVal, eTangentKnot, eTangentKnot, 0, eTangentStepped);
+			NEXTENUM(tanmode, mVal, eTangentSmooth, eTangentSmooth, 0, eTangentKnot);
+			NEXTENUM(tanmode, mVal, eTangentFlat, eTangentFlat, 0, eTangentSmooth);
+			NEXTMEM1(tanmode, "Baseclass_EnumBase", BASE_CLASS, mVal,
+				EnumeTangentModes, enumbase, 0, mVal);
+			ADD(tanmode);
+
+			DEFINET2(actres, ActingResource);
+			FIRSTMEM(actres, "Baseclass_ActingOverridablePropOwner", mSerializationFlags, ActingResource, propo, 0);
+			NEXTMEM2(actres, mResource, ActingResource, animorchore, MetaFlag::MetaFlag_EditorHide, mSerializationFlags);
+			NEXTMEM2(actres, mValidIntensityRange, ActingResource, rangef, 0, mResource);
+			ADD(actres);
+
+			DEFINET2(actdur, ActingPalette::EnumActiveDuring);
+			ADDFLAGS(actdur, 0x8008);
+			FIRSTMEM2(actdur, mVal, ActingPalette::EnumActiveDuring, long, 0);
+			FIRSTENUM(actdur, mVal, always, ActingPalette::ActiveDuring::always, 0);
+			NEXTENUM(actdur, mVal, talking, ActingPalette::ActiveDuring::talking, 0, always);
+			NEXTENUM(actdur, mVal, listening, ActingPalette::ActiveDuring::listening, 0, talking);
+			NEXTMEM1(actdur, "Baseclass_EnumBase", BASE_CLASS, mVal,
+				ActingPalette::EnumActiveDuring, enumbase, 0x10, mVal);
+			ADD(actdur);
+
+			DEFINET2(actrun1, ActingAccentPalette::EnumOverrun);
+			ADDFLAGS(actrun1, 0x8008);
+			FIRSTMEM2(actrun1, mVal, ActingAccentPalette::EnumOverrun, long, 0);
+			FIRSTENUM(actrun1, mVal, disallowed, ActingAccentPalette::Overrun::disallowed, 0);
+			NEXTENUM(actrun1, mVal, allowed, ActingAccentPalette::Overrun::allowed, 0, disallowed);
+			NEXTMEM1(actrun1, "Baseclass_EnumBase", BASE_CLASS, mVal,
+				ActingAccentPalette::EnumOverrun, enumbase, 0x10, mVal);
+			ADD(actrun1);
+
+			DEFINET2(actrun, ActingPalette::EnumOverrun);
+			ADDFLAGS(actrun, 0x8008);
+			FIRSTMEM2(actrun, mVal, ActingPalette::EnumOverrun, long, 0);
+			FIRSTENUM(actrun, mVal, disallowed, ActingPalette::Overrun::disallowed, 0);
+			NEXTENUM(actrun, mVal, allowed, ActingPalette::Overrun::allowed, 0, disallowed);
+			NEXTMEM1(actrun, "Baseclass_EnumBase", BASE_CLASS, mVal,
+				ActingPalette::EnumOverrun, enumbase, 0x10, mVal);
+			ADD(actrun);
+
+			DEFINET2(actrel, ActingPalette::EnumEndRelativeTo);
+			ADDFLAGS(actrel, 0x8008);
+			FIRSTMEM2(actrel, mVal, ActingPalette::EnumEndRelativeTo, long, 0);
+			FIRSTENUM(actrel, mVal, beginning, ActingPalette::EndRelativeTo::beginning, 0);
+			NEXTENUM(actrel, mVal, end, ActingPalette::EndRelativeTo::end, 0, beginning);
+			NEXTENUM(actrel, mVal, transition, ActingPalette::EndRelativeTo::transition, 0, end);
+			NEXTMEM1(actrel, "Baseclass_EnumBase", BASE_CLASS, mVal,
+				ActingPalette::EnumEndRelativeTo, enumbase, 0x10, mVal);
+			ADD(actrel);
+
+			DEFINET2(aresp, ActingResource*);
+			ADD(aresp);
+			DEFINEDCARRAY2(ActingResource*, actresp);
+
+			DEFINET2(actp, ActingPalette);
+			FIRSTMEM(actp, "Baseclass_ActingOverridablePropOwner", mSerializationFlags, ActingPalette, propo, 0x10);
+			NEXTMEM(actp, "Baseclass_UID::Owner", miUniqueID, ActingPalette, uidowner, 0x10, mSerializationFlags);
+			SERIALIZER(actp, ActingPalette);
+			NEXTMEM2(actp, mName, ActingPalette, string, 0x20, miUniqueID);
+			NEXTMEM2(actp, mActiveDuring, ActingPalette, actdur, 0, mName);
+			NEXTMEM2(actp, mTimeBetweenActions, ActingPalette, rangef, 0, mActiveDuring);
+			NEXTMEM2(actp, mFirstActionDelayRange, ActingPalette, rangef, 0, mTimeBetweenActions);
+			NEXTMEM2(actp, mSpilloutBufPreRange, ActingPalette, rangef, 0x20, mFirstActionDelayRange);
+			NEXTMEM2(actp, mSpilloutBufPostRange, ActingPalette, rangef, 0, mSpilloutBufPreRange);
+			NEXTMEM2(actp, mLatestStartOffsetRange, ActingPalette, rangef, 0, mSpilloutBufPostRange);
+			NEXTMEM2(actp, mValidIntensityRange, ActingPalette, rangef, 0, mLatestStartOffsetRange);
+			NEXTMEM2(actp, mResourcePtrs, ActingPalette, DCArray_actresp, 0x21, mValidIntensityRange);
+			NEXTMEM2(actp, mGroupMembershipUID, ActingPalette, long, 0x20, mResourcePtrs);
+			NEXTMEM2(actp, mFlags, ActingPalette, flags, 0x20, mGroupMembershipUID);
+			NEXTMEM2(actp, mFirstActionEndRel, ActingPalette, actrel, 0, mFlags);
+			NEXTMEM2(actp, mEndOffsetRel, ActingPalette, actrel, 0, mFirstActionEndRel);
+			NEXTMEM2(actp, mLatestStartOffsetRel, ActingPalette, actrel, 0, mEndOffsetRel);
+			NEXTMEM2(actp, mOverrunAllowed, ActingPalette, actrun, 0, mLatestStartOffsetRel);
+			NEXTMEM2(actp, mMoodOverrunAllowed, ActingPalette, actrun, 0, mOverrunAllowed);
+			NEXTMEM2(actp, mDisableAct, ActingPalette, bool, 0, mMoodOverrunAllowed);
+			NEXTMEM2(actp, mJunket, ActingPalette, long, 0, mDisableAct);
+			ADD(actp);
+
+
+			DEFINET2(actap, ActingAccentPalette);
+			ADDFLAGS(actap, 0x40);
+			SERIALIZER(actap, ActingAccentPalette);
+			FIRSTMEM(actap, "Baseclass_ActingOverridablePropOwner", mSerializationFlags, ActingAccentPalette, propo, 0x10);
+			NEXTMEM(actap, "Baseclass_UID::Owner", miUniqueID, ActingAccentPalette, uidowner, 0x10, mSerializationFlags);
+			NEXTMEM2(actap, mName, ActingAccentPalette, string, 0, miUniqueID);
+			NEXTMEM2(actap, mStartOffsetRange, ActingAccentPalette, rangef, 0, mName);
+			NEXTMEM2(actap, mMoodOverrunAllowed, ActingAccentPalette, actrun1, 0, mStartOffsetRange);
+			NEXTMEM2(actap, mDisableAct, ActingAccentPalette, bool, 0, mMoodOverrunAllowed);
+			NEXTMEM2(actap, mValidIntensityRange, ActingAccentPalette, rangef, 0, mDisableAct);
+			NEXTMEM2(actap, mSpilloutBufPostRange, ActingAccentPalette, rangef, 0, mValidIntensityRange);
+			NEXTMEM2(actap, mRandomChance, ActingAccentPalette, float, 0, mSpilloutBufPostRange);
+			NEXTMEM2(actap, mTrackID, ActingAccentPalette, long, 0, mRandomChance);
+			FIRSTENUM2(actap, mTrackID, "Body", Body, 1, 0);
+			NEXTENUM2(actap, mTrackID, "Face", Face, 2, 0, Body);
+			NEXTENUM2(actap, mTrackID, "Head 1", Head1, 3, 0, Face);
+			NEXTENUM2(actap, mTrackID, "Head 2", Head2, 4, 0, Head1);
+			NEXTMEM2(actap, mResourcePtrs, ActingAccentPalette, DCArray_actresp, 0x21, mTrackID);
+			NEXTMEM2(actap, mGroupMembershipUID, ActingAccentPalette, long, 0x20, mResourcePtrs);
+			NEXTMEM2(actap, mFlags, ActingAccentPalette, flags, 0x20, mGroupMembershipUID);
+			NEXTMEM2(actap, mVersion, ActingAccentPalette, long, 0x20, mFlags);
+			ADD(actap);
+
+			DEFINEHANDLE(tmap, TransitionMap);
+
+			DEFINET2(idlet, ActingPaletteGroup::EnumIdleTransition);
+			ADDFLAGS(idlet, 0x8008);
+			FIRSTMEM(idlet, "mVal", mVal, ActingPaletteGroup::EnumIdleTransition, long, 0);
+			FIRSTENUM(idlet, mVal, transitionLinear, 1, 0);
+			NEXTENUM(idlet, mVal, transitionEaseInOut, 2, 0, transitionLinear);
+			NEXTENUM(idlet, mVal, transitionUnused, 3, 0, transitionEaseInOut);
+			NEXTMEM1(idlet, "Baseclass_EnumBase", BASE_CLASS, mVal,
+				ActingPalette::EnumEndRelativeTo, enumbase, 0x10, mVal);
+			ADD(idlet);
+
+			DEFINET2(actpt, ActingPaletteGroup::ActingPaletteTransition);
+			FIRSTMEM2(actpt, mTransition, ActingPaletteGroup::ActingPaletteTransition, string, 0);
+			NEXTMEM2(actpt, mTransitionIn, ActingPaletteGroup::ActingPaletteTransition, animorchore, 0, mTransition);
+			NEXTMEM2(actpt, mCenterOffset, ActingPaletteGroup::ActingPaletteTransition, float, 0, mTransitionIn);
+			NEXTMEM2(actpt, mPreDelay, ActingPaletteGroup::ActingPaletteTransition, float, 0, mCenterOffset);
+			NEXTMEM2(actpt, mPostDelay, ActingPaletteGroup::ActingPaletteTransition, float, 0, mPreDelay);
+			NEXTMEM2(actpt, mFadeTime, ActingPaletteGroup::ActingPaletteTransition, float, 0, mPostDelay);
+			ADD(actpt);
+
+			DEFINELIST_(ActingPaletteGroup::ActingPaletteTransition, acttrans);
+
+			DEFINET2(actg, ActingPaletteGroup);
+			SERIALIZER(actg, ActingPaletteGroup);
+			FIRSTMEM(actg, "Baseclass_UID::Owner", miUniqueID, ActingPaletteGroup, uidowner, 0x10, mSerializationFlags);
+			NEXTMEM2(actg, mName, ActingPaletteGroup, string, 0x20, miUniqueID);
+			NEXTMEM2(actg, mIdle, ActingPaletteGroup, animorchore, 0, mName);
+			NEXTMEM2(actg, mTalkingIdle, ActingPaletteGroup, animorchore, 0x20, mIdle);
+			NEXTMEM2(actg, mMumbleMouth, ActingPaletteGroup, animorchore, 0x20, mTalkingIdle);
+			NEXTMEM2(actg, mWeight, ActingPaletteGroup, float, 0x20, mMumbleMouth);
+			NEXTMEM2(actg, mTransitionIn, ActingPaletteGroup, animorchore, 0x20, mWeight);
+			NEXTMEM2(actg, mTransitionOut, ActingPaletteGroup, animorchore, 0x20, mTransitionIn);
+			NEXTMEM2(actg, mTransitions, ActingPaletteGroup, List_acttrans, 0x20, mTransitionOut);
+			NEXTMEM2(actg, mIdleTransitionTimeOverride, ActingPaletteGroup, float, 0, mTransitions);
+			NEXTMEM2(actg, mhIdleTransitionMap, ActingPaletteGroup, Handletmap, 0, mIdleTransitionTimeOverride);
+			meta_actg_mhIdleTransitionMap.mMinMetaVersion = 6;//only in new
+			NEXTMEM2(actg, mIdleTransitionKind, ActingPaletteGroup, idlet, 0, mhIdleTransitionMap);
+			NEXTMEM2(actg, mRandomAutoMin, ActingPaletteGroup, float, 0, mIdleTransitionKind);
+			NEXTMEM2(actg, mRandomAutoMax, ActingPaletteGroup, float, 0, mRandomAutoMin);
+			ADD(actg);
+
+			DEFINET2(actpp, ActingPalette*);
+			ADD(actpp);
+
+			DEFINEDCARRAY2(ActingPalette*, actpp);
+
+			DEFINET2(actapp, ActingAccentPalette*);
+			ADD(actapp);
+
+			DEFINEDCARRAY2(ActingAccentPalette*, actapp);
+
+			DEFINET2(actppg, ActingPaletteGroup*);
+			ADD(actppg);
+
+			DEFINEDCARRAY2(ActingPaletteGroup*, actppg);
+
+			DEFINET2(actc, ActingPaletteClass);
+			SERIALIZER(actc, ActingPaletteClass);
+			FIRSTMEM(actc, "Baseclass_UID::Generator", miNextUniqueID, ActingPaletteClass, uidgen, 0x10);
+			NEXTMEM(actc, "Baseclass_UID::Owner", miUniqueID, ActingPaletteClass, uidowner, 0x10, miNextUniqueID);
+			NEXTMEM(actc, "Baseclass_ActingOverridablePropOwner", mSerializationFlags, ActingPaletteClass, propo, 0x10, miUniqueID);
+			NEXTMEM2(actc, mName, ActingPaletteClass, string, 0, mSerializationFlags);
+			NEXTMEM2(actc, mPalettePtrs, ActingPaletteClass, DCArray_actpp, 0x21, mName);
+			NEXTMEM2(actc, mAccentPalettePtrs, ActingPaletteClass, DCArray_actapp, 0x21, mPalettePtrs);
+			NEXTMEM2(actc, mPaletteGroupPtrs, ActingPaletteClass, DCArray_actppg, 0x21, mAccentPalettePtrs);
+			NEXTMEM2(actc, mAlternateNames, ActingPaletteClass, DCArray_String, 0, mPaletteGroupPtrs);
+			NEXTMEM2(actc, mDefaultPaletteGroupID, ActingPaletteClass, long, 0x20, mAlternateNames);
+			NEXTMEM2(actc, mFlags, ActingPaletteClass, flags, 0x20, mDefaultPaletteGroupID);
+			NEXTMEM2(actc, mInstantChange, ActingPaletteClass, bool, 0x20, mFlags);
+			ADD(actc);
+
+			DEFINEDCARRAY2(ActingPaletteClass*, actcp);
+			DEFINEDCARRAY2(ActingPaletteClass, actc);
+			DEFINET2(sg, StyleGuide);
+			SERIALIZER(sg, StyleGuide);
+			EXT(sg, "style");
+			FIRSTMEM(sg, "Baseclass_UID::Generator", miNextUniqueID, StyleGuide, uidgen, 0x10);
+			NEXTMEM(sg, "Baseclass_ActingOverridablePropOwner", mSerializationFlags, StyleGuide, propo, 0x10, miNextUniqueID);
+			NEXTMEM2(sg, mDefPaletteClassID, StyleGuide, long, 0, mSerializationFlags);
+			NEXTMEM2(sg, mbGeneratesLookAts, StyleGuide, bool, 0, mDefPaletteClassID);
+			NEXTMEM2(sg, mPaletteClassPtrs, StyleGuide, DCArray_actcp, 1, mbGeneratesLookAts);
+			NEXTMEM2(sg, mFlags, StyleGuide, flags, 0, mPaletteClassPtrs);
+			NEXTMEM2(sg, mPaletteClasses, StyleGuide, DCArray_actc, 0x20, mFlags);
+			NEXTMEM2(sg, mDefPaletteClassIndex, StyleGuide, long, 0x20, mPaletteClasses);
+			ADD(sg);
+
+			DEFINEHANDLE(sound, SoundData);
+
+			DEFINET(ptrbase, void*);
+			meta_ptrbase.Initialize("Ptr<PtrBase>");
+			meta_ptrbase.mFlags |= 1u;
+			ADD(ptrbase);
+
+			DEFINET2(lr, LanguageResource);
+			SERIALIZER(lr, LanguageResource);
+			EXT(lr, langres);
+			FIRSTMEM2(lr, mId, LanguageResource, long, 0);
+			NEXTMEM2(lr, mPrefix, LanguageResource, string, 0, mId);
+			NEXTMEM2(lr, mText, LanguageResource, string, 0, mPrefix);
+			NEXTMEM2(lr, mhAnimation, LanguageResource, Handlehanm, 0, mText);
+			NEXTMEM2(lr, mhVoiceData, LanguageResource, Handlesound, 0, mhAnimation);
+			NEXTMEM2(lr, mShared, LanguageResource, bool, 0, mhVoiceData);
+			NEXTMEM2(lr, mAllowSharing, LanguageResource, bool, 0, mShared);
+			NEXTMEM2(lr, mbNoAnim, LanguageResource, bool, 0, mAllowSharing);
+			NEXTMEM2(lr, mpLipsyncAnimation, LanguageResource, ptrbase, 0, mbNoAnim);
+			NEXTMEM2(lr, mFlags, LanguageResource, flags, 0, mpLipsyncAnimation);
+			static MetaFlagDescription synth;
+			synth.mpFlagName = "Synthesized";
+			synth.mFlagValue = 1;
+			static MetaFlagDescription synth1;
+			synth1.mpFlagName = "Lipsync ignore text";
+			synth1.mFlagValue = 2;
+			synth1.mpNext = &synth;
+			static MetaFlagDescription synth2;
+			synth2.mpFlagName = "Hide Subtitles";
+			synth2.mFlagValue = 4;
+			synth2.mpNext = &synth1;
+			static MetaFlagDescription synth3;
+			synth3.mpFlagName = "Is Voiced";
+			synth3.mFlagValue = 8;
+			synth3.mpNext = &synth2;
+			static MetaFlagDescription synth4;
+			synth4.mpFlagName = "Is Silent";
+			synth4.mFlagValue = 16;
+			synth4.mpNext = &synth3;
+			meta_lr_mFlags.mpFlagDescriptions = &synth4;
+			meta_lr_mFlags.mFlags = MetaFlag::MetaFlag_FlagType;
+			ADD(lr);
+
+			DEFINEMAP(int, LanguageResource, std::less<int>);
+
+			DEFINET2(langdb, LanguageDatabase);
+			EXT(langdb, langdb);
+			SERIALIZER(langdb, LanguageDatabase);
+			FIRSTMEM2(langdb, mLanguageResources, LanguageDatabase,
+				Map_int_LanguageResource, 0);
+			NEXTMEM2(langdb, mName, LanguageDatabase, string, 0, mLanguageResources);
+			ADD(langdb);
+
+			DEFINET2(locali, LocalizeInfo);
+			FIRSTMEM2(locali, mFlags, LocalizeInfo, flags, 0);
+			ADD(locali);
+
+			DEFINET2(langresl, LanguageResLocal);
+			ADDFLAGS(langresl, MetaFlag::MetaFlag_NoPanelCaption);
+			FIRSTMEM2(langresl, mPrefix, LanguageResLocal, string, 0);
+			NEXTMEM2(langresl, mText, LanguageResLocal, string, 0, mPrefix);
+			NEXTMEM2(langresl, mLocalInfo, LanguageResLocal, locali, 0x20, mText);
+			ADD(langresl);
+
+			DEFINEDCARRAY2(LanguageResLocal, lresl);
+
+			DEFINET2(pidp, ProjectDatabaseIDPair);
+			FIRSTMEM2(pidp, mProjectID, ProjectDatabaseIDPair, long, 0);
+			NEXTMEM2(pidp, mDBID, ProjectDatabaseIDPair, long, 0, mProjectID);
+			ADD(pidp);
+
+			DEFINET2(recs, RecordingUtils::EnumRecordingStatus);
+			FIRSTMEM2(recs, mVal, RecordingUtils::EnumRecordingStatus, long, 0);
+			FIRSTENUM2(recs, mVal, "Not Recorded", notrec, 0, 0);
+			NEXTENUM2(recs, mVal, "Sent To Studio", sent, 0, 1, notrec);
+			NEXTENUM2(recs, mVal, "Recorded", rec, 0, 2, sent);
+			NEXTENUM2(recs, mVal, "Delivered", del, 0, 3, rec);
+			NEXTMEM1(recs, "Baseclass_EnumBase", BASE_CLASS, mVal,
+				RecordingUtils::EnumRecordingStatus, enumbase, 0x10, mVal);
+			ADD(recs);
+
+			DEFINET2(lres, LanguageRes);
+			FIRSTMEM2(lres, mResName, LanguageRes, symbol, 0);
+			NEXTMEM2(lres, mID, LanguageRes, long, 0x20, mResName);
+			NEXTMEM2(lres, mIDAlias, LanguageRes, long, 0, mID);
+			NEXTMEM2(lres, mhAnimation, LanguageRes, Handlehanm, 0, mIDAlias);
+			NEXTMEM2(lres, mhVoiceData, LanguageRes, Handlesound, 0, mhAnimation);
+			NEXTMEM2(lres, mLocalData, LanguageRes, DCArray_lresl, 0x20, mhVoiceData);
+			NEXTMEM2(lres, mLengthOverride, LanguageRes, float, 0x20, mLocalData);
+			NEXTMEM2(lres, mResolvedLocalData, LanguageRes, langresl, 0x20, mLengthOverride);
+			NEXTMEM2(lres, mRecordingStatus, LanguageRes, recs, 0x20, mResolvedLocalData);
+			NEXTMEM2(lres, mFlags, LanguageRes, flags, 0x20, mRecordingStatus);
+			static MetaFlagDescription asynth;
+			asynth.mpFlagName = "Synthesized";
+			asynth.mFlagValue = 1;
+			static MetaFlagDescription asynth1;
+			asynth1.mpFlagName = "Lipsync ignore text";
+			asynth1.mFlagValue = 2;
+			asynth1.mpNext = &asynth;
+			static MetaFlagDescription asynth2;
+			asynth2.mpFlagName = "Hide Subtitles";
+			asynth2.mFlagValue = 4;
+			asynth2.mpNext = &asynth1;
+			static MetaFlagDescription asynth3;
+			asynth3.mpFlagName = "Is Voiced";
+			asynth3.mFlagValue = 8;
+			asynth3.mpNext = &asynth2;
+			static MetaFlagDescription asynth4;
+			asynth4.mpFlagName = "Is Silent";
+			asynth4.mFlagValue = 16;
+			asynth4.mpNext = &asynth3;
+			static MetaFlagDescription asynth5;
+			asynth5.mpFlagName = "No Anim";
+			asynth5.mFlagValue = 32;
+			asynth5.mpNext = &asynth4;
+			meta_lres_mFlags.mpFlagDescriptions = &asynth5;
+			meta_lres_mFlags.mFlags = MetaFlag::MetaFlag_FlagType;
+			EXT(lres, lang);
+			ADD(lres);
+
+			DEFINET2(lanreg, LanguageRegister);
+			FIRSTMEM(lanreg, "Baseclass_UID::Generator", miNextUniqueID, LanguageRegister, uidgen, 0x10);
+			EXT(lanreg, lanreg);
+			ADD(lanreg);
+
+			DEFINEDCARRAY2(ProjectDatabaseIDPair, pdbidp);
+
+			DEFINEMAP2(unsigned int, LanguageRes, uint, langres, std::less<unsigned int>);
+
+			DEFINET2(landb, LanguageDB);
+			EXT(landb, landb);
+			SERIALIZER(landb,LanguageDB);
+			FIRSTMEM(landb, "Baseclass_UID::Owner", miUniqueID, LanguageDB, uidowner, 0x10);
+			NEXTMEM(landb, "Baseclass_UID::Generator", miNextUniqueID, LanguageDB, uidgen, 0x10, miUniqueID);
+			NEXTMEM2(landb, mLanguageResources, LanguageDB, Map_uint_langres, 0, miNextUniqueID);
+			NEXTMEM2(landb, mRegistry, LanguageDB, locreg, 0, mLanguageResources);
+			NEXTMEM2(landb, mFlags, LanguageDB, flags, 0, mRegistry);
+			NEXTMEM2(landb, mProjectID, LanguageDB, long, 0, mFlags);
+			NEXTMEM2(landb, mExpandedIDRanges, LanguageDB, DCArray_pdbidp, 0, mProjectID);
+			ADD(landb);
 
 		}
 		Initialize2();
@@ -1591,4 +1945,3 @@ namespace MetaInit {
 	}
 
 }
-

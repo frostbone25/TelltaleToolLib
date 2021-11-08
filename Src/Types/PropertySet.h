@@ -5,7 +5,6 @@
 
 #include "../TelltaleToolLibrary.h"
 #include "../HashDB/HashDB.h"
-#include "../Meta.hpp"
 #include "Set.h"
 #include "List.h"
 #include "Map.h"
@@ -26,6 +25,7 @@ struct PropertyValue {
 	void ClearData() {
 		if (mpDataDescription && mpValue)
 			mpDataDescription->Delete(mpValue);
+		mpValue = NULL;
 	}
 
 	template<typename T> T* CastValue() const {
@@ -42,8 +42,7 @@ struct PropertyValue {
 		ClearData();
 		mpDataDescription = pDescription;
 		if (!(pDescription->mpVTable[0]) || !(pDescription->mpVTable[2]) || !(pDescription->mpVTable[3])) {
-			printf("BAD ERROR: COULD NOT ADD TYPE TO PROP. THIS TYPE (%s) SHOULD NOT BE IN A .PROP!!!\n",pDescription->mpTypeInfoName);
-			throw "TYPE ATTEMPED TO BE ADDED TO PROP WHICH SHOULD NOT BE THERE!";
+			TelltaleToolLib_RaiseError("Cannot add non trivial virtual types as a property as its not a concrete object type!", ErrorSeverity::ERR);
 			return;
 		}
 		mpValue = operator new(pDescription->mClassSize);
@@ -152,6 +151,32 @@ public:
 
 	};
 
+	PropertySet() {
+		this->mKeyMap = List<KeyInfo>();
+		mParentList = List<ParentInfo>();
+		mPropVersion = 0;
+		mPropertyFlags.mFlags = 0;
+		mHOI.mFlags.mFlags = 0;
+		mHOI.mObjectName.SetCRC(0);
+	}
+
+	PropertySet(const PropertySet& rhs) {
+		mPropVersion = rhs.mPropVersion;
+		mPropertyFlags = rhs.mPropertyFlags;
+		mKeyMap = rhs.mKeyMap;
+		mParentList = rhs.mParentList;
+		mHOI = rhs.mHOI;
+	}
+
+	PropertySet& operator=(const PropertySet& rhs) {
+		mPropVersion = rhs.mPropVersion;
+		mPropertyFlags = rhs.mPropertyFlags;
+		mKeyMap = rhs.mKeyMap;
+		mParentList = rhs.mParentList;
+		mHOI = rhs.mHOI;
+		return *this;
+	}
+
 	struct ParentInfo {
 		Handle<PropertySet> mhParent;
 	};
@@ -159,7 +184,7 @@ public:
 	int mPropVersion;
 	Flags mPropertyFlags;
 	//Flags mModifiedFlags; //NOT SERIALIZED! could be useful?
-	Set<PropertySet::KeyInfo> mKeyMap;//type=>value
+	List<PropertySet::KeyInfo> mKeyMap;//type=>value
 	List<ParentInfo> mParentList;//list of parent property set handle file references. in the engine these could be files (eTTArch) or just
 	//memory references (eMemory). not implemented in this lib but useful to know for loaded .props 
 	HandleObjectInfo mHOI;
@@ -179,7 +204,7 @@ public:
 		if ((result = ::Meta::MetaOperation_SerializeAsync(pObj, pDesc, pCtx, pUserData)) != eMetaOp_Succeed)return result;
 		if (prop->mPropVersion > 2)
 			prop->mPropVersion = 1;
-		if (stream->mMode == MetaStreamMode::eMetaStream_Read)
+		/*if (stream->mMode == MetaStreamMode::eMetaStream_Read)
 			prop->mPropertyFlags &= 0xFDFF7FFF;
 		if (flag1)
 			prop->mPropertyFlags |= 0x1000;
@@ -188,7 +213,7 @@ public:
 		if (flag2)
 			prop->mPropertyFlags |= 0x2000;
 		else
-			prop->mPropertyFlags |= 0xFFFFDFFF;
+			prop->mPropertyFlags |= 0xFFFFDFFF;*/
 		stream->BeginBlock();
 		u32 parents = prop->mParentList.GetSize();
 		stream->serialize_uint32(&parents);
@@ -332,12 +357,38 @@ public:
 		mParentList.AddElement(0, NULL, &info);
 	}
 
+	bool HasProperty(u64 crc) {
+		for (auto it = mKeyMap.begin(); it != mKeyMap.end(); it++) {
+			if (it->mKeyName.GetCRC() == crc)return true;
+		}
+		return false;
+	}
+
 	bool HasProperty(const char* keyName) {
 		u64 crc = CRC64_CaseInsensitive(0, keyName);
 		for (auto it = mKeyMap.begin(); it != mKeyMap.end(); it++) {
 			if (it->mKeyName.GetCRC() == crc)return true;
 		}
 		return false;
+	}
+
+	void* GetProperty(u64 crc) {
+		for (auto it = mKeyMap.begin(); it != mKeyMap.end(); it++) {
+			if (it->mKeyName.GetCRC() == crc)
+				return it->mValue.mpValue;
+		}
+		return NULL;
+	}
+
+	void SetProperty(u64 crc, void* val) {
+		for (List<PropertySet::KeyInfo>::iterator it = mKeyMap.begin(); it != mKeyMap.end(); it++) {
+			if (it->mKeyName.GetCRC() == crc) {
+				if (it->mValue.mpValue && it->mValue.mpDataDescription) {
+					it->mValue.mpDataDescription->Delete(it->mValue.mpValue);
+				}
+				(*it).mValue.mpValue = val;
+			}
+		}
 	}
 
 	void* GetProperty(const char* keyName) {
@@ -378,6 +429,33 @@ public:
 		return GetNumPropertiesOfType(desc);
 	}
 
+	void AddProperty(u64 crc, MetaClassDescription* desc, void* value) {
+		if (!desc)return;
+		KeyInfo k;
+		k.mKeyName = crc;
+		k.mValue.SetData(value, desc);
+		mKeyMap.AddElement(0, NULL, &k);
+	}
+
+	bool ExistsKey(const Symbol& pKeyName, bool pSearchParents) {
+		for (int i = 0; i < mKeyMap.GetSize(); i++) {
+			if (mKeyMap[i].mKeyName == pKeyName)
+				return true;
+		}
+		if (pSearchParents) {
+			TelltaleToolLib_RaiseError("Cannot search parents,"
+				" cannot load external file", ErrorSeverity::NOTIFY);
+		}
+		return false;
+	}
+
+	void CreateKey(const Symbol& KeyName, MetaClassDescription* pDesc) {
+		KeyInfo k;
+		k.mValue.SetData(NULL, pDesc);
+		k.mKeyName = KeyName;
+		mKeyMap.AddElement(0, NULL, &k);
+	}
+
 	void AddProperty(const char* keyName, MetaClassDescription* desc, void* value) {
 		if (!keyName || !desc)return;
 		KeyInfo k;
@@ -395,6 +473,16 @@ public:
 			return;
 		}
 		AddProperty(keyName, desc, value);
+	}
+
+	bool RemoveProperty(u64 crc) {
+		for (auto it = mKeyMap.begin(); it != mKeyMap.end(); it++) {
+			if (it->mKeyName.GetCRC() == crc) {
+				mKeyMap.erase(it);
+				return true;
+			}
+		}
+		return false;
 	}
 
 	bool RemoveProperty(const char* keyName) {

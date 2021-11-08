@@ -3,17 +3,91 @@
 // the engine and require that if you use this code or library, you give credit to me and
 // the amazing Telltale Games.
 
+//DO NOT DELETE THIS HEADER IF YOU ARE USING TEDITOR.H
+
 #include "../TelltaleToolLibrary.h"
 
 // Copyright Lucas Saragosa - Part of the Telltale Editor project. Some Job semantics from Telltale. Implementation is by me.
-
-// This header should not be included in any files.
 
 #include "TEditor.h"
 #include "../Types/DCArray.h"
 #include <iostream>
 #include "dirent.h"//free impl!
 #include <filesystem>
+#include "../Types/PropertySet.h"
+
+void Job_PropertySet::PerformOperation(void* pInput) {
+	PropertySet* prop = GetPtr<PropertySet>(pInput, 0);
+	u32 op = GetAt<u32>(pInput, 8);
+	u64 crc = GetAt<u64>(pInput, 12);
+	IFFAIL(prop);
+	IFFAIL(crc);
+	mResult = NULL;
+	if (op == Op::eClear) {
+		prop->ClearKeys();
+	}
+	else if (op == Op::eAddProp) {
+		void* val = GetPtr<void>(pInput,20);
+		MetaClassDescription* clazz = GetPtr<MetaClassDescription>(pInput, 28);
+		IFFAIL(clazz);
+		prop->AddProperty(crc, clazz, val);
+	}
+	else if (op == Op::eGetData) {
+		u32* destsize = GetPtr<u32>(pInput, 20);
+		u64** outSymbolBuffer = (u64**)crc;
+		IFFAIL(destsize);
+		*destsize = prop->GetNumKeys();
+		*outSymbolBuffer = (u64*)malloc(*destsize * 0x10);
+		IFFAILMSG(*outSymbolBuffer,"Could not allocate output symbol buffer for reading property set");
+		int rounds = *destsize * 2;
+		for (int i = 0; i < rounds; i++) {
+			*(*outSymbolBuffer + i) = prop->mKeyMap[i].mKeyName.GetCRC();
+			i++;
+			*(*outSymbolBuffer + i) = prop->mKeyMap[i].mValue.mpDataDescription->mHash;
+		}
+	}
+	else if (op == Op::eGetProp) {
+		mResult = prop->GetProperty(crc);
+	}
+	else if (op == Op::eRemoveProp) {
+		mResult = (void*)prop->RemoveProperty(crc);
+	}
+	else if (op == Op::eCopyPropSet) {
+		PropertySet* dest = (PropertySet*)crc;
+		*dest = *prop;
+	}
+	else {
+		FAIL;
+		return;
+	}
+	SUCCEED;
+}
+
+
+void Job_PropertyValue::PerformOperation(void* pInput) {
+	PropertySet* prop = GetPtr<PropertySet>(pInput, 0);
+	u64 crc = GetAt<u64>(pInput, 8);
+	u32 op = GetAt<u32>(pInput, 16);
+	IFFAIL(prop);
+	IFFAIL(crc);
+	mResult = NULL;
+	if (op == Op::eExists) {
+		mResult = (void*)prop->HasProperty(crc);
+	}
+	else if (op == Op::eGetValue) {
+		mResult = prop->GetProperty(crc);
+	}
+	else if (op == Op::eSetValue) {
+		mResult = GetPtr<void>(pInput, 20);
+		prop->SetProperty(crc, mResult);
+		mResult = NULL;
+	}
+	else {
+		FAIL;
+		return;
+	}
+	SUCCEED;
+}
 
 #define _MAX(x,y) max(x,y)
 #define _MIN(x,y) min(x,y)
@@ -452,28 +526,28 @@ struct _LeakSlave {
 	}
 };
 
-#include "../Types/WalkBoxes.h"
+#include "../Types/LanguageDatabase.h"
 
 int main(int argn, char* argv[]) {
 
 	_LeakSlave _s;
 
 	{
-		TelltaleToolLib_Initialize("WDC");
+		TelltaleToolLib_Initialize("MCSM");
 
 		TelltaleToolLib_SetGlobalHashDatabaseFromStream(
 			_OpenDataStreamFromDisc("c:/users/lucas/desktop/My Stuff/Projects/HashDB Creator/LibTelltale DB/LibTelltale.HashDB",
 				DataStreamMode::eMode_Read));
 
-		WalkBoxes data;
-		MetaStream meta(NULL);
-		meta.Open(_OpenDataStreamFromDisc("D:/Games/Telltale Archives/"
-			"The Walking Dead Definitive/adv_woodsTower.wbox", DataStreamMode::eMode_Read), MetaStreamMode::eMetaStream_Read, { 0 });
-		PerformMetaSerializeAsync(&meta, &data);
-		printf("Name: %s %d %d %d %d\n", data.mName.c_str(), data.mNormals.mSize, data.mVerts.mSize, data.mQuads.mSize,data.mTris.mSize);
-		meta.SwitchToMode(MetaStreamMode::eMetaStream_Write, _OpenDataStreamFromDisc(
-			"c:/users/lucas/desktop/o.wbox", DataStreamMode::eMode_Write));
-		PerformMetaSerializeAsync(&meta, &data);
+		DataStream* stream = OpenDataStreamFromDisc("d:/games/telltale archives/", READ);
+
+		{
+			MetaStream meta("in.bin");
+			meta.Open(stream, MetaStreamMode::eMetaStream_Read, { 0 });
+
+
+		}
+
 	}
 
 	return 0;

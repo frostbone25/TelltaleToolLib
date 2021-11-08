@@ -6,15 +6,9 @@
 //Code from blowfish from ttarchext/bruce schnieder
 
 #include "Blowfish.h"
+#include <string.h>
 
 #define N 16
-
-unsigned int strlen(const char* str) {
-	const char* s;
-	for (s = str; *s; ++s)
-		;
-	return (s - str);
-}
 
 void beo(Blowfish*, unsigned long* xl, unsigned long* xr);
 void bdo(Blowfish*, unsigned long* xl, unsigned long* xr);
@@ -63,6 +57,23 @@ void TelltaleToolLib_BlowfishEncrypt(unsigned char* data, unsigned int size, boo
 		eo(c, (unsigned long*)data, size / 8);
 	}
 }
+
+const char* TelltaleToolLib_GetRawBlowfishKey(const char* gameID) {
+	for (int i = 0; i < KEY_COUNT; i++) {
+		if (!_stricmp(sBlowfishKeys[i].game_id, gameID))
+			return sBlowfishKeys[i].game_key;
+	}
+	return NULL;
+}
+
+bool TelltaleToolLib_DoesGameUseModifiedEncryption(const char* gameID) {
+	for (int i = 0; i < KEY_COUNT; i++) {
+		if (!_stricmp(sBlowfishKeys[i].game_id, gameID))
+			return sBlowfishKeys[i].isNewEncryption;
+	}
+	return false;
+}
+
 void TelltaleToolLib_BlowfishDecrypt(unsigned char* data, unsigned int size, bool n, unsigned char* k) {
 	Blowfish cipher;
 	Blowfish* c = &cipher;

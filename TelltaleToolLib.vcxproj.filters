@@ -83,6 +83,10 @@
     <ClInclude Include="Src\Types\AnimOrChore.h" />
     <ClInclude Include="Src\Types\Animation.h" />
     <ClInclude Include="Src\Types\Chore.h" />
+    <ClInclude Include="Src\Types\LanguageDatabase.h" />
+    <ClInclude Include="Src\Types\SoundData.h" />
+    <ClInclude Include="Src\Types\LanguageDB.h" />
+    <ClInclude Include="Src\Types\LanguageRegister.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include=".gitattributes" />

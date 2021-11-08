@@ -10,6 +10,22 @@
 #include "TelltaleEditor/TEditor.h"
 #endif
 
+i32 TelltaleToolLib_GetGameKeyIndex(const char* pGameID) {
+    if (pGameID) {
+        for (int i = 0; i < KEY_COUNT; i++) {
+            if (!_stricmp(sBlowfishKeys[i].game_id, pGameID)) {
+                return i;
+            }
+        }
+    }
+    return -1;
+}
+
+MetaOpResult TelltaleToolLib_PerformMetaSerialize(MetaClassDescription* pObjectDescription, void* pObject, MetaStream* pUserData) {
+    if (!pObjectDescription || !pObject || !pUserData)
+        return eMetaOp_Fail;
+    return PerformMetaSerializeFull(pUserData, pObject, pObjectDescription);
+}
 
 HashDatabase* sgHashDB = NULL;
 bool sInitialized = false;
@@ -71,28 +87,52 @@ u8* TelltaleToolLib_DecryptLencScript(u8* data, u32 size, u32* outsize) {
     return ret;
 }
 
-u8* TelltaleToolLib_EncryptScript(u8* data, u32 size) {
+u8* TelltaleToolLib_EncryptScript(u8* data, u32 size, u32 *outsize) {
     if (!data || 4 < size)return NULL;
-    u8* ret = (u8*)malloc(size);
-    memcpy(ret, data, size);
     if (*(int*)data == *(const int*)"\x1BLua") {
-        *(int*)ret = 1850035227;
+        u8* ret = (u8*)malloc(size);
+        memcpy(ret, data, size);
+        *outsize = size;
+        *(int*)ret = 1850035227;//LEn
+        TelltaleToolLib_BlowfishEncrypt(ret + 4, size - 4, sBlowfishKeys[sSetKeyIndex].isNewEncryption, (unsigned char*)sBlowfishKeys[sSetKeyIndex].game_key);
+        return ret;
     }
     else if (*(int*)data != *(const int*)"\x1BLEo" && *(int*)data != *(const int*)"\x1BLEn") {
-        *(int*)ret = 1866812443;
+        u8* ret = (u8*)malloc(size + 4);
+        memcpy(ret + 4, data, size);
+        *outsize = size + 4;
+        *(int*)ret = 1866812443;//LEo
+        TelltaleToolLib_BlowfishEncrypt(ret + 4, size, sBlowfishKeys[sSetKeyIndex].isNewEncryption, (unsigned char*)sBlowfishKeys[sSetKeyIndex].game_key);
+        return ret;
     }
-    TelltaleToolLib_BlowfishEncrypt(ret + 4, size - 4, sBlowfishKeys[sSetKeyIndex].isNewEncryption, (unsigned char*)sBlowfishKeys[sSetKeyIndex].game_key);
+    u8* ret = (u8*)malloc(size);
+    memcpy(ret, data, size);
+    *outsize = size;
     return ret;
 }
 
-u8* TelltaleToolLib_DecryptScript(u8* data, u32 size) {
-    if (4 > size || !data)return NULL;
+u8* TelltaleToolLib_DecryptScript(u8* data, u32 size, u32* outsize) {
+    if (8 >= size || !data)return NULL;
+    if (*(char*)data != '\x1B') {
+        //plain old text version workaround
+        u8* ret = (u8*)malloc(size);
+        memcpy(ret, data, size);
+        *outsize = size;
+        return ret;
+    }
+    if (*(int*)data == *(const int*)"\x1BLEo") {
+        u8* ret = (u8*)malloc(size - 4);
+        memcpy(ret, data + 4, size - 4);
+        *outsize = size - 4;
+        TelltaleToolLib_BlowfishDecrypt(ret, size - 4, sBlowfishKeys[sSetKeyIndex].isNewEncryption, (unsigned char*)sBlowfishKeys[sSetKeyIndex].game_key);
+        return ret;
+    }
     u8* ret = (u8*)malloc(size);
     memcpy(ret, data, size);
-    if (*(char*)data != '\x1B')return ret;//plain old text version workaround
-    TelltaleToolLib_BlowfishDecrypt(ret + 4, size - 4, sBlowfishKeys[sSetKeyIndex].isNewEncryption, (unsigned char*)sBlowfishKeys[sSetKeyIndex].game_key);
     if (*(int*)data == *(const int*)"\x1BLEn")
         *(int*)ret = 1635077147;
+    TelltaleToolLib_BlowfishDecrypt(ret + 4, size - 4, sBlowfishKeys[sSetKeyIndex].isNewEncryption, (unsigned char*)sBlowfishKeys[sSetKeyIndex].game_key);
+    *outsize = size;
     return ret;
 }
 
@@ -136,12 +176,24 @@ MetaClassDescription* TelltaleToolLib_FindMetaClassDescription_ByHash(u64 pHash)
 }
 
 MetaClassDescription* TelltaleToolLib_FindMetaClassDescription(const char* pStr, bool pIsName) {
-    for (MetaClassDescription* i = TelltaleToolLib_GetFirstMetaClassDescription(); i;) {
-        if (!i->mpExt && !pIsName) {//stfu:(cba
+    if (pIsName) {
+        u64 crc = CRC64_CaseInsensitive(0, pStr);
+        for (MetaClassDescription* i = TelltaleToolLib_GetFirstMetaClassDescription(); i;) {
+            if (i->mHash == crc)
+                return i;
             TelltaleToolLib_GetNextMetaClassDescription(&i);
-            continue;
-        }else if (!_stricmp(pStr, pIsName ? i->mpTypeInfoName : i->mpExt))return i;
-        TelltaleToolLib_GetNextMetaClassDescription(&i);
+        }
+    }
+    else {
+        for (MetaClassDescription* i = TelltaleToolLib_GetFirstMetaClassDescription(); i;) {
+            if (!i->mpExt) {//stfu:(cba
+                TelltaleToolLib_GetNextMetaClassDescription(&i);
+                continue;
+            }
+            if (!_stricmp(pStr, i->mpExt))
+                return i;
+            TelltaleToolLib_GetNextMetaClassDescription(&i);
+        }
     }
     return NULL;
 }

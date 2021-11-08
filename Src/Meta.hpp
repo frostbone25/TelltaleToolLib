@@ -11,6 +11,7 @@
 #include <typeinfo>
 #include <vector>
 #include <stack>
+#include "Types/TRange.h"
 #include "HashManager.h"
 #include "HashDB/HashDB.h"
 
@@ -106,18 +107,46 @@ enum MetaOpResult {
 
 namespace UID {
 	typedef int idT;
-	
+
+	struct __declspec(align(8)) Generator {
+		static constexpr idT msUninitID = -1;
+		idT miNextUniqueID;
+
+		Generator() : miNextUniqueID(1) {}
+
+		static idT UninitID() {
+			return 0xFFFFFFFF;
+		}
+
+		inline void Reset() {
+			miNextUniqueID = 1;
+		}
+
+		inline bool ValidID(idT id) {
+			return id >= 1 && id < this->miNextUniqueID;
+		}
+
+		inline idT GetNextUniqueID(bool bIncrement) {
+			idT _t = miNextUniqueID;
+			if (miNextUniqueID == 0xFFFFFFFF) {
+				miNextUniqueID = 1;
+				_t = 1;
+			}
+			else if (bIncrement)
+				miNextUniqueID++;
+			return _t;
+		}
+	};
+
 	struct __declspec(align(8)) Owner {
 		idT miUniqueID;
 
-		Owner() : miUniqueID(0){}
+		Owner() : miUniqueID(-1) {}
 
-	};
+		Owner(Generator& gen) {
+			miUniqueID = gen.GetNextUniqueID(true);
+		}
 
-	struct __declspec(align(8)) Generator {
-		idT miNextUniqueID;
-
-		Generator() : miNextUniqueID(0) {}
 	};
 
 };
@@ -378,7 +407,8 @@ public:
 	Symbol(const String& pString) {
 		mCrc64 = CRC64_CaseInsensitive(0, pString.c_str());
 	}
-	Symbol(u64 crc) : mCrc64(crc) {}
+
+	constexpr Symbol(u64 crc) : mCrc64(crc) {}
 
 	Symbol& operator=(const Symbol& rhs) {
 		this->mCrc64 = rhs.mCrc64;
@@ -913,6 +943,20 @@ struct MetaMemberDescription {
 		MetaFlagDescription* mpFlagDescriptions;
 	};
 	MetaClassDescription* mpMemberDesc;
+	i32 mMinMetaVersion;//by lib for other game support
+	TRange<int> mGameIndexVersionRange;
+	inline MetaMemberDescription() {
+		mMinMetaVersion = -1;
+		mpName = NULL;
+		mOffset = 0;
+		mFlags = 0;
+		mpHostClass = NULL;
+		mpNextMember = NULL;
+		mpMemberDesc = NULL;
+		mpEnumDescriptions = NULL;
+		mGameIndexVersionRange.min = -1;
+		mGameIndexVersionRange.max = -1;
+	}
 	~MetaMemberDescription();
 };
 
@@ -1041,6 +1085,85 @@ struct BinaryBuffer {
 
 };
 
+#include "Types/TRange.h"
+
+
+namespace Acting {
+
+	constexpr TRange<float> kSecBetweenLinesRange{ 0.25,0.35 };
+	constexpr TRange<float> kProcLookatSpeakerDelayRange{ 0.0f, 0.15f };
+	constexpr TRange<float> kProcLookAtDefaultBeginDelayRange{ 0.25f,0.75f };
+	constexpr TRange<float> kProcLookAtDefaultEndDelayRange{ 0.08f,0.25f };
+	constexpr TRange<float> kProcLookAtFinalEndDelayRange{ 0.0f,0.2f };
+	constexpr TRange<float> sContributionScaleRangeDef{ 1.0f,1.0f };
+	constexpr TRange<float> sAnimScaleRangeDef{ 1.0f,1.0f };
+	constexpr Symbol kBaseLookAtPriKey{ 0x79E37DC8F4EA91E5 };
+	constexpr Symbol kLookAtPriIncrementKey{ 0x0A398C78DEBB2D503 };
+	constexpr Symbol kLookAtFadeTimeKey{ 0x31E84EFD0F4F164A };
+	constexpr Symbol kLookAtGenerateInProjectKey{ 0x3619B30FCD406D18 };
+	constexpr Symbol kPrefUseLegacyLookAtMaxAngle{ 0x9906F5914B07805F };
+	constexpr Symbol kNoMoverDataInIdlesKey{ 0x85E2318F7535F345 };
+	constexpr Symbol kTalkingDefaultMinInitialDelayKey{ 0x987C4BFD3365F7B4 };
+	constexpr Symbol kListeningDefaultMinInitialDelayKey{ 0x6F44D84461CEEE36 };
+	constexpr Symbol kAlwaysDefaultMinInitialDelayKey{ 0x37DB3E605513B158 };
+	constexpr Symbol kTalkingDefaultMaxInitialDelayKey{ 0x6F001ADEABBDD403 };
+	constexpr Symbol kListeningDefaultMaxInitialDelayKey{ 0x9D3C011E171914F7 };
+	constexpr Symbol kAlwaysDefaultMaxInitialDelayKey{ 0x7DE1C03C3E2E54EE };
+	constexpr Symbol kAnimFadeTimeDefKey{ 0x3AE879EB1625184D };
+	constexpr Symbol kLookatStrengthKey{ 0x0EE55C02999ED1F98 };
+	constexpr Symbol kAnimPreDelayDefKey{ 0x17C95DFE007ECEB2 };
+	constexpr Symbol kAnimPostDelayDefKey{ 0x9A627A4316571A81 };
+	constexpr Symbol kAnimPriorityDefKey{ 0x0E204FD2E718CCA1B };
+	constexpr Symbol kAnimBlendingDefKey{ 0x0C1E314190D01F26 };
+	constexpr Symbol kAnimScaleRangeDefKey{ 0x632C08E64BE46194 };
+	constexpr Symbol kContributionScaleRangeDefKey{ 0x6DA3E623CF54498A };
+	constexpr Symbol kPauseCommandDefKey{ 0x0FB9EDBBE2BE479B2 };
+	constexpr Symbol kValidateEmbeddedCommandsKey{ 0x1CD8B1FCD7E493C8 };
+	constexpr Symbol kStyleIdleTransitionTimeKey{ 0x6BDE8E8578A2708F };
+	constexpr Symbol kStyleIdleTransitionInTimeOverrideKey{ 0x0A88B3F9F7218A160 };
+	constexpr Symbol kStyleIdleTransitionOutTimeOverrideKey{ 0x0B8DEF12AFA1DAB4A };
+	constexpr Symbol kStyleBaseIdleTransitionTimeKey{ 0x3974E6A76464C68A };
+	constexpr Symbol kValidateVoicePreAAKey{ 0x0EA4E8DD73A00249D };
+	constexpr Symbol kUseNewActingKey{ 0x1D7F3F7C5E624254 };
+	constexpr Symbol kDisplayLookAtDebugDataKey{ 0x0FB304862D67CE4A4 };
+	constexpr Symbol kDisplayDebugPathKey{ 0x0DDE767E8D498D4D1 };
+	constexpr Symbol kSetDefaultIntensityKey{ 0x0E29CC88BC83A9DA8 };
+	constexpr Symbol kDefaultIntensityValue{ 0x8B0C232138FF0D8A };
+	constexpr Symbol kSetDefaultAccentTags{ 0x7F3B16B6CB2F79FE };
+	constexpr Symbol kFixPopInAdditiveIdleTransition{ 0x0B72FDFD28B8C051F };
+	constexpr Symbol kTalkingIdleTransitionTimeKey{ 0x12C9352DE9F6D9B3 };
+	constexpr Symbol kActingIntensityKey{ 0x0DE48259EB8929B6 };
+	constexpr Symbol kActingFaceAccentKey{ 0xCBAE23CE3F2B0CCE };
+	constexpr Symbol kActingBodyAccentKey{ 0xEFFC9824AB71EF3D };
+	constexpr Symbol kActingHead1AccentKey{ 0x7D37DAB358DDE48C };
+	constexpr Symbol kActingHead2AccentKey{ 0xC86CE44964FFF54B };
+	constexpr Symbol kLookAtStopKey{ 0x66E772BA8E023A4D };
+	constexpr Symbol kGenerateAccentsFromLanguageResources{ 0x73AF59848641A183 };
+	constexpr Symbol kEnableNewLookats{ 0x69967C61AE2C7675 };
+	constexpr Symbol kUseCurvedPath{ 0x8A29C4B8ACC1A104 };
+	constexpr Symbol kLegacyEnableTargetedBlockingOnAttachments{ 0x6B8EE0DEAD524B98 };
+	constexpr Symbol kLegacyUseOldBGMIdleBehavior{ 0x0E35173FA6BB35AD1 };
+	constexpr Symbol kPriorityKey{ 0x19E1083970E1804D };
+	constexpr Symbol kFadeTimeKey{ 0x5252B0398028EEE7 };
+	constexpr Symbol kPreDelayKey{ 0x49AE373C8672B756 };
+	constexpr Symbol kPostDelayKey{ 0x5EAA376E1C28BFEB };
+	constexpr Symbol kBlendingKey{ 0x8CD42C9E0BD6AD43 };
+	constexpr Symbol kScaleRangeKey{ 0x0D07B6742C1C50C1F };
+	constexpr Symbol kStyleMumbleMouthKey{ 0x7D10D6DE5CE9F014 };
+	constexpr Symbol kContributionRangeKey{ 0x151FE38B3A415A9D };
+	constexpr Symbol kResourceGroupsKey{ 0x89CC3329DF3EC278 };
+	constexpr Symbol kStartOffsetRangeKey{ 0x54BF2651351D34B9 };
+	constexpr Symbol kStyleTransitionTimeKey{ 0x0B7535A357B22778 };
+	constexpr Symbol kPropertyKeyBlockOverrunPercentage{ 0x38AA965019501AF9 };
+	constexpr Symbol kPropertyKeyIntensityContributionMultiplierRange{ 0x9525F5C22FC0F5D1 };
+	constexpr Symbol kPropertyKeyIntensityScaleMultiplierRange{ 0x272FA01DF8115368 };
+	constexpr Symbol kPropertyKeyValidIntensityRange{ 0x6C92A5EB51A06379 };
+	constexpr Symbol kPropertyKeyPaletteValidIntensityRange{ 0xDB68FF2D8AE9697B };
+	constexpr Symbol kPropertyKeyIntensityTimeBetweenActionsMultiplierRange{ 0x8A21C545508159E };
+	constexpr Symbol kRuntimeApplyChoreGenConflictToAllKey{ 0x6890F50FAF563600 };
+	constexpr Symbol kRuntimeChoreGenConflictActionKey{ 0x345FF590FDEC8D01 };
+}
+
 /*
 * Tries to find the symbol name for the given symbol. Make sure the global hash database is set. This is will try search all pages in the 
 * current game set (using set blowfish key). This can be slow! If the value is found, the outpageref pointer is set to the page it was
@@ -1053,5 +1176,31 @@ String FindSymbolName(const Symbol&, HashDatabase::Page*& outpageref);
 * Gets the constant list of file extension strings that the library currently supports.
 */
 const std::vector<const char*>* GetMetaFileExtensions();
+
+namespace RecordingUtils {
+
+	enum ScriptType {
+		STScript = 1,
+		STActor = 2,
+		STEngineer = 3,
+		STTakeSheet = 4
+	};
+
+	enum RecordingStatus {
+		eRecordingStatus_None = 0,
+		eRecordingStatus_AtStudio = 1,
+		eRecordingStatus_Recorded = 2,
+		eRecordingStatus_Delivered = 3
+	};
+
+	struct EnumRecordingStatus : public EnumBase {
+		RecordingStatus mVal;
+	};
+
+	struct EnumScriptType : public EnumBase {
+		ScriptType mVal;
+	};
+
+}
 
 #endif

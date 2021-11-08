@@ -10,9 +10,18 @@
 #include <mutex>
 #include <thread>
 #include <vector>
+#include <algorithm>
 
 #include "../TTArchive2.hpp"
 #include "../Meta.hpp"
+
+template<typename T> T* GetPtr(void* pPtr, int offset) {
+	return *static_cast<T**>((void*)(((char*)pPtr) + offset));
+}
+
+template<typename T> T GetAt(void* pPtr, int offset) {
+	return *static_cast<T*>((void*)(((char*)pPtr) + offset));
+}
 
 enum class JobResult {
 	eJobResult_Succeeded = 0,
@@ -79,6 +88,12 @@ public:
 
 };
 
+#define IFFAILMSG(object,msg) if ((object) == NULL) {\
+mAccessLock.SetResult(JobResult::eJobResult_Failed);\
+TelltaleToolLib_RaiseError(msg, ERR);\
+return;\
+}\
+
 #define IFFAIL(object) if ((object) == NULL) {\
 mAccessLock.SetResult(JobResult::eJobResult_Failed);\
 return;\
@@ -87,12 +102,17 @@ return;\
 #define FAIL mAccessLock.SetResult(JobResult::eJobResult_Failed)
 #define SUCCEED mAccessLock.SetResult(JobResult::eJobResult_Succeeded)
 
+#define JOB_MAX_SIZE (sizeof(Job) + 0x18)
+#define JOB_POOL_SIZE 50
+
 class Job {
 public:
 
 	//if true this job should be async
 	bool mbProgressStatAvailable;
+	bool mbExternMem;
 	CriticalJobAccess mAccessLock;
+	void* mResult;
 	
 	virtual void PerformOperation(void* pInput) = 0;
 	virtual void* GetOutput() = 0;
@@ -108,23 +128,22 @@ void _DispatchJobAsync(Job* pJob,void* pInput) {
 
 class Job_CreateObject : public Job {
 public:
-	void* mObj;
 
-	Job_CreateObject() : mObj(NULL) { mbProgressStatAvailable = false; }
+	Job_CreateObject() { mbProgressStatAvailable = false; mResult = NULL; }
 
 	void PerformOperation(void* pInput) override {
 		const char* type = *static_cast<const char**>(pInput);
 		if (!_stricmp(type, "TTArchive2")) {
-			mObj = new TTArchive2;
+			mResult = new TTArchive2;
 		}
 		else if (!_stricmp(type, "MetaStream")) {
-			mObj = new MetaStream(NULL);
+			mResult = new MetaStream(NULL);
 		}
 		else if (!_stricmp(type, "DataStreamFileDisc")) {
 			const char* filepath = *static_cast<const char**>((void*)((char*)pInput + 8));
 			IFFAIL(filepath);
 			DataStreamMode mode = *static_cast<DataStreamMode*>((void*)((char*)pInput + 16));
-			mObj = OpenDataStreamFromDisc(filepath, mode);
+			mResult = OpenDataStreamFromDisc(filepath, mode);
 		}
 		else {
 			MetaClassDescription* typeClass = TelltaleToolLib_FindMetaClassDescription(type, true);
@@ -137,13 +156,19 @@ public:
 				mAccessLock.SetResult(JobResult::eJobResult_Failed);
 				return;
 			}
-			mObj = func();
+			mResult = func();
+			FuncConstruct func1 = (FuncConstruct)typeClass->mpVTable[VTableFunction::eVTableConstruct];
+			if (!func1) {
+				mAccessLock.SetResult(JobResult::eJobResult_Failed);
+				return;
+			}
+			func1(mResult);
 		}
-		mAccessLock.SetResult(mObj ? JobResult::eJobResult_Succeeded : JobResult::eJobResult_OutOfMemory);
+		mAccessLock.SetResult(mResult ? JobResult::eJobResult_Succeeded : JobResult::eJobResult_OutOfMemory);
 	}
 
 	void* GetOutput() override {
-		return mObj;
+		return mResult;
 	}
 
 };
@@ -169,6 +194,9 @@ public:
 		}
 		else if (!_stricmp(type, "DataStreamFileDisc")) {
 			delete static_cast<DataStreamFileDisc*>(obj);
+		}
+		else if (!_stricmp(type, "DataStreamSubStream")) {
+			delete static_cast<DataStreamSubStream*>(obj);
 		}
 		else {
 			mAccessLock.SetResult(JobResult::eJobResult_Failed);
@@ -209,11 +237,9 @@ public:
 		eEntriesNameTable,
 		eEntryNameTableIndex,
 		eGetResourceStream,
+		eEntryCrc,
 	};
-
-	void* mResult;
-
-	Job_GetArchiveInfo() : mResult(NULL) { mbProgressStatAvailable = false; }
+	Job_GetArchiveInfo() { mbProgressStatAvailable = false; mResult = NULL; }
 
 	void* GetOutput() override { return mResult; }
 
@@ -269,6 +295,11 @@ public:
 			TTArchive2::ResourceEntry* e = *static_cast<TTArchive2::ResourceEntry**>(pInput);
 			IFFAIL(e);
 			mResult = (void*)(e->mNamePageIndex * 0x10000 + e->mNamePageOffset);
+		}
+		else if (op == InfoOp::eEntryCrc) {
+			TTArchive2::ResourceEntry* e = *static_cast<TTArchive2::ResourceEntry**>(pInput);
+			IFFAIL(e);
+			mResult = (void*)(e->mNameCRC);
 		}
 		else if (op == InfoOp::eEntriesNameTable) {
 			TTArchive2* arc = *static_cast<TTArchive2**>(pInput);
@@ -339,9 +370,10 @@ public:
 
 class Job_MetaSerialize : public Job {
 public:
-	Job_MetaSerialize() { mbProgressStatAvailable = false; }
-
-	MetaOpResult mResult;
+	Job_MetaSerialize() { 
+		mbProgressStatAvailable = false; 
+		mResult = 0;
+	}
 
 	void PerformOperation(void* pInput) override {
 		MetaStream* stream = *static_cast<MetaStream**>(pInput);
@@ -356,15 +388,57 @@ public:
 			FAIL;
 			return;
 		}
-		mResult = PerformMetaSerializeFull(stream, obj, clazz);
+		mResult = (void*)PerformMetaSerializeFull(stream, obj, clazz);
 		SUCCEED;
 	}
 
 	void* GetOutput() override {
-		return (void*)mResult;
+		return mResult;
 	}
 
 };
+
+class Job_PropertySet : public Job {
+public:
+
+	enum Op {
+		eClear,
+		eAddProp,
+		eRemoveProp,
+		eGetProp,
+		eCopyPropSet,
+		eGetData
+	};
+
+	Job_PropertySet() { mbProgressStatAvailable = false; mResult = NULL; }
+
+	void PerformOperation(void* pInput) override;
+
+	void* GetOutput() override {
+		return mResult;
+	}
+
+};
+
+class Job_PropertyValue : public Job {
+public:
+
+	enum Op {
+		eGetValue = 0,
+		eSetValue = 1,
+		eExists = 2
+	};
+
+	Job_PropertyValue() { mbProgressStatAvailable = false;  mResult = NULL; }
+
+	void PerformOperation(void* pInput) override;
+
+	void* GetOutput() override {
+		return mResult;
+	}
+
+};
+
 
 class Job_ReadTTArchive2 : public Job {
 public:
@@ -385,12 +459,47 @@ public:
 
 };
 
+class Job_DataStream : public Job {
+public:
+	Job_DataStream() { mbProgressStatAvailable = false; }
+
+	enum Op {
+		eRead,
+		eSetPos,
+		eGetPos,
+	};
+
+	void PerformOperation(void* pInput) override {
+		DataStream* ds = GetPtr<DataStream>(pInput, 0);
+		IFFAIL(ds);
+		int op = GetAt<int>(pInput, 8);
+		if (op == Op::eRead) {
+			int toread = GetAt<int>(pInput, 12);
+			
+		}
+		else if (op == Op::eSetPos) {
+			u64 pos = GetAt<u64>(pInput, 12);
+			ds->SetPosition(pos, DataStreamSeekType::eSeekType_Begin);
+		}
+		else if (op == Op::eGetPos) {
+			mResult = (void*)ds->GetPosition();
+		}
+		else {
+			FAIL;
+		}
+		SUCCEED;
+	}
+
+	void* GetOutput() override {
+		return mResult;
+	}
+
+};
+
 class Job_WriteTTArchive2 : public Job {
 public:
 	Job_WriteTTArchive2() { mbProgressStatAvailable = true; }
 
-	bool mResult;
-	
 	static void _cb(const char*, float) {}
 
 	void PerformOperation(void* pInput) override {
@@ -406,12 +515,12 @@ public:
 		if (version > 2)version = 2;
 		IFFAIL(dst);
 		IFFAIL(entries);
-		mResult = TTArchive2::Create(_cb,dst, entries, numentries, encrypt, compress, lib, version);
+		mResult = (void*)TTArchive2::Create(_cb,dst, entries, numentries, encrypt, compress, lib, version);
 		SUCCEED;
 	}
 
 	void* GetOutput() override {
-		return &mResult;
+		return mResult;
 	}
 
 };
@@ -425,41 +534,54 @@ enum JobOp : int {
 	eCloseMetaStream,
 	eReadArchive,
 	eWriteArchive,
-	eMetaSerialize
+	eMetaSerialize,
+	ePropertyValue,
+	ePropertySet,
+	eDataStream
 };
 
-Job* DispatchJob(JobOp op, void* pInput) {
+Job* DispatchJob(JobOp op, void* pInput, void *pJobMemory) {
 	Job* jobptr = NULL;
 	switch (op) {
 	case JobOp::eCreateObject:
-		jobptr = new Job_CreateObject;
+		jobptr = pJobMemory ? new (pJobMemory) Job_CreateObject : new Job_CreateObject;
+		break;
+	case JobOp::ePropertyValue:
+		jobptr = pJobMemory ? new (pJobMemory)  Job_PropertyValue : new Job_PropertyValue;
+		break;
+	case JobOp::ePropertySet:
+		jobptr = pJobMemory ? new (pJobMemory) Job_PropertySet : new Job_PropertySet;
 		break;
 	case JobOp::eMetaSerialize:
-		jobptr = new Job_MetaSerialize;
+		jobptr = pJobMemory ? new (pJobMemory)  Job_MetaSerialize : new Job_MetaSerialize;
 		break;
 	case JobOp::eDeleteObject:
-		jobptr = new Job_DeleteObject;
+		jobptr = pJobMemory ? new (pJobMemory) Job_DeleteObject : new Job_DeleteObject;
 		break;
 	case JobOp::eSetHashDB:
-		jobptr = new Job_SetHashDB;
+		jobptr = pJobMemory ? new (pJobMemory) Job_SetHashDB : new Job_SetHashDB;
 		break;
 	case JobOp::eArchiveInfo:
-		jobptr = new Job_GetArchiveInfo;
+		jobptr = pJobMemory ? new (pJobMemory) Job_GetArchiveInfo : new Job_GetArchiveInfo;
 		break;
 	case JobOp::eOpenMetaStream:
-		jobptr = new Job_MetaStreamOpen;
+		jobptr = pJobMemory ? new (pJobMemory) Job_MetaStreamOpen : new Job_MetaStreamOpen;
 		break;
 	case JobOp::eCloseMetaStream:
-		jobptr = new Job_MetaStreamClose;
+		jobptr = pJobMemory ? new (pJobMemory) Job_MetaStreamClose: new Job_MetaStreamClose;
 		break;
 	case JobOp::eReadArchive:
-		jobptr = new Job_ReadTTArchive2;
+		jobptr = pJobMemory ? new (pJobMemory) Job_ReadTTArchive2 : new Job_ReadTTArchive2;
 		break;
 	case JobOp::eWriteArchive:
-		jobptr = new Job_WriteTTArchive2;
+		jobptr = pJobMemory ? new (pJobMemory) Job_WriteTTArchive2 : new Job_WriteTTArchive2;
+		break;
+	case JobOp::eDataStream:
+		jobptr = pJobMemory ? new (pJobMemory) Job_DataStream : new Job_DataStream ;
 		break;
 	}
 	if (!jobptr)return NULL;
+	jobptr->mbExternMem = pJobMemory != NULL;
 	if (jobptr->mbProgressStatAvailable) {
 		std::thread t(_DispatchJobAsync, jobptr, pInput);
 		t.detach();
@@ -472,13 +594,41 @@ Job* DispatchJob(JobOp op, void* pInput) {
 	return jobptr;
 }
 
+inline extern std::vector<int> giJobPoolObjectIndices = {};
+
 void FinishJob(Job* pJob) {//call to destroy a job
 	if (!pJob)return;
-	delete pJob;
+	if (pJob->mbExternMem)
+		delete pJob;
+}
+
+_TTToolLib_Exp void TEditor_RemoveJobMemoryFromInternalPool(int pPoolIndex) {
+	giJobPoolObjectIndices.erase(std::remove(giJobPoolObjectIndices.begin(), giJobPoolObjectIndices.end(), pPoolIndex),
+		giJobPoolObjectIndices.end());
+}
+
+_TTToolLib_Exp Job* TEditor_TryGetJobMemoryFromInternalPool(int* pDestPoolIndex) {
+	static char sJobMemoryPool[JOB_POOL_SIZE * JOB_MAX_SIZE];
+	if (giJobPoolObjectIndices.capacity() != JOB_POOL_SIZE)
+		giJobPoolObjectIndices.reserve(JOB_POOL_SIZE);
+	if (giJobPoolObjectIndices.size() >= JOB_POOL_SIZE)
+		return NULL;
+	int index;
+	for (index = 0; index < JOB_POOL_SIZE; index++) {
+		if (std::find(giJobPoolObjectIndices.cbegin(), giJobPoolObjectIndices.cend(), index) != giJobPoolObjectIndices.cend())
+			continue;
+	}
+	giJobPoolObjectIndices.push_back(index);
+	*pDestPoolIndex = index;
+	return (Job*)(sJobMemoryPool + index * JOB_MAX_SIZE);
+}
+
+_TTToolLib_Exp Job* TEditor_CreateDispatchJob2(JobOp _Operation, void* _Input, void* mem) {
+	return DispatchJob(_Operation, _Input,mem);
 }
 
 _TTToolLib_Exp Job* TEditor_CreateDispatchJob(JobOp _Operation, void* _Input) {
-	return DispatchJob(_Operation, _Input); 
+	return DispatchJob(_Operation, _Input,NULL); 
 }
 
 _TTToolLib_Exp TryWaitResult TEditor_PollJobState(Job* _JobPtr) {
@@ -518,6 +668,19 @@ _TTToolLib_Exp void* TEditor_GetArgumentBuffer() {
 	return _ArgBuf;
 }
 
-//TODO export functions should wrap it 
+_TTToolLib_Exp void TEditor_SetStdStringData(String* _Str, const char* _Data) {
+	if (_Str) {
+		if (_Data) {
+			_Str->operator=(_Data);
+		}
+		else {
+			_Str->clear();
+		}
+	}
+}
+
+_TTToolLib_Exp const char* TEditor_GetStdStringData(String* _Str) {
+	return _Str ? _Str->c_str() : NULL;
+}
 
 #endif
