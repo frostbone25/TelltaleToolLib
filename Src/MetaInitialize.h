@@ -2012,6 +2012,53 @@ namespace MetaInit {
 			NEXTMEM2(sprite, mAnimations, ParticleSprite, DCArray_spriteanm, 0, mBlendMode);
 			ADD(sprite);
 
+			DEFINET2(rectf, TRect<float>);
+			ADDFLAGS(rectf, MetaFlag::MetaFlag_MetaSerializeBlockingDisabled);
+			FIRSTMEM2(rectf, left, TRect<float>, float, 0);
+			NEXTMEM2(rectf, right, TRect<float>, float, 0,left);
+			NEXTMEM2(rectf, top, TRect<float>, float, 0, right);
+			NEXTMEM2(rectf, bottom, TRect<float>, float, 0, top);
+			ADD(rectf);
+
+			DEFINET2(glyph, Font::GlyphInfo);
+			FIRSTMEM2(glyph, mTexturePage, Font::GlyphInfo, long, 0);
+			NEXTMEM2(glyph, mChannel, Font::GlyphInfo, long, 0, mTexturePage);
+			NEXTMEM2(glyph, mGlyph, Font::GlyphInfo, rectf, 0, mChannel);
+			NEXTMEM2(glyph, mWidth, Font::GlyphInfo, float, 0, mGlyph);
+			NEXTMEM2(glyph, mHeight, Font::GlyphInfo, float, 0, mWidth);
+			NEXTMEM2(glyph, mXOffset, Font::GlyphInfo, float, 0, mHeight);
+			NEXTMEM2(glyph, mYOffset, Font::GlyphInfo, float, 0, mXOffset);
+			NEXTMEM2(glyph, mXAdvance, Font::GlyphInfo, float, 0, mYOffset);
+			//GRADIENT SIZE (OLDE)
+			ADD(glyph);
+
+			DEFINEMAP2(unsigned int, Font::GlyphInfo, uint,
+				glyphinf, std::less<unsigned int>);
+
+			DEFINEDCARRAY(T3Texture);
+			DEFINEDCARRAY2(unsigned int, uint);
+
+			DEFINET2(font, Font);
+			ADDFLAGS(font, MetaFlag::MetaFlag_RenderResource);
+			EXT(font, font);
+			SERIALIZER(font, Font);
+			FIRSTMEM2(font, mName, Font, string, 0);
+			NEXTMEM2(font, mbUnicode, Font, bool, 0, mName);
+			NEXTMEM2(font, mHeight, Font, float, 0, mbUnicode);
+			NEXTMEM2(font, mBase, Font, float, 0, mHeight);
+			//WII SCALE, FONT SCALE
+			NEXTMEM2(font, mGlyphInfo, Font, Map_uint_glyphinf, 0, mBase);
+			NEXTMEM2(font, mTexturePages, Font, DCArray_T3Texture, 0, mGlyphInfo);
+			NEXTMEM2(font, mIsDistanceField, Font, bool, 0, mTexturePages);
+			//NEWER GAMES
+			NEXTMEM2(font, mIsRuntime, Font, bool, 0, mIsDistanceField);
+			NEXTMEM2(font, mIsFiltered, Font, bool, 0, mIsRuntime);
+			NEXTMEM2(font, mTtfData, Font, bb, 0, mIsFiltered);
+			NEXTMEM2(font, mBasePointSize, Font, float, 0, mTtfData);
+			NEXTMEM2(font, mPreferredPointSizes, Font, DCArray_uint, 0, mBasePointSize);
+			//------
+			ADD(font);
+
 		}
 		Initialize2();
 		Initialize3();

@@ -15,7 +15,7 @@
 //.FONT FILES
 struct Font {
 
-	struct GlpyhInfo {
+	typedef struct GlyphInfo {
 		long mTexturePage;
 		long mChannel;
 		TRect<float> mGlyph;
@@ -24,7 +24,10 @@ struct Font {
 		float mXOffset;
 		float mYOffset;
 		float mXAdvance;
-	};
+		//OLDER GAMES
+		float mGradientSize;
+		//-------
+	} GlyphInfo;
 
 	//TODO REMEMBER TO NOTE THE VARS WHICH ARE IN OLDER GAMES ETC . WHEN ON PC WITH ALL GAMES CHECK WHICH GAMES HAVE THE VARS (.EXE)
 
@@ -33,12 +36,13 @@ struct Font {
 	float mHeight;
 	float mBase;
 
-	//OLDER GAMES ---
+	//OLDER GAMES --- ALSO REMEMBER TO EDIT SUPPORT FOR OLDER T3TEXTURES
+	//SINCE FONTS CONTAIN TEXTURE
 	float mWiiScale;
 	float mFontScale;
 	//-----
 
-	Map<unsigned int, Font::GlpyhInfo> mGlyphInfo;
+	Map<unsigned int, GlyphInfo> mGlyphInfo;
 	DCArray<T3Texture> mTexturePages;
 	bool mIsDistanceField;
 

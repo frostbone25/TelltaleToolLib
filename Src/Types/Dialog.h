@@ -6,6 +6,9 @@
 #ifndef _DLG
 #define _DLG
 
+struct DlgObjID {};
+
+//.DLG & .DLOG FILES
 struct Dlg {
 
 };

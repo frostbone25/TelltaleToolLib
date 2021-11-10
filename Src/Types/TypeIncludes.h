@@ -8,6 +8,7 @@
 #include "Container.h"
 #include "DCArray.h"
 #include "LanguageRegister.h"
+#include "PreloadPackage.h"
 #include "HandleObjectInfo.h"
 #include "SArray.h"
 #include "TRect.h"

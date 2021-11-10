@@ -8,6 +8,7 @@
 
 #include "TelltaleToolLibrary.h"
 #include <string>
+#include <math.h>
 #include <typeinfo>
 #include <vector>
 #include <stack>
@@ -1163,6 +1164,32 @@ namespace Acting {
 	constexpr Symbol kRuntimeApplyChoreGenConflictToAllKey{ 0x6890F50FAF563600 };
 	constexpr Symbol kRuntimeChoreGenConflictActionKey{ 0x345FF590FDEC8D01 };
 }
+
+template<int N>
+struct __BitSet_BaseN {
+	static constexpr int _TyN = (N / 32) + (N % 32 == 0 ? 0 : 1)
+};
+
+template<int N>
+struct BitSetBase {
+	u32 mWords[N];
+
+	static METAOP_FUNC_IMPL__(SerializeAsync) {
+		for (int i = 0; i < N; i++) {
+			((MetaStream*)pUserData)->serialize_uint32(mWords + i);
+		}
+	}
+
+};
+
+template<typename T, int N, int NoClueLol>
+struct BitSet : BitSetBase<__BitSet_BaseN<N>::_TyN> {
+
+	T operator[](int _Index) const {
+		return static_cast<T>(this.mWords[_Index]);
+	}
+
+};
 
 /*
 * Tries to find the symbol name for the given symbol. Make sure the global hash database is set. This is will try search all pages in the 
