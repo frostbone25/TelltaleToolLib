@@ -26,6 +26,8 @@ struct Font {
 		float mXAdvance;
 	};
 
+	//TODO REMEMBER TO NOTE THE VARS WHICH ARE IN OLDER GAMES ETC . WHEN ON PC WITH ALL GAMES CHECK WHICH GAMES HAVE THE VARS (.EXE)
+
 	String mName;
 	bool mbUnicode;
 	float mHeight;
