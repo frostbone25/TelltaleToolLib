@@ -87,6 +87,10 @@
     <ClInclude Include="Src\Types\SoundData.h" />
     <ClInclude Include="Src\Types\LanguageDB.h" />
     <ClInclude Include="Src\Types\LanguageRegister.h" />
+    <ClInclude Include="Src\Types\T3OverlayData.h" />
+    <ClInclude Include="Src\Types\ParticleSprite.h" />
+    <ClInclude Include="Src\Types\Font.h" />
+    <ClInclude Include="Src\Types\TRect.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include=".gitattributes" />

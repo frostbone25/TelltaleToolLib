@@ -1915,6 +1915,103 @@ namespace MetaInit {
 			NEXTMEM2(landb, mExpandedIDRanges, LanguageDB, DCArray_pdbidp, 0, mProjectID);
 			ADD(landb);
 
+			DEFINEHANDLE(sprite, ParticleSprite);
+			DEFINEHANDLE(tex, T3Texture);
+			DEFINEHANDLE(font, Font);
+
+			DEFINET2(ovsp, T3OverlaySpriteParams);
+			FIRSTMEM2(ovsp, mhSprite, T3OverlaySpriteParams, Handlesprite, 0);
+			NEXTMEM2(ovsp, mInitialPosition, T3OverlaySpriteParams, vec2, 0, mhSprite);
+			NEXTMEM2(ovsp, mSize, T3OverlaySpriteParams, vec2, 0, mInitialPosition);
+			NEXTMEM2(ovsp, mAnimation, T3OverlaySpriteParams, symbol, 0, mSize);
+			NEXTMEM2(ovsp, mAnimationSpeed, T3OverlaySpriteParams, float, 0, mAnimation);
+			NEXTMEM2(ovsp, mFlags, T3OverlaySpriteParams, flags, MetaFlag::MetaFlag_FlagType, mAnimationSpeed);
+			static MetaFlagDescription ovspf;
+			ovspf.mpFlagName = "eOverlaySprite_AnimationLoop";
+			ovspf.mFlagValue = 1;
+			ovspf.mpNext = NULL;
+			meta_ovsp_mFlags.mpFlagDescriptions = &ovspf;
+			ADD(ovsp);
+
+			DEFINET2(oodtp, T3OverlayTextParams);
+			FIRSTMEM2(oodtp, mhFont, T3OverlayTextParams, Handlefont, 0);
+			NEXTMEM2(oodtp, mhDlg, T3OverlayTextParams, Handledlg, 0, mhFont);
+			NEXTMEM2(oodtp, mDlgNodeName, T3OverlayTextParams, symbol, 0, mhDlg);
+			NEXTMEM2(oodtp, mText, T3OverlayTextParams, string, 0, mDlgNodeName);
+			NEXTMEM2(oodtp, mInitialPosition, T3OverlayTextParams, vec2, 0, mText);
+			ADD(oodtp);
+
+			DEFINET2(oods, T3OverlayObjectData_Sprite);
+			FIRSTMEM2(oods, mName, T3OverlayObjectData_Sprite, symbol, 0);
+			NEXTMEM2(oods, mParams, T3OverlayObjectData_Sprite, ovsp, 0, mName);
+			ADD(oods);
+
+			DEFINET2(oodt, T3OverlayObjectData_Text);
+			FIRSTMEM2(oodt, mName, T3OverlayObjectData_Text, symbol, 0);
+			NEXTMEM2(oodt, mParams, T3OverlayObjectData_Text, oodtp, 0, mName);
+			ADD(oodt);
+
+			DEFINET2(op, T3OverlayParams);
+			FIRSTMEM2(op, mhBackgroundTexture, T3OverlayParams, Handletex, 0);
+			NEXTMEM2(op, mhChore, T3OverlayParams, Handlehchore, 0, mhBackgroundTexture);
+			NEXTMEM2(op, mMinDisplayTime, T3OverlayParams, float, 0, mhChore);
+			NEXTMEM2(op, mFadeTime, T3OverlayParams, float, 0, mMinDisplayTime);
+			ADD(op);
+
+			DEFINEDCARRAY2(T3OverlayObjectData_Text, overlaytext);
+			DEFINEDCARRAY2(T3OverlayObjectData_Sprite, overlaysprite);
+
+			DEFINET2(overlay, T3OverlayData);
+			EXT(overlay, overlay);
+			FIRSTMEM2(overlay, mName, T3OverlayData, string, 0x20);
+			NEXTMEM2(overlay, mSpriteObjects, T3OverlayData, DCArray_overlaysprite, 0, mName);
+			NEXTMEM2(overlay, mTextObjects, T3OverlayData, DCArray_overlaytext, 0, mSpriteObjects);
+			NEXTMEM2(overlay, mParams, T3OverlayData, op, 0, mTextObjects);
+			ADD(overlay);
+
+			DEFINET2(blendmode, BlendMode);
+			FIRSTMEM2(blendmode, mVal, BlendMode, long, MetaFlag::MetaFlag_EnumIntType);
+			FIRSTENUM2(blendmode, mVal, "Normal", normal, T3BlendMode::eBlendModeNormal, 0);
+			NEXTENUM2(blendmode, mVal, "Default", default, T3BlendMode::eBlendModeDefault, 0, normal);
+			NEXTENUM2(blendmode, mVal, "Alpha", alpha, 1, 0, default);
+			NEXTENUM2(blendmode, mVal, "Alpha Alpha Test", aat, 2, 0, alpha);
+			NEXTENUM2(blendmode, mVal, "Alpha Test", at, 3, 0, aat);
+			NEXTENUM2(blendmode, mVal, "Inverse Alpha Test", iat, 4, 0, at);
+			NEXTENUM2(blendmode, mVal, "Add", add, 5, 0, iat);
+			NEXTENUM2(blendmode, mVal, "Multiply", mul, 6, 0, add);
+			NEXTENUM2(blendmode, mVal, "InverseMultiply", imul, 7, 0, mul);
+			NEXTENUM2(blendmode, mVal, "Alpha Add", aadd, 8, 0, imul);
+			NEXTENUM2(blendmode, mVal, "Alpha Subtract", asub, 9, 0, aadd);
+			NEXTENUM2(blendmode, mVal, "Alpha Inverse Alpha Test", aiat, 10, 0, asub);
+			NEXTENUM2(blendmode, mVal, "Add Alpha Test", aat1,11, 0, aiat);
+			NEXTENUM2(blendmode, mVal, "Add Inverse Alpha Test", aaiat, 12, 0, aat1);
+			NEXTENUM2(blendmode, mVal, "Multiply Alpha Test", mat, 13, 0, aaiat);
+			NEXTENUM2(blendmode, mVal, "Multiply Inverse Alpha Test", miat, 14, 0,mat);
+			NEXTMEM1(blendmode, "Baseclass_EnumBase", BASE_CLASS, mVal, BlendMode, enumbase, MetaFlag::MetaFlag_BaseClass, mVal);
+			ADD(blendmode);
+
+			DEFINESARRAY_( Handle<T3Texture>, handletex, 1);
+
+			DEFINET2(spriteanm, ParticleSprite::Animation);
+			FIRSTMEM2(spriteanm, mName, ParticleSprite::Animation, symbol, 0);
+			NEXTMEM2(spriteanm, mStartFrame, ParticleSprite::Animation, long, 0, mName);
+			NEXTMEM2(spriteanm, mFrameCount, ParticleSprite::Animation, long, 0, mStartFrame);
+			ADD(spriteanm);
+
+			DEFINEDCARRAY2(ParticleSprite::Animation, spriteanm);
+
+			DEFINET2(sprite, ParticleSprite);
+			EXT(sprite, sprite);
+			SERIALIZER(sprite, ParticleSprite);
+			FIRSTMEM2(sprite, mName, ParticleSprite, string, 0x20);
+			NEXTMEM2(sprite, mhTexture, ParticleSprite, sarray_handletex_1, 0, mName);
+			NEXTMEM2(sprite, mTextureX, ParticleSprite, long, 0, mhTexture);
+			NEXTMEM2(sprite, mTextureY, ParticleSprite, long, 0, mTextureX);
+			NEXTMEM2(sprite, mSpriteSize, ParticleSprite, vec2, 0, mTextureY);
+			NEXTMEM2(sprite, mBlendMode, ParticleSprite, blendmode, 0, mSpriteSize);
+			NEXTMEM2(sprite, mAnimations, ParticleSprite, DCArray_spriteanm, 0, mBlendMode);
+			ADD(sprite);
+
 		}
 		Initialize2();
 		Initialize3();
