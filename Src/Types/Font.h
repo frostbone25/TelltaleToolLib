@@ -33,7 +33,7 @@ struct Font {
 	float mHeight;
 	float mBase;
 
-	//OLDER GAMES ---
+	//OLDER GAMES --- (before WD4, exclusive)
 	float mWiiScale;
 	float mFontScale;
 	//-----
