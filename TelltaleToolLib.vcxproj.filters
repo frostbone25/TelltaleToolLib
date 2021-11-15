@@ -91,6 +91,7 @@
     <ClInclude Include="Src\Types\ParticleSprite.h" />
     <ClInclude Include="Src\Types\Font.h" />
     <ClInclude Include="Src\Types\TRect.h" />
+    <ClInclude Include="Src\Types\PreloadPackage.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include=".gitattributes" />

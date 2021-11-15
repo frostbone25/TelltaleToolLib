@@ -8,6 +8,7 @@
 
 #include "TelltaleToolLibrary.h"
 #include <string>
+#include <math.h>
 #include <typeinfo>
 #include <vector>
 #include <stack>
@@ -301,6 +302,14 @@ public:
 	SectionType mCurrentSection;
 	WriteParams mWriteParams;
 
+	struct MissingMemberCallbackInfo {
+		bool(*mMissingMemberCallback)(
+			SerializedVersionInfo::MemberDesc*, void*);
+		void* mpUserData;
+	};
+
+	DCArrayNM<MissingMemberCallbackInfo> mMissingMemberCallbacks;
+
 	/*
 	* Stream Versions:
 	* 1: MBIN (and MBES if encrypted)
@@ -328,6 +337,10 @@ public:
 	void Open(DataStream*, MetaStreamMode, MetaStreamParams);
 	void DisableDebugSection();
 	u64 GetPartialStreamSize();
+	void PushMissingMemberCallback(bool(*cb)(
+		SerializedVersionInfo::MemberDesc*, void*),
+	void* mpUserData);
+	void PopMissingMemberCallback();
 	virtual i64 ReadData(void*, u32);
 	virtual i64 WriteData(void*, u32);
 	virtual bool BeginAsyncSection();
@@ -1164,6 +1177,32 @@ namespace Acting {
 	constexpr Symbol kRuntimeChoreGenConflictActionKey{ 0x345FF590FDEC8D01 };
 }
 
+template<int N>
+struct __BitSet_BaseN {
+	static constexpr int _TyN = (N / 32) + (N % 32 == 0 ? 0 : 1)
+};
+
+template<int N>
+struct BitSetBase {
+	u32 mWords[N];
+
+	static METAOP_FUNC_IMPL__(SerializeAsync) {
+		for (int i = 0; i < N; i++) {
+			((MetaStream*)pUserData)->serialize_uint32(mWords + i);
+		}
+	}
+
+};
+
+template<typename T, int N, int NoClueLol>
+struct BitSet : BitSetBase<__BitSet_BaseN<N>::_TyN> {
+
+	T operator[](int _Index) const {
+		return static_cast<T>(this.mWords[_Index]);
+	}
+
+};
+
 /*
 * Tries to find the symbol name for the given symbol. Make sure the global hash database is set. This is will try search all pages in the 
 * current game set (using set blowfish key). This can be slow! If the value is found, the outpageref pointer is set to the page it was
@@ -1202,5 +1241,59 @@ namespace RecordingUtils {
 	};
 
 }
+
+struct PathBase {};
+
+template<typename T>
+MetaClassDescription* GetMetaClassDescription() {
+	MetaClassDescription* clazz = TelltaleToolLib_GetFirstMetaClassDescription();
+	const char* tn = typeid(T).name();
+	while (clazz != NULL) {
+		if (!_stricmp(tn, clazz->mpTypeInfoExternalName))
+			return clazz;
+		TelltaleToolLib_GetNextMetaClassDescription(&clazz);
+	}
+	return NULL;
+}
+
+/*struct WalkPath {
+	Set<int, std::less<int>> mTrianglesInPath;
+	Handle<WalkBoxes> mhBoxes;
+	Vector3 mRequestedStart, mRequestedEnd, mPathStart, mPathEnd,
+		mPathStartDir, mPathEndDir;
+	String mName;
+	mutable DCArray<PathBase> mPaths;
+
+	static METAOP_FUNC_IMPL__(SerializeAsync) {
+		MetaOpResult r = Meta::MetaOperation_SerializeAsync(pObj,
+			pObjDescription, pContextDescription, pUserData);
+		if (r != eMetaOp_Succeed)
+			return r;
+		MetaStream* meta = static_cast<MetaStream*>(pUserData);
+		WalkPath* o = (WalkPath*)pObj;
+		bool iswrite = meta->mMode == MetaStreamMode::eMetaStream_Write;
+		u32 paths = o->mPaths.GetSize();
+		MetaClassDescription* pathBaseDescription = GetMetaClassDescription<PathBase>();
+		meta->serialize_uint32(&paths);
+		for (int i = 0; i < paths; i++) {
+			if (iswrite) {
+				meta->serialize_uint64(&pathBaseDescription->mHash);
+				r = PerformMetaSerializeFull(meta, o->mPaths.mpStorage + i, pathBaseDescription);
+				if (r != eMetaOp_Succeed)
+					return r;
+			}
+			else {
+				u64 crc = 0;
+				meta->serialize_uint64(&crc);
+				if (crc != pathBaseDescription->mHash) {
+					TelltaleToolLib_RaiseError("PathBase ", ErrorSeverity::ERR);
+					return eMetaOp_Fail;
+				}
+			}
+		}
+		return eMetaOp_Succeed;
+	}
+
+};*/
 
 #endif

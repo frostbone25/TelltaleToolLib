@@ -6,10 +6,7 @@
 #ifndef _SOUNDDATA
 #define _SOUNDDATA
 
-#include "../Meta.hpp"
-
-struct SoundData {
-
-};
+//.WAV FILES : Mainly used as file references. Holds state data, not useful here
+struct SoundData {};
 
 #endif

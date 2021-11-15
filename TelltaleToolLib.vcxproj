@@ -187,6 +187,7 @@
     <ClInclude Include="Src\Types\Map.h" />
     <ClInclude Include="Src\Types\ObjectSpaceIntrinsics.h" />
     <ClInclude Include="Src\Types\ParticleSprite.h" />
+    <ClInclude Include="Src\Types\PreloadPackage.h" />
     <ClInclude Include="Src\Types\PropertySet.h" />
     <ClInclude Include="Src\Types\Rect.h" />
     <ClInclude Include="Src\Types\SArray.h" />

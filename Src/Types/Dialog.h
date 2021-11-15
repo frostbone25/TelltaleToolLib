@@ -6,6 +6,13 @@
 #ifndef _DLG
 #define _DLG
 
+#include "../Meta.hpp"
+
+struct DlgObjID {
+	Symbol mID;
+};
+
+//.DLOG FILES
 struct Dlg {
 
 };

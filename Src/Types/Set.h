@@ -10,7 +10,7 @@
 #ifndef _SET
 #define _SET
 
-template<typename T> class Set : public ContainerInterface, public std::set<T,std::less<T>> {
+template<typename T, typename Less = std::less<T>> class Set : public ContainerInterface, public std::set<T,Less> {
 public:
 	virtual int GetSize() {
 		return this->size();
