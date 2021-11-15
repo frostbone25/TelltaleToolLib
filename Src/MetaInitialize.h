@@ -2059,6 +2059,84 @@ namespace MetaInit {
 			//------
 			ADD(font);
 
+			DEFINET2(dlgid, DlgObjID);
+			FIRSTMEM2(dlgid, mID, DlgObjID, symbol, 0);
+			ADD(dlgid);
+
+			DEFINET2(startnodeoff, PreloadPackage::StartNodeOffset);
+			FIRSTMEM2(startnodeoff, mStartNodeChain, PreloadPackage::StartNodeOffset, dlgid, 0);
+			NEXTMEM2(startnodeoff, fStartTimeSeconds, PreloadPackage::StartNodeOffset, float, 0,mStartNodeChain);
+			NEXTMEM2(startnodeoff, mfMinDurationToPreload, PreloadPackage::StartNodeOffset, float, 0, fStartTimeSeconds);
+			ADD(startnodeoff);
+
+			DEFINET2(idandnodeoff, PreloadPackage::RuntimeDataDialog::DlgObjIdAndStartNodeOffset);
+			FIRSTMEM2(idandnodeoff, mID, PreloadPackage::RuntimeDataDialog::DlgObjIdAndStartNodeOffset, dlgid, 0);
+			NEXTMEM2(idandnodeoff, mOffset, PreloadPackage::RuntimeDataDialog::DlgObjIdAndStartNodeOffset, startnodeoff, 0, mID);
+			ADD(idandnodeoff);
+
+			DEFINESET_(Symbol SEP Symbol::CompareCRC, symbol);
+
+			DEFINET2(seen, PreloadPackage::ResourceSeenTimes);
+			FIRSTMEM2(seen, mfEarliest, PreloadPackage::ResourceSeenTimes, float, 0);
+			NEXTMEM2(seen, mfLatest, PreloadPackage::ResourceSeenTimes, float, 0, mfEarliest);
+			NEXTMEM2(seen, mAdditionalScenes, PreloadPackage::ResourceSeenTimes, Set_symbol,0, mfLatest);
+			ADD(seen);
+
+			DEFINET2(bitsetbase1, BitSetBase<1>);
+			SERIALIZER(bitsetbase1, BitSetBase<1>);
+			ADD(bitsetbase1);
+
+			DEFINET2(reskey, PreloadPackage::ResourceKey);
+			FIRSTMEM2(reskey, mResourceName, PreloadPackage::ResourceKey, symbol, 0);
+			NEXTMEM2(reskey, mMetaClassDescriptionCrc, PreloadPackage::ResourceKey, __int64, 0, mResourceName);
+			//NEWER GAMES
+			NEXTMEM2(reskey, mRenderQualities, PreloadPackage::ResourceKey, bitsetbase1, 0x20, mMetaClassDescriptionCrc);
+			NEXTMEM2(reskey, mVisible, PreloadPackage::ResourceKey, bool, 0, mRenderQualities);
+			NEXTMEM2(reskey, mPrefix, PreloadPackage::ResourceKey, string, 0, mVisible);
+			//--
+			ADD(reskey);
+
+			DEFINEDCARRAY2(PreloadPackage::ResourceKey, reskey);
+
+			DEFINET2(ppkgs, PreloadPackage::RuntimeDataScene);
+			EXT(ppkgs, preloadpackagerts);
+			FIRSTMEM2(ppkgs, mResources, PreloadPackage::RuntimeDataScene, DCArray_reskey, 0);
+			ADD(ppkgs);
+
+			DEFINET2(dlgresinf, PreloadPackage::RuntimeDataDialog::DialogResourceInfo);
+			FIRSTMEM2(dlgresinf, mResourceKey, PreloadPackage::RuntimeDataDialog::DialogResourceInfo, reskey, 0);
+			NEXTMEM2(dlgresinf, mResourceSeenTimes, PreloadPackage::RuntimeDataDialog::DialogResourceInfo, seen, 0, mResourceKey);
+			ADD(dlgresinf);
+
+			DEFINEDCARRAY2(PreloadPackage::RuntimeDataDialog::DialogResourceInfo, resinfodlg);
+
+			DEFINET2(idandvec, PreloadPackage::RuntimeDataDialog::DlgObjIdAndResourceVector);
+			FIRSTMEM2(idandvec, mID, PreloadPackage::RuntimeDataDialog::DlgObjIdAndResourceVector, dlgid, 0);
+			NEXTMEM2(idandvec, mVector, PreloadPackage::RuntimeDataDialog::DlgObjIdAndResourceVector, DCArray_resinfodlg, 0, mID);
+			ADD(idandvec);
+
+			DEFINEDCARRAY2(PreloadPackage::RuntimeDataDialog::DlgObjIdAndResourceVector, resvec);
+			DEFINEDCARRAY2(PreloadPackage::RuntimeDataDialog::DlgObjIdAndStartNodeOffset, startnodeoffandid);
+
+			DEFINET2(ppkgd, PreloadPackage::RuntimeDataDialog);
+			EXT(ppkgd, preloadpackagertd);
+			FIRSTMEM2(ppkgd, mDialogResourceVectors, PreloadPackage::RuntimeDataDialog, DCArray_resvec, 0);
+			NEXTMEM2(ppkgd, mStartNodeOffsets, PreloadPackage::RuntimeDataDialog, DCArray_startnodeoffandid, 0, mDialogResourceVectors);
+			ADD(ppkgd);
+
+			DEFINET2(sounddata, SoundData);
+			EXT(sounddata, wav);
+			ADD(sounddata);
+
+			DEFINET2(pathbase, PathBase);
+			ADDFLAGS(pathbase, MetaFlag::MetaFlag_Memberless);
+			ADD(pathbase);
+
+			//DEFINET2(walkpath, WalkPath);
+			//SERIALIZER(walkpath, WalkPath);
+			//FIRSTMEM2(walkpath, mName, WalkPath, string, 0);
+			//ADD(walkpath);
+
 		}
 		Initialize2();
 		Initialize3();

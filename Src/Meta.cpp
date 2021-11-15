@@ -505,6 +505,19 @@ void MetaStream::EndBlock() {
 	sect.mBlockInfo.pop();
 }
 
+void MetaStream::PushMissingMemberCallback(bool(*cb)(
+	SerializedVersionInfo::MemberDesc*, void*),
+	void* ud) {
+	MissingMemberCallbackInfo i;
+	i.mpUserData = ud;
+	i.mMissingMemberCallback = cb;
+	mMissingMemberCallbacks.AddElement(0, NULL, &i);
+}
+
+void MetaStream::PopMissingMemberCallback() {
+	mMissingMemberCallbacks.RemoveElement(mMissingMemberCallbacks.mSize - 1);
+}
+
 u64 MetaStream::GetPos() {
 	return mSection[(int)mCurrentSection].mpStream->GetPosition();
 }

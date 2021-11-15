@@ -72,7 +72,6 @@ public:
 
 	virtual void RemoveElement(int at_index) override {
 		int v2;
-		DCArray<bool> arra;
 		__int64 v3;
 		v2 = this->mSize;
 		if (v2)

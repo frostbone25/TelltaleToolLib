@@ -40,7 +40,7 @@ namespace PreloadPackage {
 	struct StartNodeOffset {
 		DlgObjID mStartNodeChain;
 		float fStartTimeSeconds;
-		float fMinDurationToPreload;
+		float mfMinDurationToPreload;
 	};
 
 	struct ResourceSeenTimes {
