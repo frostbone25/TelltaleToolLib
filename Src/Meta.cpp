@@ -782,16 +782,28 @@ int MetaStream::serialize_bytes(void* bytes, u32 size) {
 	return mMode == MetaStreamMode::eMetaStream_Read ? ReadData(bytes, size) : WriteData(bytes, size);
 }
 
+void _unused_progressf(const char*, const float) {}
+
 //checks if chunks need compressing and compresses
 void MetaStream::_FinalizeStream() {
 	for (int i = 1; i <= 3; i++) {
 		SectionInfo& sect = mSection[i];
 		if (mParams.mbCompress && sect.mpStream->GetSize() > 0x8000) {
-			throw "Does not support compression or compressed files yet!";
-			//TODO compress sect.mpStream into a new stream, once set then set sect.mpStream to compressed.
-			//make sure to delete sect.mpStream before its set (the old stream)
-			//use datastreamcontainers for the TTCZ header
+			DataStreamContainerParams params{};
+			DataStreamMemory* out_stream = new DataStreamMemory(0x10000, 0x10000);
+			params.mbEncrypt = false;
+			params.mWindowSize = 0x10000;
+			params.mCompressionLibrary = Compression::Library::ZLIB;
+			params.mDstOffset = 0;
+			params.mpSrcStream = sect.mpStream;
+			params.mpDstStream = out_stream;
+			params.mbCompress = true;
 			sect.mbCompressed = true;
+			sect.mpStream = out_stream;
+			DataStreamContainer::Create(
+				_unused_progressf, params, 
+				params.mpSrcStream->GetSize());
+			delete params.mpSrcStream;
 		}
 		else {
 			sect.mCompressedSize = sect.mpStream ? sect.mpStream->GetSize() : 0;
@@ -808,7 +820,7 @@ bool MetaStream::_SetSection(SectionType s) {
 		return true;
 	}
 	if (!sect.mbEnable || mMode != MetaStreamMode::eMetaStream_Write)return false;
-	sect.mpStream = new DataStreamMemory(0x0ui64, 0x4000ui64);
+	sect.mpStream = new DataStreamMemory(0x4000ui64, 0x4000ui64);
 	mCurrentSection = s;
 	return true;
 }
@@ -844,11 +856,12 @@ bool MetaStream::Attach(DataStream* stream, MetaStreamMode mode, MetaStreamParam
 			if (currentSect.mCompressedSize) {
 				currentSect.mpStream = mSection[0].mpStream->GetSubStream(offset, currentSect.mCompressedSize);
 				if (currentSect.mbCompressed) {
-					throw "COMPRESSED SECTION! NEED TO LOOK AT THIS FILE AND IMPL";
-					//currentSect.mStreamOffset = 0;//notice this! stream offset is zero.
-					//uncompressed sects the offset is the current file offset, but has 0 here because the stream is a seperate
-					//decompressed stream
-					//currentSect.mStreamSize = currentSect.mpStream->GetSize();
+					DataStreamContainerParams params{};
+					u64 u=0;
+					params.mpSrcStream = currentSect.mpStream;
+					DataStreamContainer* c = new DataStreamContainer(params);
+					c->Read(0, &u);
+					currentSect.mpStream = c;
 				}
 				offset += currentSect.mCompressedSize;
 			}

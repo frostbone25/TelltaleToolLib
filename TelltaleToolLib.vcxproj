@@ -171,6 +171,7 @@
     <ClInclude Include="Src\Types\Dialog.h" />
     <ClInclude Include="Src\Types\DlgSystemSettings.h" />
     <ClInclude Include="Src\Types\EnlightenData.h" />
+    <ClInclude Include="Src\Types\EventStorage.h" />
     <ClInclude Include="Src\Types\Font.h" />
     <ClInclude Include="Src\Types\HandleObjectInfo.h" />
     <ClInclude Include="Src\HashManager.h" />
