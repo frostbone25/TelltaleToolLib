@@ -526,7 +526,6 @@ struct _LeakSlave {
 	}
 };
 
-#include "../Types/LanguageDatabase.h"
 
 int main(int argn, char* argv[]) {
 
@@ -539,7 +538,8 @@ int main(int argn, char* argv[]) {
 			_OpenDataStreamFromDisc("c:/users/lucas/desktop/My Stuff/Projects/HashDB Creator/LibTelltale DB/LibTelltale.HashDB",
 				DataStreamMode::eMode_Read));
 
-		DataStream* stream = OpenDataStreamFromDisc("d:/games/telltale archives/", READ);
+		DataStream* stream = OpenDataStreamFromDisc("D:\\Games\\Telltale Archives\\Minecraft Story Mode - Season 1 & 2\\"
+			"mojangBitmap_big.FONT", READ);
 
 		{
 			MetaStream meta("in.bin");

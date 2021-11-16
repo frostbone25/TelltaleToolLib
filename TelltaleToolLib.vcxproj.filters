@@ -92,6 +92,8 @@
     <ClInclude Include="Src\Types\Font.h" />
     <ClInclude Include="Src\Types\TRect.h" />
     <ClInclude Include="Src\Types\PreloadPackage.h" />
+    <ClInclude Include="Src\Types\LightProbeData.h" />
+    <ClInclude Include="Src\Types\Rules.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include=".gitattributes" />

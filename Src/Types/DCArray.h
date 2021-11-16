@@ -246,6 +246,7 @@ public:
 };
 
 //DCArrayNoMeta (not serialized)
-template<typename T> using DCArrayNM = DCArray<T>;
+template<typename T> 
+using DCArrayNM = DCArray<T>;
 
 #endif

@@ -15,7 +15,7 @@
 //.FONT FILES
 struct Font {
 
-	struct GlpyhInfo {
+	typedef struct GlyphInfo {
 		long mTexturePage;
 		long mChannel;
 		TRect<float> mGlyph;
@@ -24,9 +24,10 @@ struct Font {
 		float mXOffset;
 		float mYOffset;
 		float mXAdvance;
-	};
-
-	//TODO REMEMBER TO NOTE THE VARS WHICH ARE IN OLDER GAMES ETC . WHEN ON PC WITH ALL GAMES CHECK WHICH GAMES HAVE THE VARS (.EXE)
+		//OLDER GAMES
+		float mGradientSize;
+		//-------
+	} GlyphInfo;
 
 	String mName;
 	bool mbUnicode;
@@ -38,11 +39,11 @@ struct Font {
 	float mFontScale;
 	//-----
 
-	Map<unsigned int, Font::GlpyhInfo> mGlyphInfo;
+	Map<unsigned int, GlyphInfo> mGlyphInfo;
 	DCArray<T3Texture> mTexturePages;
 	bool mIsDistanceField;
 
-	//-- NEWER DATA BELOW 
+	//-- NEWER DATA BELOW (>=WD4)
 	bool mIsRuntime;
 	bool mIsFiltered;
 	BinaryBuffer mTtfData;

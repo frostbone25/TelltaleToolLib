@@ -505,17 +505,16 @@ void MetaStream::EndBlock() {
 	sect.mBlockInfo.pop();
 }
 
-void MetaStream::PushMissingMemberCallback(bool(*cb)(
-	SerializedVersionInfo::MemberDesc*, void*),
+void MetaStream::PushMissingMemberCallback(bool(*cb)(SerializedVersionInfo::MemberDesc*, void*),
 	void* ud) {
 	MissingMemberCallbackInfo i;
 	i.mpUserData = ud;
 	i.mMissingMemberCallback = cb;
-	mMissingMemberCallbacks.AddElement(0, NULL, &i);
+	mMissingMemberCallbacks.push_back(i);
 }
 
 void MetaStream::PopMissingMemberCallback() {
-	mMissingMemberCallbacks.RemoveElement(mMissingMemberCallbacks.mSize - 1);
+	mMissingMemberCallbacks.pop_back();
 }
 
 u64 MetaStream::GetPos() {
@@ -805,7 +804,7 @@ bool MetaStream::_SetSection(SectionType s) {
 	SectionInfo& sect = mSection[(int)s];
 	if (sect.mpStream) {
 		mCurrentSection = s;
-		sect.mpStream->SetPosition(0, DataStreamSeekType::eSeekType_Begin);
+		//sect.mpStream->SetPosition(0, DataStreamSeekType::eSeekType_Begin);
 		return true;
 	}
 	if (!sect.mbEnable || mMode != MetaStreamMode::eMetaStream_Write)return false;

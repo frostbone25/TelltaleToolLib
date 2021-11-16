@@ -170,6 +170,16 @@ meta_##parent##_##memberNameInStruct##.mFlags |= flags;\
 meta_##parent##_##previousMember##.mpNextMember =& meta_##parent##_##memberNameInStruct##;
 
 
+#define NEXTMEM4(parent, memberNameInStruct, pathToMember, typeDesc, flags, previousMember, minVersion, maxVersion) \
+DEFINEM(parent, memberNameInStruct);\
+meta_##parent##_##memberNameInStruct##.mpName = #memberNameInStruct;\
+meta_##parent##_##memberNameInStruct##.mOffset = offsetof(pathToMember,memberNameInStruct);\
+meta_##parent##_##memberNameInStruct##.mpMemberDesc = &meta_##typeDesc##;\
+meta_##parent##_##memberNameInStruct##.mFlags |= flags;\
+meta_##parent##_##previousMember##.mpNextMember =& meta_##parent##_##memberNameInStruct##;\
+meta_##parent##_##memberNameInStruct##.mGameIndexVersionRange.min = minVersion;\
+meta_##parent##_##memberNameInStruct##.mGameIndexVersionRange.max = maxVersion;
+
 #define NEXTMEM(parent, namestr, memberNameInStruct, pathToMember, typeDesc, flags, previousMember) \
 DEFINEM(parent, memberNameInStruct);\
 meta_##parent##_##memberNameInStruct##.mpName = namestr;\
@@ -1217,6 +1227,7 @@ namespace MetaInit {
 			DEFINEDCARRAY(T3ToonGradientRegion);
 
 			DEFINET2(swizzle, RenderSwizzleParams);
+			SERIALIZER(swizzle, RenderSwizzleParams);
 			DEFINEM(RenderSwizzleParams, s0);
 			size_t start = offsetof(RenderSwizzleParams, mSwizzle);
 			meta_RenderSwizzleParams_s0.mOffset = start + 0;
@@ -1248,12 +1259,13 @@ namespace MetaInit {
 			NEXTMEM2(tex, mName, T3Texture, string, 0, mPlatform);
 			NEXTMEM2(tex, mImportName, T3Texture, string, 0, mName);
 			NEXTMEM2(tex, mImportScale, T3Texture, float, 0, mImportName);
-			NEXTMEM2(tex, mToolProps, T3Texture, tp, MetaFlag::MetaFlag_EditorHide, mImportScale);
+			NEXTMEM4(tex, mImportSpecularPower, T3Texture, float, 0, mImportScale, -1, TelltaleToolLib_GetGameKeyIndex("MCSM"));
+			NEXTMEM2(tex, mToolProps, T3Texture, tp, MetaFlag::MetaFlag_EditorHide, mImportSpecularPower);
 			NEXTMEM2(tex, mNumMipLevels, T3Texture, long, 0, mToolProps);
 			NEXTMEM2(tex, mWidth, T3Texture, long, 0, mNumMipLevels);
 			NEXTMEM2(tex, mHeight, T3Texture, long, 0, mWidth);
-			NEXTMEM2(tex, mDepth, T3Texture, long, 0, mHeight);
-			NEXTMEM2(tex, mArraySize, T3Texture, long, 0, mDepth);
+			NEXTMEM4(tex, mDepth, T3Texture, long, 0, mHeight, TelltaleToolLib_GetGameKeyIndex("BATMAN"), -1);
+			NEXTMEM4(tex, mArraySize, T3Texture, long, 0, mDepth, TelltaleToolLib_GetGameKeyIndex("BATMAN"), -1);
 			NEXTMEM2(tex, mSurfaceFormat, T3Texture, long, 0, mArraySize);
 			FIRSTENUM(tex, mSurfaceFormat, eSurface_Unknown, -1, 0);
 			NEXTENUM(tex, mSurfaceFormat, eSurface_ARGB8, 0, 0, eSurface_Unknown);
@@ -1333,7 +1345,7 @@ namespace MetaInit {
 			FIRSTENUM(tex, mSurfaceGamma, eSurfaceGamma_Unknown, -1, 0);
 			NEXTENUM(tex, mSurfaceGamma, eSurfaceGamma_Linear, 0, 0, eSurfaceGamma_Unknown);
 			NEXTENUM(tex, mSurfaceGamma, eSurfaceGamma_sRGB, 1, 0, eSurfaceGamma_Linear);
-			NEXTMEM2(tex, mSurfaceMultisample, T3Texture, long, 0, mSurfaceGamma);
+			NEXTMEM4(tex, mSurfaceMultisample, T3Texture, long, 0, mSurfaceGamma, TelltaleToolLib_GetGameKeyIndex("BATMAN"), -1);
 			ADDFLAGS(tex_mSurfaceMultisample, MetaFlag::MetaFlag_EnumIntType);
 			FIRSTENUM(tex, mSurfaceMultisample, eSurfaceMultisample_None, 0, 0);
 			NEXTENUM(tex, mSurfaceMultisample, eSurfaceMultisample_2x, 1, 0, eSurfaceMultisample_None);
@@ -1389,7 +1401,7 @@ namespace MetaInit {
 			NEXTENUM(tex, mType, eTxLightmapFlatAtlas, 0x27, 0, eTxNormalXYMap);
 			NEXTENUM(tex, mType, eTxLookupXY, 0x28, 0, eTxLightmapFlatAtlas);
 			NEXTENUM(tex, mType, eTxObjectNormalMap, 0x29, 0, eTxLookupXY);
-			NEXTMEM2(tex, mSwizzle, T3Texture, swizzle, 0, mType);
+			NEXTMEM2(tex, mSwizzle, T3Texture, swizzle, MetaFlag::MetaFlag_MetaSerializeBlockingDisabled, mType);
 			NEXTMEM2(tex, mSpecularGlossExponent, T3Texture, float, 0, mSwizzle);
 			NEXTMEM2(tex, mHDRLightmapScale, T3Texture, float, 0, mSpecularGlossExponent);
 			NEXTMEM2(tex, mToonGradientCutoff, T3Texture, float, 0, mHDRLightmapScale);
@@ -1410,9 +1422,8 @@ namespace MetaInit {
 			NEXTMEM2(tex, mNumSurfacesRequested, T3Texture, long, MetaFlag::MetaFlag_MetaSerializeDisable, mNumMipLevelsAllocated);
 			NEXTMEM2(tex, mNumSurfacesRequired, T3Texture, long, MetaFlag::MetaFlag_MetaSerializeDisable, mNumSurfacesRequested);
 			NEXTMEM2(tex, mNumSurfacesLoaded, T3Texture, long, MetaFlag::MetaFlag_MetaSerializeDisable, mNumSurfacesRequired);
-			NEXTMEM2(tex, mArrayFrameNames, T3Texture, DCArray_Symbol, 0, mNumSurfacesLoaded);
+			NEXTMEM4(tex, mArrayFrameNames, T3Texture, DCArray_Symbol, 0, mNumSurfacesLoaded, TelltaleToolLib_GetGameKeyIndex("BATMAN"),-1);
 			NEXTMEM2(tex, mToonRegions, T3Texture, DCArray_T3ToonGradientRegion, MetaFlag::MetaFlag_EditorHide, mArrayFrameNames);
-			ADDFLAGS(tex_mToonRegions, MetaFlag::MetaFlag_EditorHide);
 			SERIALIZER(tex, T3Texture);
 			ADD(tex);
 
@@ -1428,7 +1439,7 @@ namespace MetaInit {
 			NEXTMEM2(rsh, mMipCount, T3Texture::RegionStreamHeader, long, 0, mMipIndex);
 			NEXTMEM2(rsh, mDataSize, T3Texture::RegionStreamHeader, long, 0, mMipCount);
 			NEXTMEM2(rsh, mPitch, T3Texture::RegionStreamHeader, long, 0, mDataSize);
-			NEXTMEM2(rsh, mSlicePitch, T3Texture::RegionStreamHeader, long, 0, mPitch);
+			NEXTMEM4(rsh, mSlicePitch, T3Texture::RegionStreamHeader, long, 0, mPitch, TelltaleToolLib_GetGameKeyIndex("BATMAN"),-1);
 			ADD(rsh);
 
 			DEFINET2(aux, T3Texture::AuxilaryData);
@@ -2029,7 +2040,7 @@ namespace MetaInit {
 			NEXTMEM2(glyph, mXOffset, Font::GlyphInfo, float, 0, mHeight);
 			NEXTMEM2(glyph, mYOffset, Font::GlyphInfo, float, 0, mXOffset);
 			NEXTMEM2(glyph, mXAdvance, Font::GlyphInfo, float, 0, mYOffset);
-			//GRADIENT SIZE (OLDE)
+			NEXTMEM4(glyph, mGradientSize, Font::GlyphInfo, float, 0, mXAdvance, -1, TelltaleToolLib_GetGameKeyIndex("MICHONNE"));
 			ADD(glyph);
 
 			DEFINEMAP2(unsigned int, Font::GlyphInfo, uint,
@@ -2047,15 +2058,18 @@ namespace MetaInit {
 			NEXTMEM2(font, mHeight, Font, float, 0, mbUnicode);
 			NEXTMEM2(font, mBase, Font, float, 0, mHeight);
 			//WII SCALE, FONT SCALE
-			NEXTMEM2(font, mGlyphInfo, Font, Map_uint_glyphinf, 0, mBase);
+			NEXTMEM4(font, mWiiScale, Font, float, 0, mBase, -1, TelltaleToolLib_GetGameKeyIndex("BATMAN2"));
+			NEXTMEM4(font, mFontScale, Font, float, 0, mWiiScale, -1, TelltaleToolLib_GetGameKeyIndex("BATMAN2"));
+			//-------
+			NEXTMEM2(font, mGlyphInfo, Font, Map_uint_glyphinf, 0, mFontScale);
 			NEXTMEM2(font, mTexturePages, Font, DCArray_T3Texture, 0, mGlyphInfo);
 			NEXTMEM2(font, mIsDistanceField, Font, bool, 0, mTexturePages);
 			//NEWER GAMES
-			NEXTMEM2(font, mIsRuntime, Font, bool, 0, mIsDistanceField);
-			NEXTMEM2(font, mIsFiltered, Font, bool, 0, mIsRuntime);
-			NEXTMEM2(font, mTtfData, Font, bb, 0, mIsFiltered);
-			NEXTMEM2(font, mBasePointSize, Font, float, 0, mTtfData);
-			NEXTMEM2(font, mPreferredPointSizes, Font, DCArray_uint, 0, mBasePointSize);
+			NEXTMEM4(font, mIsRuntime, Font, bool, 0, mIsDistanceField, TelltaleToolLib_GetGameKeyIndex("WD4"),-1);
+			NEXTMEM2(font, mIsFiltered, Font, bool, 0, mIsRuntime, TelltaleToolLib_GetGameKeyIndex("WD4"), -1);
+			NEXTMEM2(font, mTtfData, Font, bb, 0, mIsFiltered, TelltaleToolLib_GetGameKeyIndex("WD4"), -1);
+			NEXTMEM2(font, mBasePointSize, Font, float, 0, mTtfData, TelltaleToolLib_GetGameKeyIndex("WD4"), -1);
+			NEXTMEM2(font, mPreferredPointSizes, Font, DCArray_uint, 0, mBasePointSize, TelltaleToolLib_GetGameKeyIndex("WD4"), -1);
 			//------
 			ADD(font);
 
@@ -2090,9 +2104,12 @@ namespace MetaInit {
 			FIRSTMEM2(reskey, mResourceName, PreloadPackage::ResourceKey, symbol, 0);
 			NEXTMEM2(reskey, mMetaClassDescriptionCrc, PreloadPackage::ResourceKey, __int64, 0, mResourceName);
 			//NEWER GAMES
-			NEXTMEM2(reskey, mRenderQualities, PreloadPackage::ResourceKey, bitsetbase1, 0x20, mMetaClassDescriptionCrc);
-			NEXTMEM2(reskey, mVisible, PreloadPackage::ResourceKey, bool, 0, mRenderQualities);
-			NEXTMEM2(reskey, mPrefix, PreloadPackage::ResourceKey, string, 0, mVisible);
+			NEXTMEM4(reskey, mRenderQualities, PreloadPackage::ResourceKey, bitsetbase1, 0x20, mMetaClassDescriptionCrc
+				,TelltaleToolLib_GetGameKeyIndex("BATMAN"),-1);
+			NEXTMEM4(reskey, mVisible, PreloadPackage::ResourceKey, bool, 
+				0, mRenderQualities, TelltaleToolLib_GetGameKeyIndex("WD4"), -1);
+			NEXTMEM4(reskey, mPrefix, PreloadPackage::ResourceKey, string,
+				0, mVisible, TelltaleToolLib_GetGameKeyIndex("WD4"), -1);
 			//--
 			ADD(reskey);
 
@@ -2136,6 +2153,51 @@ namespace MetaInit {
 			//SERIALIZER(walkpath, WalkPath);
 			//FIRSTMEM2(walkpath, mName, WalkPath, string, 0);
 			//ADD(walkpath);
+
+			DEFINEMAP(Symbol, bool, Symbol::CompareCRC);
+
+			DEFINET2(litem, LogicGroup::LogicItem);
+			FIRSTMEM(litem, "Baseclass_PropertySet", mPropVersion,LogicGroup::LogicItem, prop, 0);
+			NEXTMEM2(litem, mName, LogicGroup::LogicItem, string, 0, mPropVersion);
+			NEXTMEM2(litem, mKeyNegateList, LogicGroup::LogicItem, Map_Symbol_bool, 0, mName);
+			NEXTMEM2(litem, mKeyComparisonList, LogicGroup::LogicItem, Map_Symbol_int, 0, mKeyNegateList);
+			NEXTMEM2(litem, mKeyActionList , LogicGroup::LogicItem, Map_Symbol_int, 0, mKeyComparisonList);
+			NEXTMEM2(litem, mReferenceKeyList, LogicGroup::LogicItem, DCArray_String, 0, mKeyActionList);
+			ADD(litem);
+
+			DEFINEDCARRAY(LogicGroup);
+			DEFINEMAP2(String, LogicGroup::LogicItem, string, logicitem, std::less<String>);
+
+			DEFINET2(lgroup, LogicGroup);
+			FIRSTMEM2(lgroup, mOperator, LogicGroup, long, 0);
+			NEXTMEM2(lgroup, mItems, LogicGroup, Map_string_logicitem, 0, mOperator);
+			NEXTMEM2(lgroup, mLogicGroups, LogicGroup,DCArray_LogicGroup, 0, mItems);
+			NEXTMEM2(lgroup, mGroupOperator, LogicGroup, long, 0, mLogicGroups);
+			NEXTMEM2(lgroup, mType, LogicGroup, long, 0, mGroupOperator);
+			NEXTMEM2(lgroup, mName, LogicGroup, string, 0, mType);
+			ADD(lgroup);
+
+			DEFINET2(rule, Rule);
+			ADDFLAGS(rule, MetaFlag::MetaFlag_ScriptTransient | MetaFlag::MetaFlag_PlaceInAddPropMenu);
+			SERIALIZER(rule, Rule);
+			FIRSTMEM2(rule, mName, Rule, string, 0);
+			NEXTMEM2(rule, mRuntimePropName, Rule, string, 0, mName);
+			NEXTMEM2(rule, mFlags, Rule, flags, 0, mRuntimePropName);
+			NEXTMEM2(rule, mConditions, Rule, lgroup, 0, mFlags);
+			NEXTMEM2(rule, mActions, Rule, lgroup, 0, mConditions);
+			NEXTMEM2(rule, mElse, Rule, lgroup, 0, mActions);
+			NEXTMEM2(rule, mAgentCategory, Rule, string, 0, mElse);
+			ADD(rule);
+
+			DEFINEMAP2(String, Rule*, string, ruleptr, std::less<String>);
+
+			DEFINET2(rules, Rules);
+			SERIALIZER(rules, Rules);
+			EXT(rules, rules);
+			FIRSTMEM2(rules, mFlags, Rules, flags, 0);
+			NEXTMEM2(rules, mhLogicProps, Rules, Handlepropset, 0, mFlags);
+			NEXTMEM2(rules, mRuleMap, Rules, Map_string_ruleptr, MetaFlag::MetaFlag_MetaSerializeDisable, mhLogicProps);
+			ADD(rules);
 
 		}
 		Initialize2();

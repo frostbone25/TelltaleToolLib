@@ -241,6 +241,26 @@ enum RenderSwizzleType : char {
 
 struct RenderSwizzleParams {
 	RenderSwizzleType mSwizzle[4];
+
+	static METAOP_FUNC_IMPL__(SerializeAsync) {
+		static int _ID = TelltaleToolLib_GetGameKeyIndex("BATMAN");
+		RenderSwizzleParams* swiz = static_cast<RenderSwizzleParams*>(pObj);
+		MetaStream* meta = static_cast<MetaStream*>(pUserData);
+		u32 blockSize = 8;
+		if (sSetKeyIndex >= _ID) {
+			meta->serialize_uint32(&blockSize);
+			if (blockSize != 8) {
+				TelltaleToolLib_RaiseError("Swizzle block not correct size", ErrorSeverity::ERR);
+				return eMetaOp_Fail;
+			}
+		}
+		meta->serialize_int8((char*)&swiz->mSwizzle[0]);
+		meta->serialize_int8((char*)&swiz->mSwizzle[1]);
+		meta->serialize_int8((char*)&swiz->mSwizzle[2]);
+		meta->serialize_int8((char*)&swiz->mSwizzle[3]);
+		return eMetaOp_Succeed;
+	}
+
 };
 
 //.D3DTX FILES
@@ -335,6 +355,7 @@ struct T3Texture {
 	String mName;
 	String mImportName;
 	float mImportScale;
+	float mImportSpecularPower;//old games
 	ToolProps mToolProps;
 	long mNumMipLevels;
 	long mWidth;

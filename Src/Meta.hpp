@@ -57,7 +57,6 @@
 
 struct MetaClassDescription;
 struct MetaMemberDescription;
-class SerializedVersionInfo;
 class Symbol; 
 
 struct EnumBase {};
@@ -90,6 +89,38 @@ constexpr const char VersionHeaders[][5] = {
 	"MSV5",//version 5
 	"MSV6",//version 6
 #endif
+};
+
+struct SerializedVersionInfo {
+
+	struct MemberDesc {
+		String mName;
+		String mTypeName;
+		u64 mTypeNameSymbolCrc;
+		bool mbBlocked;
+		u32 mSize;
+		u32 mVersionCrc;
+	};
+
+	String mFileName;
+	u64 mTypeSymbolCrc;
+	u32 mVersionCrc;
+	u32 mSize;
+	bool mbBlocked;
+	std::vector<MemberDesc> mMembers;//DCArrayNM<MemberDesc> mMembers;
+
+	static SerializedVersionInfo* RetrieveCompiledVersionInfo(MetaClassDescription* pObjDescription);
+
+	//Originally would save to <Tool>/Meta/<file> This saves in .vers format. This writes everything (including header).
+	//Vers file (serialized versions) names are in the format %s1(%s2).vers , where %s1 is the type name, 
+	//and %s2 is the base 36 of the version CRC. Returns a datastream pointer, which you need to delete
+	DataStream* Save(const char* versName);
+
+	//TAKES OWNERSHIP OF STREAM PARAM, IT WILL BE DELETED AFTER USE
+	//Loads this version information from a .vers.
+	//There should be three parameters (type name crc, version crc) and the engine would load the .vers from that
+	void RetrieveVersionInfo(/*u64 typeNameCrc, u32 typeVersionCrc, */ const char* versFileName, DataStream* stream);
+
 };
 
 static constexpr u32 GetMetaMagic(int versionID) {
@@ -303,12 +334,11 @@ public:
 	WriteParams mWriteParams;
 
 	struct MissingMemberCallbackInfo {
-		bool(*mMissingMemberCallback)(
-			SerializedVersionInfo::MemberDesc*, void*);
+		bool(*mMissingMemberCallback)(SerializedVersionInfo::MemberDesc*, void*);
 		void* mpUserData;
 	};
 
-	DCArrayNM<MissingMemberCallbackInfo> mMissingMemberCallbacks;
+	std::vector<MissingMemberCallbackInfo> mMissingMemberCallbacks;
 
 	/*
 	* Stream Versions:
@@ -654,7 +684,7 @@ enum MetaFlag : int {
 	MetaFlag_ScriptEnum = 0x200,
 	//The name of this type (in meta member descriptions) is allocated on the heap
 	MetaFlag_Heap = 0x400,
-	//Not seen this used yet
+	//Serialized or created from lua scripts
 	MetaFlag_ScriptTransient = 0x800,
 	//Not seen this used yet
 	MetaFlag_SelectAgentType = 0x1000,
@@ -730,38 +760,6 @@ enum MetaFlag : int {
 00000188 serialize_Symbol dq ? ; offset 392
 00000190 serialize_bool  dq ? ; offset 400
 00000198 serialize_bytes dq ? ; offset 408*/
-
-struct SerializedVersionInfo {
-
-	struct MemberDesc {
-		String mName;
-		String mTypeName;
-		u64 mTypeNameSymbolCrc;
-		bool mbBlocked;
-		u32 mSize;
-		u32 mVersionCrc;
-	};
-
-	String mFileName;
-	u64 mTypeSymbolCrc;
-	u32 mVersionCrc;
-	u32 mSize;
-	bool mbBlocked;
-	std::vector<MemberDesc> mMembers;//DCArrayNM<MemberDesc> mMembers;
-
-	static SerializedVersionInfo* RetrieveCompiledVersionInfo(MetaClassDescription* pObjDescription);
-
-	//Originally would save to <Tool>/Meta/<file> This saves in .vers format. This writes everything (including header).
-	//Vers file (serialized versions) names are in the format %s1(%s2).vers , where %s1 is the type name, 
-	//and %s2 is the base 36 of the version CRC. Returns a datastream pointer, which you need to delete
-	DataStream* Save(const char* versName);
-
-	//TAKES OWNERSHIP OF STREAM PARAM, IT WILL BE DELETED AFTER USE
-	//Loads this version information from a .vers.
-	//There should be three parameters (type name crc, version crc) and the engine would load the .vers from that
-	void RetrieveVersionInfo(/*u64 typeNameCrc, u32 typeVersionCrc, */ const char* versFileName, DataStream* stream);
-
-};
 
 struct MetaMemberDescription;
 struct MetaClassDescription;
@@ -1179,7 +1177,7 @@ namespace Acting {
 
 template<int N>
 struct __BitSet_BaseN {
-	static constexpr int _TyN = (N / 32) + (N % 32 == 0 ? 0 : 1)
+	static constexpr int _TyN = (N / 32) + (N % 32 == 0 ? 0 : 1);
 };
 
 template<int N>
@@ -1188,8 +1186,9 @@ struct BitSetBase {
 
 	static METAOP_FUNC_IMPL__(SerializeAsync) {
 		for (int i = 0; i < N; i++) {
-			((MetaStream*)pUserData)->serialize_uint32(mWords + i);
+			((MetaStream*)pUserData)->serialize_uint32(((BitSetBase<N>*)pObj)->mWords + i);
 		}
+		return eMetaOp_Succeed;
 	}
 
 };
