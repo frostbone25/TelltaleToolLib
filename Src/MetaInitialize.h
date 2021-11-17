@@ -2199,6 +2199,39 @@ namespace MetaInit {
 			NEXTMEM2(rules, mRuleMap, Rules, Map_string_ruleptr, MetaFlag::MetaFlag_MetaSerializeDisable, mhLogicProps);
 			ADD(rules);
 
+			DEFINET2(eloge, EventLoggerEvent);
+			FIRSTMEM2(eloge, mEventID, EventLoggerEvent, long, 0);
+			NEXTMEM2(eloge, mMaxSeverity, EventLoggerEvent, long, 0, mEventID);
+			ADD(eloge);
+
+			DEFINET2(epage, EventStoragePage);
+			SERIALIZER(epage, EventStoragePage);
+			EXT(epage, epage);
+			FIRSTMEM2(epage, mVersion, EventStoragePage, long, 0);
+			NEXTMEM2(epage, mSessionID,EventStoragePage, __int64, 0, mVersion);
+			NEXTMEM2(epage, mFlushedNameOnDisk, EventStoragePage, string, 0, mSessionID);
+			ADD(epage);
+
+			DEFINEDCARRAY2(EventStorage::PageEntry, estoreentry);
+			DEFINEHANDLE(estorepage, EventStoragePage);
+
+			DEFINET2(estoree, EventStorage::PageEntry);
+			ADDFLAGS(estoree, MetaFlag::MetaFlag_Handle | MetaFlag::MetaFlag_PlaceInAddPropMenu);
+			FIRSTMEM2(estoree, mhPage, EventStorage::PageEntry, Handleestorepage, 0);
+			NEXTMEM2(estoree, mMaxEventID, EventStorage::PageEntry, long, 0, mhPage);
+			ADD(estoree);
+
+			DEFINET2(estore, EventStorage);
+			EXT(estore, estore);
+			SERIALIZER(estore, EventStorage);
+			FIRSTMEM2(estore, mVersion, EventStorage, long, 0);
+			NEXTMEM2(estore, mSessionID, EventStorage, __int64, 0, mVersion);
+			NEXTMEM2(estore, mPages, EventStorage, DCArray_estoreentry, 0, mSessionID);
+			NEXTMEM2(estore, mName, EventStorage, string, 0, mPages);
+			NEXTMEM2(estore, mLastEventID, EventStorage, long, 0, mName);
+			NEXTMEM2(estore, mEventStoragePageSize, EventStorage, long, 0, mLastEventID);
+			ADD(estore);
+
 		}
 		Initialize2();
 		Initialize3();

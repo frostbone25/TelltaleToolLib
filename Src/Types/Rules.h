@@ -54,10 +54,51 @@ struct Rules {
 	Handle<PropertySet> mhLogicProps;
 	Map<String, Rule*, std::less<String>> mRuleMap;
 
-	static METAOP_FUNC_IMPL__(SerializeAsync) {
-		MetaOpResult r = Meta::MetaOperation_SerializeAsync(pObj, pObjDescription, pContextDescription, pUserData);
-		if (r == eMetaOp_Succeed) {
+	~Rules() {
+		for (int i = 0; i < mRuleMap.GetSize(); i++) {
+			delete mRuleMap[i].second;
+		}
+	}
 
+	static METAOP_FUNC_IMPL__(SerializeAsync) {
+		static i32 _ID = TelltaleToolLib_GetGameKeyIndex("WD4");
+		MetaOpResult r = Meta::MetaOperation_SerializeAsync(pObj, pObjDescription, pContextDescription, pUserData);
+		Rules* rules = static_cast<Rules*>(pObj);
+		MetaStream* meta = static_cast<MetaStream*>(pObj);
+		bool read = meta->mMode == MetaStreamMode::eMetaStream_Read;
+		MetaClassDescription* ruleDesc = GetMetaClassDescription<Rule>();
+		bool old = _ID > sSetKeyIndex;
+		if (r == eMetaOp_Succeed) {
+			u32 num = rules->mRuleMap.GetSize();
+			meta->serialize_uint32(&num);
+			String string{};
+			std::pair<String, Rule*> p;
+			if (old) {
+				for (int i = 0; i < num; i++) {
+					if (read) {
+						meta->serialize_String(&string);
+					}
+					else {
+						p = rules->mRuleMap[i];
+						meta->serialize_String(&p.first);
+					}
+				}
+			}
+			for (int i = 0; i < num; i++) {
+				if (read) {
+					if(!old)
+						meta->serialize_String(&string);
+					Rule* rule = new Rule;
+					PerformMetaSerializeAsync<Rule>(meta, rule);
+					rules->mRuleMap.AddElement(0, &string, &rule);
+				}
+				else {
+					p = rules->mRuleMap[i];
+					if(!old)
+						meta->serialize_String(&p.first);
+					PerformMetaSerializeAsync<Rule>(meta, p.second);
+				}
+			}
 		}
 		return r;
 	}

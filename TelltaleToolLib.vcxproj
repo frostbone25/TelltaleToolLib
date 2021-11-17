@@ -232,6 +232,7 @@
     <ClCompile Include="Src\TelltaleToolLibrary.cpp" />
     <ClCompile Include="Src\Test\main.cpp" />
     <ClCompile Include="Src\TTArchive2.cpp" />
+    <ClCompile Include="Src\Types\EventStorage.cpp" />
     <ClCompile Include="Src\Types\T3Texture.cpp" />
     <ClCompile Include="Src\Zlib\adler32.c" />
     <ClCompile Include="Src\Zlib\compress.c" />

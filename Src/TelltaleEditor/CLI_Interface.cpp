@@ -526,6 +526,7 @@ struct _LeakSlave {
 	}
 };
 
+#include "../Types/EventStorage.h"
 
 int main(int argn, char* argv[]) {
 
@@ -538,13 +539,19 @@ int main(int argn, char* argv[]) {
 			_OpenDataStreamFromDisc("c:/users/lucas/desktop/My Stuff/Projects/HashDB Creator/LibTelltale DB/LibTelltale.HashDB",
 				DataStreamMode::eMode_Read));
 
-		DataStream* stream = OpenDataStreamFromDisc("D:\\Games\\Telltale Archives\\Minecraft Story Mode - Season 1 & 2\\"
-			"mojangBitmap_big.FONT", READ);
+		DataStream* stream = OpenDataStreamFromDisc("C:/users/lucas/documents/telltale games/minecraft - story mode"
+			"/_saveslot1_autosave.bundle", READ);
 
 		{
+			EventStoragePage savegame{};
 			MetaStream meta("in.bin");
 			meta.Open(stream, MetaStreamMode::eMetaStream_Read, { 0 });
-
+			u32 u;
+			for (int i = 0; i < 10; i++) {
+				meta.serialize_uint32(&u);
+				printf("number %d %x\n", i, u);
+			}
+			printf("-done\n");
 
 		}
 

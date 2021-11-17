@@ -22,6 +22,7 @@
     <ClCompile Include="Src\Zlib\uncompr.c" />
     <ClCompile Include="Src\Zlib\zutil.c" />
     <ClCompile Include="Src\Types\T3Texture.cpp" />
+    <ClCompile Include="Src\Types\EventStorage.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Src\Blowfish.h" />

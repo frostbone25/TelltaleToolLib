@@ -20,6 +20,7 @@
 #include "Deque.h"
 #include "LightProbeData.h"
 #include "SoundEventBankMap.h"
+#include "EventStorage.h"
 #include "Rules.h"
 #include "Map.h"
 #include "PropertySet.h"
