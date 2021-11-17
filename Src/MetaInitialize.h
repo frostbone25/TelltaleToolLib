@@ -2232,6 +2232,22 @@ namespace MetaInit {
 			NEXTMEM2(estore, mEventStoragePageSize, EventStorage, long, 0, mLastEventID);
 			ADD(estore);
 
+			DEFINET2(pentry, PhonemeTable::PhonemeEntry);
+			FIRSTMEM2(pentry, mAnimation, PhonemeTable::PhonemeEntry, animorchore, 0);
+			NEXTMEM2(pentry, mContributionScalar, PhonemeTable::PhonemeEntry, float, 0, mAnimation);
+			NEXTMEM2(pentry, mTimeScalar, PhonemeTable::PhonemeEntry, float, 0, mContributionScalar);
+			ADD(pentry);
+
+			DEFINEMAP2(Symbol, PhonemeTable::PhonemeEntry, symbol, pentry, Symbol::CompareCRC);
+
+			DEFINET2(ptable, PhonemeTable);
+			EXT(ptable, ptable);
+			SERIALIZER(ptable, PhonemeTable);
+			FIRSTMEM2(ptable, mName, PhonemeTable, string, 0);
+			NEXTMEM2(ptable, mContributionScaler, PhonemeTable, float, 0, mName);
+			NEXTMEM2(ptable, mAnimations, PhonemeTable, Map_symbol_pentry, 0, mContributionScaler);
+			ADD(ptable);
+
 		}
 		Initialize2();
 		Initialize3();

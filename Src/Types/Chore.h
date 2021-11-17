@@ -6,8 +6,27 @@
 #ifndef _CHORE
 #define _CHORE
 
-//TODO
+#include "../Meta.hpp"
+#include "DCArray.h"
+#include "LocalizationRegistry.h"
+#include "PropertySet.h"
+
+//.CHORE FILES
 struct Chore {
+
+	String mName;
+	Flags mFlags;
+	float mLength;
+	long mNumResources;
+	long mNumAgents;
+	PropertySet mEditorProps;
+	String mChoreSceneFile;
+	long mRenderDelay;
+	LocalizeInfo mSynchronizedToLocalization;
+
+	static METAOP_FUNC_IMPL__(SerializeAsync) {
+		
+	}
 
 };
 

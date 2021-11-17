@@ -96,6 +96,8 @@
     <ClInclude Include="Src\Types\LightProbeData.h" />
     <ClInclude Include="Src\Types\Rules.h" />
     <ClInclude Include="Src\Types\EventStorage.h" />
+    <ClInclude Include="Src\Types\ResourceBundle.h" />
+    <ClInclude Include="Src\Types\PhonemeTable.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include=".gitattributes" />

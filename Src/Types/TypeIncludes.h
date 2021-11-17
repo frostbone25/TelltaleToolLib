@@ -6,6 +6,7 @@
 #pragma once
 
 #include "Container.h"
+#include "ResourceBundle.h"//DEPRECATED
 #include "DCArray.h"
 #include "LanguageRegister.h"
 #include "PreloadPackage.h"
@@ -55,3 +56,4 @@
 #include "LanguageLookupMap.h"
 #include "DlgSystemSettings.h"
 #include "LanguageDatabase.h"
+#include "PhonemeTable.h"
