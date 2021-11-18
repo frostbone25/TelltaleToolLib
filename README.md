@@ -16,7 +16,7 @@ Telltale Games store all 'files' in a sectioned wrapping file format called a `M
 The header section contains the section sizes in the meta stream, the meta version, and a list of type symbol CRC64s (with their version CRC32s) for all types serialized using the Meta namespace default serialization (more on that later). The default section contains the main chunk of serialized data, most data read in files is from this section. The debug section, as the name implies, contains debug data used when making games in Tool. The last section, the asynchronous section, contains data which would need to be accessed by other threads in the runtime Game Engine. This is normally data such as texture data. All of this can be found inside the Meta.hpp header, so get that included.
 The following snippet of code shows you how to initialize a MetaStream for reading.
 <br>
-`
+```
 #include "TelltaleToolLib.h"
 #include "Meta.hpp"
 
@@ -34,12 +34,13 @@ int MyExample() {
   //closed before letting it get destructed.
   myStream.Close();
 }
-`
+```
+
 The Open function reads the header section. This will read every header version from any game. However, the actual data inside the meta streams in this library only supports games newer than and including the Wolf Among Us (games that use .ttarch2, an updated version of the game engine). Another thing to note is that since only games newer than TWAU are supported, only meta versions 5 & 6 can be written (and read, in terms of reading the payload data in the sections). These versions you would commonly know as 'MSV5/MSV6' or '5VSM/6VSM' in little endian. These mean 'Meta Stream Version X'.
 
 Writing MetaStreams is easy aswell:
 
-`
+```
 //...
 //Initializes all sections, makes this meta stream ready to be written to.
 myStream.Open(_OpenDataStreamFromDisc("C:/Users/User/Desktop/File_To_Write_To.font",WRITE), MetaStreamMode::eMetaStream_Write, {0});
@@ -48,7 +49,7 @@ myStream.Open(_OpenDataStreamFromDisc("C:/Users/User/Desktop/File_To_Write_To.fo
 
 //Flush the data in the meta stream to the output stream (writes to the file).
 myStream.Close();
-`
+```
 
 #### Serializing types of data
 Ok, so we can write data to MetaStreams. But what data? This is where MetaClassDescriptions come into play. A MetaClassDescription is a view of a class/struct or any intrinsic type of data, a meta view, which holds a list of the member variables in the class (names, and their offsets etc) and is used to present these types programmatically in the game engine. In each meta class description is also a linked list of meta member descriptions which describe a list of member variables in the class/struct. These contain the variable names, variable offsets in the struct layed out in memory and its flags. They also contain enum and flag descriptions, which if the member is an enum or has flags that can be set, can contain enum names and values, and flag names and values. 
@@ -65,7 +66,7 @@ Pass in the name of the type you want to get, or the extension of the type, to t
 
 Here is an example of how you would now read a .LANDB (LanguageDB). This same format continues for all other types.
 
-`
+```
 #include "TelltaleToolLib.h"
 #include "Meta.hpp"
 #include "Types/LanguageDB.h"
@@ -85,7 +86,7 @@ int MyExample(){
   //Destructor calls Close(), so it will automatically flush at the end of this scope! Note that when calling Close(), after the call the mode is set to closed to
   //prevent it from being written again.
 }
-`
+```
 
 
 
