@@ -526,8 +526,6 @@ struct _LeakSlave {
 	}
 };
 
-#include "../Types/EventStorage.h"
-
 int main(int argn, char* argv[]) {
 
 	_LeakSlave _s;
@@ -543,15 +541,8 @@ int main(int argn, char* argv[]) {
 			"/_saveslot1_autosave.bundle", READ);
 
 		{
-			EventStoragePage savegame{};
 			MetaStream meta("in.bin");
 			meta.Open(stream, MetaStreamMode::eMetaStream_Read, { 0 });
-			u32 u;
-			for (int i = 0; i < 10; i++) {
-				meta.serialize_uint32(&u);
-				printf("number %d %x\n", i, u);
-			}
-			printf("-done\n");
 
 		}
 

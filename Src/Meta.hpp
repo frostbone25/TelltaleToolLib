@@ -55,6 +55,8 @@
 #define METAOP_FUNC_IMPL__(_FuncName) MetaOpResult MetaOperation_##_FuncName(void *pObj,MetaClassDescription* pObjDescription,\
 	MetaMemberDescription *pContextDescription,void *pUserData)
 
+#define CAST_METAOP(Ty, _name) MetaStream* meta = static_cast<MetaStream*>(pUserData); Ty* _name = static_cast<Ty*>(pObj);
+
 struct MetaClassDescription;
 struct MetaMemberDescription;
 class Symbol; 
@@ -355,6 +357,14 @@ public:
 	//Blowfish* mpBlowfish;
 	Flags mRuntimeFlags;//flag values: RuntimeFlags enum
 	//char mName[260];
+
+	INLINE bool IsRead() {
+		return mMode == MetaStreamMode::eMetaStream_Read;
+	}
+
+	INLINE bool IsWrite() {
+		return mMode == MetaStreamMode::eMetaStream_Write;
+	}
 
 	bool mbDontDeleteStream = false;//by lib
 
@@ -703,12 +713,12 @@ enum MetaFlag : int {
 	MetaFlag_FlagType = 0x40000,
 	//Not seen this used yet
 	MetaFlag_SelectFolderType = 0x80000,
-	//This type has no members, so doesnt need to be serialized
+	//This type has no members
 	MetaFlag_Memberless = 0x100000,
-	//This type is a renderable resource (eg a texture)
+	//This type is a renderable resource (eg a texture or font)
 	MetaFlag_RenderResource = 0x200000,
 	//If this type has a block around it but the size of the serialized version is not always one value
-	MetaFlag_MetaSerializeNonBlockedVariableSize = 0x400002,
+	MetaFlag_MetaSerializeNonBlockedVariableSize = 0x400000 | MetaFlag_MetaSerializeBlockingDisabled,
 	//Not seen this used yet
 	MetaFlag_EmbeddedCacheableResource = 0x800000,
 	//Not seen this used yet

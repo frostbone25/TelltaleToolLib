@@ -40,6 +40,7 @@ public:
 	}
 
 	ContainerInterface() {}
+	virtual ~ContainerInterface() {}
 
 	virtual Iterator* BeginIteration(Iterator* result) {
 		result->mpInternalIter = new int(0);

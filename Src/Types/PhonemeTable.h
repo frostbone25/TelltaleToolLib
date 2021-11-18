@@ -17,11 +17,21 @@ struct PhonemeTable {
 	struct PhonemeEntry {	
 		AnimOrChore mAnimation;
 		float mContributionScalar, mTimeScalar;
+
+		PhonemeEntry() {
+			mContributionScalar = 1.0f;
+			mTimeScalar = 1.0f;
+		}
+
 	};
 
 	String mName;
 	float mContributionScaler;
 	Map<Symbol, PhonemeEntry, Symbol::CompareCRC> mAnimations;
+
+	PhonemeTable() {
+		mContributionScaler = 1.0f;
+	}
 
 	static METAOP_FUNC_IMPL__(SerializeAsync) {
 		return Meta::MetaOperation_SerializeAsync

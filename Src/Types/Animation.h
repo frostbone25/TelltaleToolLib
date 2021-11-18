@@ -6,7 +6,7 @@
 #ifndef _ANM
 #define _ANM
 
-//TODO
+//TODO , note cant use chore included, prefine and code in src file
 struct Animation {
 
 };
