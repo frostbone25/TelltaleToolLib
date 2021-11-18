@@ -6,8 +6,16 @@
 #ifndef _ANM
 #define _ANM
 
+#include "../Meta.hpp"
+
 //TODO , note cant use chore included, prefine and code in src file
 struct Animation {
+
+	static METAOP_FUNC_IMPL__(SerializeAsync) {
+		CAST_METAOP(Animation, a);
+		meta->SkipToEndOfCurrentBlock();//for chore
+		return eMetaOp_Succeed;
+	}
 
 };
 

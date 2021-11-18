@@ -1,5 +1,6 @@
 TODO LIST:
 
+- CHORE VERSIONING - AND AA STATUS
 - EPAGE - CHECK TWD2 EXE IF MFLUSHEDNAMEONDISK EXISTS, THEN ADD TO VERSION
 - T3BULLET (just add binary buffer or something, it contains serialized bullet phys lib data)
 - DIALOG

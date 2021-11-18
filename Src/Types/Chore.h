@@ -16,6 +16,8 @@
 #include "ToolProps.h"
 #include "Animation.h"
 
+struct Chore;
+
 //.LOOK FILES
 struct Procedural_LookAt {
 
@@ -39,13 +41,141 @@ struct Procedural_LookAt {
 
 };
 
+struct PathBase {
+
+	virtual MetaClassDescription* GetMetaClassDescription() {
+		return ::GetMetaClassDescription<PathBase>();
+	}
+
+	virtual ~PathBase() {}
+
+};
+
+struct PathSegment : PathBase {
+	Vector3 mStart, mEnd;
+	unsigned long mStartNodeId, mEndNodeId;
+
+	virtual MetaClassDescription* GetMetaClassDescription() override {
+		return ::GetMetaClassDescription<PathSegment>();
+	}
+
+	static METAOP_FUNC_IMPL__(SerializeAsync) {
+		MetaOpResult r = Meta::MetaOperation_SerializeAsync(pObj, pObjDescription,
+			pContextDescription, pUserData);
+		if (r != eMetaOp_Succeed)
+			return r;
+		//has sync section....tf forgot to take it out of debug def
+		return r;
+	}
+
+};
+
+struct HermiteCurvePathSegment : PathBase {
+	Vector3 mStart, mEnd;
+	Vector3 mStartDir, mEndDir;
+	unsigned long mStartNodeId, mEndNodeId;
+
+	virtual MetaClassDescription* GetMetaClassDescription() override {
+		return ::GetMetaClassDescription<HermiteCurvePathSegment>();
+	}
+
+	static METAOP_FUNC_IMPL__(SerializeAsync) {
+		MetaOpResult r = Meta::MetaOperation_SerializeAsync(pObj, pObjDescription,
+			pContextDescription, pUserData);
+		if (r != eMetaOp_Succeed)
+			return r;
+		return r;
+	}
+
+};
+
+struct AnimationDrivenPathSegment : PathBase {
+
+	struct EnumAnimatedPathSegmentType {
+		long mVal;//start type = 0, loop type = 1, stop type = 2
+	};
+
+	Vector3 mStart, mEnd, mStartDirection, mEndDirection;
+	EnumAnimatedPathSegmentType mAnimType;
+
+	virtual MetaClassDescription* GetMetaClassDescription() override {
+		return ::GetMetaClassDescription<AnimationDrivenPathSegment>();
+	}
+
+	static METAOP_FUNC_IMPL__(SerializeAsync) {
+		MetaOpResult r = Meta::MetaOperation_SerializeAsync(pObj, pObjDescription,
+			pContextDescription, pUserData);
+		if (r != eMetaOp_Succeed)
+			return r;
+		//has sync section....tf forgot to take it out of debug def
+		return r;
+	}
+
+};
+
 struct WalkPath {
 	String mName;
+	DCArray<PathBase*> mPath;
+
+	void _DeleteData() {
+		for (int i = 0; i < mPath.GetSize(); i++) {
+			delete mPath[i];
+		}
+		mPath.ClearElements();
+	}
+
+	~WalkPath() {
+		_DeleteData();
+	}
 
 	static METAOP_FUNC_IMPL__(SerializeAsync) {
 		CAST_METAOP(WalkPath, path);
-		//TODO WALKPATH
-		return eMetaOp_Succeed;
+		MetaOpResult r = Meta::MetaOperation_SerializeAsync(pObj,
+			pObjDescription, pContextDescription, pUserData);
+		if (r == eMetaOp_Succeed) {
+			u32 count = path->mPath.GetSize();
+			meta->serialize_uint32(&count);
+			if (meta->IsRead()) {
+				path->mPath.ClearElements();
+				u64 crc = 0;
+				MetaClassDescription* mcd = NULL;
+				for (int i = 0; i < count; i++) {
+					meta->serialize_uint64(&crc);
+					mcd = TelltaleToolLib_FindMetaClassDescription_ByHash(crc);
+					if (!mcd) {
+						TelltaleToolLib_RaiseError(
+							"Could not find derived class of PathBase "
+							"from read symbol", ErrorSeverity::ERR);
+						return eMetaOp_Fail;
+					}
+					void* pathInst = mcd->New();
+					if (!pathInst)
+						return eMetaOp_OutOfMemory;
+					r = PerformMetaSerializeFull(meta, pathInst, mcd);
+					if (r != eMetaOp_Succeed)
+						return r;
+					PathBase* path1 = (PathBase*)mcd->CastToBase(pathInst,
+						GetMetaClassDescription<PathBase>());
+					if (!path1) {
+						TelltaleToolLib_RaiseError(
+							"Paths serialized member does not derive"
+							" from PathBase", ErrorSeverity::ERR);
+						return eMetaOp_Fail;
+					}
+					path->mPath.AddElement(0, NULL, &path1);
+				}
+			}
+			else {
+				for (int i = 0; i < count; i++) {
+					PathBase* pathBase = path->mPath[i];
+					MetaClassDescription* type = pathBase->GetMetaClassDescription();
+					meta->serialize_uint64(&type->mHash);
+					PerformMetaSerializeFull(meta, pathBase, type);
+				}
+			}
+
+		}
+		return r;
 	}
 
 };
@@ -133,199 +263,199 @@ struct AutoActStatus {
 
 };
 
-//.CHORE FILES
-struct Chore {
+struct ChoreResource {
 
-	struct ChoreResource {
+	struct Block {
+		float mStartTime;
+		float mEndTime;
+		bool mbLoopingBlock;
+		float mScale;
+		bool mbSelected;//not serialized
+	};
 
-		struct Block {
-			float mStartTime;
-			float mEndTime;
-			bool mbLoopingBlock;
-			float mScale;
-			bool mbSelected;//not serialized
-		};
+	Chore* mpChore;
+	long mVersion;
+	Symbol mResName;
+	float mResLength;
+	long mPriority;
+	Flags mFlags;
+	String mResourceGroup;
+	HandleBase mhObject;
+	//by lib, for embedded data
+	void* mhObjectEmbedded;
+	MetaClassDescription* mhObjectDesc;
+	//
+	Animation mControlAnimation;
+	DCArray<Block> mBlocks;
+	bool mbNoPose;
+	bool mbEmbedded;
+	bool mbEnabled;
+	bool mbIsAgentResource;
+	bool mbViewGraphs;
+	bool mbViewEmptyGraphs;
+	bool mbViewProperties;
+	bool mbViewResourceGroups;
+	PropertySet mResourceProperties;
+	Map<Symbol, float, Symbol::CompareCRC> mResourceGroupInclude;
+	AutoActStatus mAAStatus;
 
-		Chore* mpChore;
-		long mVersion;
-		Symbol mResName;
-		float mResLength;
-		long mPriority;
-		Flags mFlags;
-		String mResourceGroup;
-		HandleBase mhObjec;
-		//by lib, for embedded data
-		void* mhObjectEmbedded;
-		MetaClassDescription* mhObjectDesc;
-		//
-		Animation mControlAnimation;
-		DCArray<Block> mBlocks;
-		bool mbNoPose;
-		bool mbEmbedded;
-		bool mbEnabled;
-		bool mbIsAgentResource;
-		bool mbViewGraphs;
-		bool mbViewEmptyGraphs;
-		bool mbViewProperties;
-		bool mbViewResourceGroups;
-		PropertySet mResourceProperties;
-		Map<Symbol, float, Symbol::CompareCRC> mResourceGroupInclude;
-		AutoActStatus mAAStatus;
+	enum ChoreFlags {
+		eFilterMoverAnimation = 1,
+		eForceInclusionOfMoverAnimation = 2,
+		eIsThisChore = 4,
+		eMoodIdlePersists = 8,
+		e_LibInterpreted_IsChoreCut = 0x1000
+	};
 
-		enum ChoreFlags {
-			eFilterMoverAnimation = 1,
-			eForceInclusionOfMoverAnimation = 2,
-			eIsThisChore = 4,
-			eMoodIdlePersists = 8,
-			e_LibInterpreted_IsChoreCut = 0x1000
-		};
+	Flags mFlags;
 
-		Flags mFlags;
+	ChoreResource() {
+		mhObjectEmbedded = NULL;
+		mhObjectDesc = NULL;
+	}
 
-		ChoreResource() {
-			mhObjectEmbedded = NULL;
-			mhObjectDesc = NULL;
+	INLINE void SetPriority(int iPriority) {
+		mPriority = iPriority;
+	}
+
+	INLINE void SetIsAgentResource(bool bIsAgentResource) {
+		mbIsAgentResource = bIsAgentResource;
+	}
+
+	INLINE void SetChore(Chore* pChore) {
+		mpChore = pChore;
+	}
+
+	INLINE void SetEmbedded(Symbol embeddedName) {
+		if (embeddedName.GetCRC()) {
+			mbEmbedded = true;
+			SetResourceName(embeddedName, NULL, false);
 		}
-
-		INLINE void SetPriority(int iPriority) {
-			mPriority = iPriority;
+		else {
+			mbEmbedded = false;
 		}
+	}
 
-		INLINE void SetIsAgentResource(bool bIsAgentResource) {
-			mbIsAgentResource = bIsAgentResource;
-		}
-		
-		INLINE void SetChore(Chore* pChore) {
-			mpChore = pChore;
-		}
+	INLINE void SetResourceHandle(void* data, MetaClassDescription* desc, bool bDeleteOldData) {
+		if (bDeleteOldData && mhObjectEmbedded && mhObjectDesc)
+			mhObjectDesc->Delete(mhObjectEmbedded);
+		mhObjectEmbedded = data;
+		mhObjectDesc = desc;
+	}
 
-		INLINE void SetEmbedded(Symbol embeddedName) {
-			if (embeddedName.GetCRC()) {
-				mbEmbedded = true;
-				SetResourceName(embeddedName, NULL, false);
+	void SetResourceName(Symbol newName, MetaClassDescription* pDesc, bool bSetResourceNameOnly) {
+		mResName = newName;
+	}
+
+	static METAOP_FUNC_IMPL__(SerializeAsync) {
+		MetaOpResult r = Meta::MetaOperation_SerializeAsync(pObj, pObjDescription, pContextDescription, pUserData);
+		MetaStream* meta = static_cast<MetaStream*>(pUserData);
+		ChoreResource* choreres = static_cast<ChoreResource*>(pObj);
+		if (r == eMetaOp_Succeed) {
+			if (meta->IsWrite() && choreres->mbEmbedded) {
+				MetaClassDescription* desc = choreres->mhObjectDesc;
+				meta->serialize_uint64(&desc->mHash);
+				meta->serialize_uint64(&desc->mHash);
+				r = PerformMetaSerializeFull(meta, choreres->mhObjectEmbedded, choreres->mhObjectDesc);
+				if (r != eMetaOp_Succeed)
+					return r;
+			}
+			u64 hash = 0;
+			MetaClassDescription* embedt = NULL;
+			if (!meta->IsRead())
+				return r;//done writing
+			if (!choreres->mbEmbedded)
+				return r;//no embed, we are done here
+			meta->serialize_uint64(&hash);
+			meta->serialize_uint64(&hash);
+			if (choreres->mVersion) {
+				embedt = TelltaleToolLib_FindMetaClassDescription_ByHash(hash);
 			}
 			else {
-				mbEmbedded = false;
+				String s;
+				meta->serialize_String(&s);
+				embedt = TelltaleToolLib_FindMetaClassDescription_ByHash(CRC64_CaseInsensitive(0, s.c_str()));
 			}
-		}
-
-		INLINE void SetResourceHandle(void* data, MetaClassDescription* desc, bool bDeleteOldData) {
-			if (bDeleteOldData && mhObjectEmbedded && mhObjectDesc)
-				mhObjectDesc->Delete(mhObjectEmbedded);
-			mhObjectEmbedded = data;
-			mhObjectDesc = desc;
-		}
-
-		void SetResourceName(Symbol newName, MetaClassDescription* pDesc, bool bSetResourceNameOnly) {
-			mResName = newName;
-		}
-
-		static METAOP_FUNC_IMPL__(SerializeAsync) {
-			MetaOpResult r = Meta::MetaOperation_SerializeAsync(pObj, pObjDescription, pContextDescription, pUserData);
-			MetaStream* meta = static_cast<MetaStream*>(pUserData);
-			ChoreResource* choreres = static_cast<ChoreResource*>(pObj);
-			if (r == eMetaOp_Succeed) {
-				if (meta->IsWrite() && choreres->mbEmbedded) {
-					MetaClassDescription* desc = choreres->mhObjectDesc;
-					meta->serialize_uint64(&desc->mHash);
-					meta->serialize_uint64(&desc->mHash);
-					r=PerformMetaSerializeFull(meta, choreres->mhObjectEmbedded, choreres->mhObjectDesc);
-					if (r != eMetaOp_Succeed)
-						return r;
-				}
-				u64 hash = 0;
-				MetaClassDescription* embedt = NULL;
-				if (!meta->IsRead())
-					return r;//done writing
-				if (!choreres->mbEmbedded)
-					return r;//no embed, we are done here
-				meta->serialize_uint64(&hash);
-				meta->serialize_uint64(&hash);
-				if (choreres->mVersion) {
-					embedt = TelltaleToolLib_FindMetaClassDescription_ByHash(hash);
-				}
-				else {
-					String s;
-					meta->serialize_String(&s);
-					embedt = TelltaleToolLib_FindMetaClassDescription_ByHash(CRC64_CaseInsensitive(0, s.c_str()));
-				}
-				if (!embedt) {
-					TelltaleToolLib_RaiseError("Could not locate meta class description from CRC in embedded chore data", ErrorSeverity::ERR);
-					return eMetaOp_Invalid;
-				}
-				void* obj = embedt->New();
-				if (!obj) {
-					return eMetaOp_OutOfMemory;
-				}
-				if (choreres->mVersion >= 2 || embedt != GetMetaClassDescription<Procedural_LookAt>()) {
-					PerformMetaSerializeFull(meta, obj, embedt);
-				}
-				else {
-					Animation temp;
-					MetaClassDescription* anmdesc = GetMetaClassDescription<Animation>();
-					PerformMetaSerializeFull(meta, &temp, anmdesc);
-					meta->mRuntimeFlags.mFlags |= 1u;
-				}
-				choreres->SetResourceHandle(obj, embedt, true);
+			if (!embedt) {
+				TelltaleToolLib_RaiseError("Could not locate meta class description from CRC in embedded chore data", ErrorSeverity::ERR);
+				return eMetaOp_Invalid;
 			}
-			return r;
+			void* obj = embedt->New();
+			if (!obj) {
+				return eMetaOp_OutOfMemory;
+			}
+			if (choreres->mVersion >= 2 || embedt != GetMetaClassDescription<Procedural_LookAt>()) {
+				PerformMetaSerializeFull(meta, obj, embedt);
+			}
+			else {
+				Animation temp;
+				MetaClassDescription* anmdesc = GetMetaClassDescription<Animation>();
+				PerformMetaSerializeFull(meta, &temp, anmdesc);
+				meta->mRuntimeFlags.mFlags |= 1u;
+			}
+			choreres->SetResourceHandle(obj, embedt, true);
 		}
+		return r;
+	}
 
+};
+
+struct ChoreAgent {
+
+	struct Attachment {
+		bool mbDoAttach;
+		String mAttachTo;//agent in scene
+		String mAttachToNode;
+		Vector3 mAttachPos;
+		Quaternion mAttachQuat;
+		bool mbAttachPreserveWorldPos;
+		bool mbLeaveAttachedWhenComplete;
 	};
 
-	struct ChoreAgent {
+	Chore* mpChore;
+	String mAgentName;
+	Flags mFlags;
+	DCArray<int> mResources;
+	Attachment mAttachment;
+	ActorAgentBinding mAABinding;
+	Rule mAgentEnabledRule;
 
-		struct Attachment {
-			bool mbDoAttach;
-			String mAttachTo;
-			String mAttachToNode;
-			Vector3 mAttachPos;
-			Quaternion mAttachQuat;
-			bool mbAttachPreserveWorldPos;
-			bool mbLeaveAttachedWhenComplete;
-		};
+	void SetIsThisChore(bool onOff) {
+		int f = mFlags.mFlags | 4;
+		if (!onOff)
+			f = mFlags.mFlags & 0xFFFFFFFB;
+		mFlags.mFlags = f;
+	}
 
-		Chore* mpChore;
-		String mAgentName;
-		Flags mFlags;
-		DCArray<int> mResources;
-		Attachment mAttachment;
-		ActorAgentBinding mAABinding;
-		Rule mAgentEnabledRule;
+	INLINE int GetNumResources() {
+		return mResources.GetSize();
+	}
 
-		void SetIsThisChore(bool onOff) {
-			int f = mFlags.mFlags | 4;
-			if (!onOff)
-				f = mFlags.mFlags & 0xFFFFFFFB;
-			mFlags.mFlags = f;
-		}
+	INLINE int GetResourceID(int index) {
+		return *(mResources.mpStorage + index);
+	}
 
-		INLINE int GetNumResources() {
-			return mResources.GetSize();
-		}
+	INLINE void SetChore(Chore* pChore) {
+		mpChore = pChore;
+	}
 
-		INLINE int GetResourceID(int index) {
-			return *(mResources.mpStorage + index);
-		}
+	INLINE String* GetAgentName() {
+		return &mAgentName;
+	}
 
-		INLINE void SetChore(Chore* pChore) {
-			mpChore = pChore;
-		}
+	INLINE void SetAgentName(const String& agentName) {
+		mAgentName.assign(agentName);
+	}
 
-		INLINE String* GetAgentName() {
-			return &mAgentName;
-		}
+	static METAOP_FUNC_IMPL__(SerializeAsync) {
+		MetaOpResult r = Meta::MetaOperation_SerializeAsync(pObj, pObjDescription, pContextDescription, pUserData);
+		return r;
+	}
 
-		INLINE void SetAgentName(const String& agentName) {
-			mAgentName.assign(agentName);
-		}
+};
 
-		static METAOP_FUNC_IMPL__(SerializeAsync) {
-			MetaOpResult r = Meta::MetaOperation_SerializeAsync(pObj, pObjDescription, pContextDescription, pUserData);
-			return r;
-		}
-
-	};
+//.CHORE FILES
+struct Chore {
 
 	String mName;
 	Flags mFlags;

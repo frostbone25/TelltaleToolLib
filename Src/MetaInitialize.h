@@ -2248,6 +2248,186 @@ namespace MetaInit {
 			NEXTMEM2(ptable, mAnimations, PhonemeTable, Map_symbol_pentry, 0, mContributionScaler);
 			ADD(ptable);
 
+			DEFINET2(cstate, Procedural_LookAt::EnumLookAtComputeStage);
+			FIRSTMEM(cstate, "Baseclass_EnumBase", mVal, 
+				Procedural_LookAt::EnumLookAtComputeStage, enumbase, 0);
+			NEXTMEM1(cstate, "mVal", ALAIS,mVal,Procedural_LookAt::EnumLookAtComputeStage,
+				long, 0, mVal);
+			FIRSTENUM2(cstate, ALAIS, "Idle Look At", idlelook, 0,0);
+			NEXTENUM2(cstate, ALAIS, "Dialog Chore Look At", dlglook, 1, 0, idlelook);
+			NEXTENUM2(cstate, ALAIS, "Final Look At", flook, 2, 0, dlglook);
+			ADD(cstate);
+
+			DEFINET2(lookat, Procedural_LookAt);
+			ADDFLAGS(lookat, MetaFlag::MetaFlag_Memberless);
+			EXT(lookat, look);
+			FIRSTMEM2(lookat, mHostNode, Procedural_LookAt, string, 1);
+			NEXTMEM2(lookat, mTargetAgent, Procedural_LookAt, string, 1, mHostNode);
+			NEXTMEM2(lookat, mTargetNode, Procedural_LookAt, string, 1, mTargetAgent);
+			NEXTMEM2(lookat, mTargetOffset, Procedural_LookAt, vec3, 1, mTargetNode);
+			NEXTMEM2(lookat, mbUsePrivateNode, Procedural_LookAt, bool, 1, mTargetOffset);
+			NEXTMEM2(lookat, mhXAxisChore, Procedural_LookAt, animorchore, 1, mbUsePrivateNode);
+			NEXTMEM2(lookat, mhYAxisChore, Procedural_LookAt, animorchore, 1, mhXAxisChore);
+			NEXTMEM2(lookat, mbRotateHostNode, Procedural_LookAt, bool, 1, mhYAxisChore);
+			NEXTMEM2(lookat, mLastLRAngle, Procedural_LookAt, float, 1, mbRotateHostNode);
+			NEXTMEM2(lookat, mLastUDAngle, Procedural_LookAt, float, 1, mLastLRAngle);
+			NEXTMEM2(lookat, mLastLRWeight, Procedural_LookAt, float, 1, mLastUDAngle);
+			NEXTMEM2(lookat,mLastUDWeight, Procedural_LookAt, float, 1, mLastLRWeight);
+			NEXTMEM2(lookat, mLookAtComputeStage, Procedural_LookAt, cstate, 1,mLastUDWeight);
+			ADD(lookat);
+
+			DEFINET2(pbase, PathBase);
+			ADDFLAGS(pbase, MetaFlag::MetaFlag_Memberless);
+			ADD(pbase);
+
+			DEFINET2(pseg, PathSegment);
+			FIRSTMEM(pseg, "Baseclass_PathBase", mStart, PathSegment, pbase, 0x10);
+			NEXTMEM1(pseg, "mStart", ALAIS, mStart, PathSegment, vec3, 0, mStart);
+			NEXTMEM2(pseg, mEnd, PathSegment, vec3, 0, ALAIS);
+			NEXTMEM2(pseg, mStartNodeId, PathSegment, long, 0, mEnd);
+			NEXTMEM2(pseg, mEndNodeId, PathSegment, long, 0, mStartNodeId);
+			SERIALIZER(pseg, PathSegment);
+			ADD(pseg);
+
+			DEFINET2(psegh, HermiteCurvePathSegment);
+			FIRSTMEM(psegh, "Baseclass_PathBase", mStart, HermiteCurvePathSegment, pbase, 0x10);
+			NEXTMEM1(psegh, "mStart", ALAIS, mStart, HermiteCurvePathSegment, vec3, 0, mStart);
+			NEXTMEM2(psegh, mEnd, HermiteCurvePathSegment, vec3, 0, ALAIS);
+			NEXTMEM2(psegh, mStartDir, HermiteCurvePathSegment, vec3, 0, mEnd);
+			NEXTMEM2(psegh, mEndDir, HermiteCurvePathSegment, vec3, 0, mStartDir);
+			NEXTMEM2(psegh, mStartNodeId, HermiteCurvePathSegment, long, 0, mEndDir);
+			NEXTMEM2(psegh, mEndNodeId, HermiteCurvePathSegment, long, 0, mStartNodeId);
+			SERIALIZER(psegh, HermiteCurvePathSegment);
+			ADD(psegh);
+
+			DEFINET2(cstate1, AnimationDrivenPathSegment::EnumAnimatedPathSegmentType);
+			FIRSTMEM(cstate1, "Baseclass_EnumBase", mVal,
+				AnimationDrivenPathSegment::EnumAnimatedPathSegmentType, enumbase, 0);
+			NEXTMEM1(cstate1, "mVal", ALAIS, mVal, AnimationDrivenPathSegment::EnumAnimatedPathSegmentType,
+				long, 0, mVal);
+			FIRSTENUM2(cstate1, ALAIS, "eStartType", idlelook, 0, 0);
+			NEXTENUM2(cstate1, ALAIS, "eLoopType", dlglook, 1, 0, idlelook);
+			NEXTENUM2(cstate1, ALAIS, "eStopType", flook, 2, 0, dlglook);
+			ADD(cstate1);
+
+			DEFINET2(psegha, AnimationDrivenPathSegment);
+			FIRSTMEM(psegha, "Baseclass_PathBase", mStart, AnimationDrivenPathSegment, pbase, 0x10);
+			NEXTMEM1(psegha, "mStart", ALAIS, mStart, AnimationDrivenPathSegment, vec3, 0, mStart);
+			NEXTMEM2(psegha, mEnd, AnimationDrivenPathSegment, vec3, 0, ALAIS);
+			NEXTMEM2(psegha, mStartDirection, AnimationDrivenPathSegment, vec3, 0, mEnd);
+			NEXTMEM2(psegha, mEndDirection, AnimationDrivenPathSegment, vec3, 0, mStartDirection);
+			NEXTMEM2(psegha, mAnimType, AnimationDrivenPathSegment, cstate1, 0, mEndDirection);
+			SERIALIZER(psegha, AnimationDrivenPathSegment);
+			ADD(psegha);
+
+			DEFINET2(wpath, WalkPath);
+			FIRSTMEM2(wpath, mName, WalkPath, string, 0);
+			SERIALIZER(wpath, WalkPath);
+			ADD(wpath);
+
+			DEFINET2(dloader, DependencyLoader<1>);
+			SERIALIZER(dloader, DependencyLoader<1>);
+			ADDFLAGS(dloader, MetaFlag::MetaFlag_Memberless);
+			ADD(dloader);
+
+			DEFINET2(aas, AutoActStatus);
+			FIRSTMEM2(aas, m_Status, AutoActStatus, 
+				long, MetaFlag::MetaFlag_EnumIntType);
+			ADD(aas);
+
+			DEFINET2(aab, ActorAgentBinding);
+			FIRSTMEM2(aab, mActorName, ActorAgentBinding, string, 0);
+			ADD(aab);
+
+			DEFINEMAP(Symbol, WalkPath, Symbol::CompareCRC);
+
+			DEFINET2(chore, Chore);
+			EXT(chore, chore);
+			SERIALIZER(chore, Chore);
+			FIRSTMEM2(chore, mName, Chore, string, 0);
+			NEXTMEM2(chore, mFlags, Chore, flags, 0, mName);
+			NEXTMEM2(chore, mLength, Chore, float, 0, mFlags);
+			NEXTMEM2(chore, mNumResources, Chore, long, 0, mLength);
+			NEXTMEM2(chore, mNumAgents, Chore, long, 0, mNumResources);
+			NEXTMEM2(chore, mEditorProps, Chore, prop, 
+				MetaFlag::MetaFlag_SkipObjectState, mNumAgents);
+			NEXTMEM2(chore, mChoreSceneFile, Chore, string, 0, mEditorProps);
+			NEXTMEM2(chore, mRenderDelay, Chore, long, MetaFlag::MetaFlag_SkipObjectState,
+				mChoreSceneFile);
+			NEXTMEM2(chore, mSynchronizedToLocalization, Chore, locali, 0, mRenderDelay);
+			NEXTMEM2(chore, mDependencies, Chore, dloader,
+				MetaFlag::MetaFlag_SkipObjectState, mSynchronizedToLocalization);
+			NEXTMEM2(chore, mToolProps, Chore, tp, MetaFlag::MetaFlag_SkipObjectState
+				| MetaFlag::MetaFlag_EditorHide, mDependencies);
+			NEXTMEM2(chore, mWalkPaths, Chore, Map_Symbol_WalkPath, 0, mToolProps);
+			ADD(chore);
+
+			DEFINET2(cattach, ChoreAgent::Attachment);
+			FIRSTMEM2(cattach, mbDoAttach, ChoreAgent::Attachment, bool, 0);
+			NEXTMEM2(cattach, mAttachTo, ChoreAgent::Attachment, string, MetaFlag::MetaFlag_SelectAgentType,mbDoAttach);
+			NEXTMEM2(cattach, mAttachToNode, ChoreAgent::Attachment, string, 0, mAttachTo);
+			NEXTMEM2(cattach, mAttachPos, ChoreAgent::Attachment, vec3, 0, mAttachToNode);
+			NEXTMEM2(cattach, mAttachQuat, ChoreAgent::Attachment, quat, 0, mAttachPos);
+			NEXTMEM2(cattach, mbAttachPreserveWorldPos, ChoreAgent::Attachment, bool, 0, mAttachQuat);
+			NEXTMEM2(cattach, mbLeaveAttachedWhenComplete, ChoreAgent::Attachment, bool, 0, mbAttachPreserveWorldPos);
+			ADD(cattach);
+
+			DEFINET2(cagent, ChoreAgent);
+			SERIALIZER(cagent, ChoreAgent);
+			FIRSTMEM2(cagent, mpChore, ChoreAgent, ptrbase, 0);
+			NEXTMEM2(cagent, mAgentName, ChoreAgent, string, 0, mpChore);
+			NEXTMEM2(cagent, mFlags, ChoreAgent, flags, 0, mAgentName);
+			NEXTMEM2(cagent, mResources, ChoreAgent, DCArray_i32, 0, mFlags);
+			NEXTMEM2(cagent, mAttachment, ChoreAgent, cattach, 0, mResources);
+			NEXTMEM2(cagent, mAABinding, ChoreAgent, aab, 0, mAttachment);
+			NEXTMEM2(cagent, mAgentEnabledRule, ChoreAgent, rule, 0, mAABinding);
+			ADD(cagent);
+
+			DEFINET2(cblock, ChoreResource::Block);
+			FIRSTMEM2(cblock, mStartTime, ChoreResource::Block, float, 0);
+			NEXTMEM2(cblock, mEndTime, ChoreResource::Block, float, 0, mStartTime);
+			NEXTMEM2(cblock, mbLoopingBlock, ChoreResource::Block, bool, 0, mEndTime);
+			NEXTMEM2(cblock, mScale, ChoreResource::Block, float, 0, mbLoopingBlock);
+			NEXTMEM2(cblock, mbSelected, ChoreResource::Block, bool, 1, mScale);
+			ADD(cblock);
+
+			DEFINEDCARRAY2(ChoreResource::Block, choreblock);
+
+			DEFINET2(anm, Animation);
+			EXT(anm, anm);
+			SERIALIZER(anm, Animation);
+			ADD(anm);
+
+			DEFINET2(cres, ChoreResource);
+			SERIALIZER(cres, ChoreResource);
+			FIRSTMEM2(cres, mpChore, ChoreResource, ptrbase, 0);
+			NEXTMEM2(cres, mVersion, ChoreResource, long, 0, mpChore);
+			NEXTMEM2(cres, mResName, ChoreResource, symbol, 0, mVersion);
+			NEXTMEM2(cres, mResLength, ChoreResource, float, 0, mResName);
+			NEXTMEM2(cres, mPriority, ChoreResource, long, 0, mResLength);
+			NEXTMEM2(cres, mFlags, ChoreResource, flags, 0, mPriority);
+			NEXTMEM2(cres, mResourceGroup, ChoreResource, string, 0, mFlags);
+			NEXTMEM2(cres, mhObject, ChoreResource, handlebase, 0, mResourceGroup);
+			NEXTMEM2(cres, mControlAnimation, ChoreResource, anm, 0, mhObject);
+			NEXTMEM2(cres, mBlocks, ChoreResource, DCArray_choreblock, 0, mControlAnimation);
+			NEXTMEM2(cres, mbNoPose, ChoreResource, bool, 0, mBlocks);
+			NEXTMEM2(cres, mbEmbedded, ChoreResource, bool, 0, mbNoPose);
+			NEXTMEM2(cres, mbEnabled, ChoreResource, bool, 0, mbEmbedded);
+			NEXTMEM2(cres, mbIsAgentResource, ChoreResource, bool, 0, mbEnabled);
+			NEXTMEM2(cres, mbViewGraphs, ChoreResource, bool,0, mbIsAgentResource);
+			NEXTMEM2(cres, mbViewEmptyGraphs, ChoreResource, bool, 0, mbViewGraphs);
+			NEXTMEM2(cres, mbViewProperties, ChoreResource, bool, 0, mbViewEmptyGraphs);
+			NEXTMEM2(cres, mbViewResourceGroups, ChoreResource, bool, 0, mbViewProperties);
+			NEXTMEM2(cres, mResourceProperties, ChoreResource, prop, 0, mbViewResourceGroups);
+			NEXTMEM2(cres, mResourceGroupInclude, ChoreResource, Map_Symbol_float, 0, mResourceProperties);
+			NEXTMEM2(cres, mAAStatus, ChoreResource, aas, 0, mResourceGroupInclude);
+			//AA STATUS: in mcsm s1 its a long, not a AutoActStatus struct
+			//(so it has not block size), in season 2 it does, but in the struct
+			//like it is now so disable its serialization and and check version
+			//in serialize specialized
+			ADD(cres);
+			
+			//WHEN ADDING .ANM, DEFINET ALREADY BEEN DONE, GO UP AND EDIT
 		}
 		Initialize2();
 		Initialize3();
