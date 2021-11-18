@@ -83,6 +83,8 @@ int MyExample(){
   
   //Now we can write it back to another file (deletes old stream)
   stream.SwitchToMode(MetaStreamMode::eMetaStream_Write,_OpenDataStreamFromDisc("C:/Path/To/Output.landb",WRITE));
+  //Write the new .landb to the metastream
+  PerformMetaSerializeAsync(&stream, &db);
   //Destructor calls Close(), so it will automatically flush at the end of this scope! Note that when calling Close(), after the call the mode is set to closed to
   //prevent it from being written again.
 }
