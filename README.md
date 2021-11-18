@@ -1,33 +1,16 @@
-# TelltaleToolLib
-A Library which implements the Meta part of the Telltale Tool Engine. The meta part of the engine is for serializing all structures in the game engine to disk.
+# TelltaleToolLib - Telltale Tool Modding Library
+A Library which implements the Meta part of the Telltale Tool Engine. 
+This is quite a large library, and requires that you understand the fundamentals.
 
-This is an updated version of my old LibTelltale library. This library will not only be more precise, but will have better memory management and is completely public.
+### Library Information
+This is a 64bit WINDOWS C++ library and is only meant to be built for windows. It should ideally be linked as a static library; however, if you are going to built it into your application then the header and source files are all in the same directories. Ideally you would copy the whole source into your project (note, credit must be given), and use it like that; this is also a template library for some types so this would benefit. This library should be shipped with/in your applications alongside the oo2core Oodle compression library DLL.
+This library can also be compiled as an application, the CLI folder should be deleted to not compile the CLI translation unit.
 
-This is a library, it is designed to be made into a dynamic library. The library is not 100% portable but I have made some endian checks and platform specific definitions which may be useful. If you were to compile on a different plaform (ie not windows) you made need to do some tinkering. This library is to make telltale modding easier, and to handle all file serialization.
+### Setting up
+Once you have the code included or static library added to the linker arguments then you can start by including TelltaleToolLib.h first.
+This header contains all the library exported functions and functions which will should be used to perform all operations in the library (although, other headers can be included and functions in them called, but unless they are in the Types folder then they arent documented for you to be using them.
 
-#### Please note that if you are to rebuild this library or use it without building it beforehand (ie copying src and headers) you should not include Src/Test or Src/TelltaleEditor in your project. These folders are for project specific implementations. If you do use the source, make sure to predefine FORCE_EXCLUDE_TEditor
+#### Fundamental structures
+Telltale Games store all 'files' in a sectioned wrapping file format called a `MetaStream`. A Meta Stream is a file stream, which can be written to and read from, and has three main sections: the `header` section, `default` section, `debug` section, and `async` section.
+The header section contains the section sizes in the meta stream, the meta version, and a list of type symbol CRC64s (with their version CRC32s) for all types serialized using the Meta namespace default serialization (more on that later). The default section contains the main chunk of serialized data, most data read in files is from this section. The debug section, as the name implies, contains debug data used when making games in Tool. The last section, the asynchronous section, contains data which would need to be accessed by other threads in the runtime Game Engine. This is normally data such as texture data. 
 
-### Where to start?
-The Library's external exported functions and all type definitions can be found in TelltaleToolLibrary.h. I suggest looking here first and reading the docs.
-If you want to get farmiliar with the API (for C++) then there should always be some example code in Test/main.cpp.
-
-### What does this library do?
-It provides an API for opening and reading the files aswell as writing them. You can open any file from any telltale game with this library (read its meta header). However to read the payload of the files (the data after the header) you need to make sure the game is supported. You can then write files back to disc, but only if they are using MSV5 or MSV6 meta versions. The payload file data is what is version dependent. In Src/Tests I will put examples and tests for how the API is used. You can also create files without opening a one previously (only for new games) and set data into those files and write them.
-
-## IMPORTANT
-
-When loading TTARCH2 bundles, MAKE SURE to have 'oo2core_5_win64.dll' is in the same directory as the executable. Preferably this dll should be kept along side this library's library.
-
-This library is designed for TWD: Definitive but games newer than Batman: Season 1 (inclusive) are most likely to be compatible. This means most of the functions to read and write the files should be compatible. 
-Older games may work, but its not guarunteed and I suggest you stick to the ones that should work:
-Batman: The Telltale Series
-The Walking Dead: A New Frontier
-Guardians of the Galaxy: The Telltale Series
-Minecraft Story Mode: Season Two
-Batman: The Enemy Within
-The Walking Dead: Collection
-The Walking Dead: The Final Season
-
-Please also note this is a windows library! You could toggle values to make it for another platform however. But note that a lot of the code expects that the machine is in little endian! Reading .ttarch2 archives will fail unless in little endian.
-
-### IT IS IMPORTANT THAT YOU DO NOT LOAD FILES FROM GAMES BEFORE BATMAN SEASON 1 OTHERWISE UNDEFINED BEHAVIOUR WILL OCCUR!
