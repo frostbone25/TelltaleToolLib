@@ -2209,7 +2209,7 @@ namespace MetaInit {
 			EXT(epage, epage);
 			FIRSTMEM2(epage, mVersion, EventStoragePage, long, 0);
 			NEXTMEM2(epage, mSessionID,EventStoragePage, __int64, 0, mVersion);
-			NEXTMEM2(epage, mFlushedNameOnDisk, EventStoragePage, string, 0, mSessionID);
+			NEXTMEM4(epage, mFlushedNameOnDisk, EventStoragePage, string, 0, mSessionID, TelltaleToolLib_GetGameKeyIndex("BORDERLANDS"), -1);
 			ADD(epage);
 
 			DEFINEDCARRAY2(EventStorage::PageEntry, estoreentry);
