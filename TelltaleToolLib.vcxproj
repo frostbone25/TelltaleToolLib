@@ -155,7 +155,7 @@
     <ClInclude Include="Src\DataStream\DataStream.h" />
     <ClInclude Include="Src\HashDB\HashDB.h" />
     <ClInclude Include="Src\MetaInitialize.h" />
-    <ClInclude Include="Src\TelltaleEditor\dirent.h" />
+    <ClInclude Include="Src\CLI\dirent.h" />
     <ClInclude Include="Src\TelltaleEditor\TEditor.h" />
     <ClInclude Include="Src\TTArchive2.hpp" />
     <ClInclude Include="Src\Types\ActorAgentMapper.h" />
@@ -230,7 +230,7 @@
     <ClCompile Include="Src\DataStream\DataStream.cpp" />
     <ClCompile Include="Src\HashDB\HashDB.cpp" />
     <ClCompile Include="Src\Meta.cpp" />
-    <ClCompile Include="Src\TelltaleEditor\CLI_Interface.cpp" />
+    <ClCompile Include="Src\CLI\CLI_Interface.cpp" />
     <ClCompile Include="Src\TelltaleToolLibrary.cpp" />
     <ClCompile Include="Src\Test\main.cpp" />
     <ClCompile Include="Src\TTArchive2.cpp" />

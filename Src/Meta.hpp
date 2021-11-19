@@ -136,6 +136,7 @@ enum MetaOpResult {
 	eMetaOp_Invalid = 0x2,
 	eMetaOp_OutOfMemory = 0x3,
 	eMetaOp_SymbolNotFoundInDB = 0x4,
+	eMetaOp_SymbolNotFound = 0x4,
 	eMetaOp_MAX = 0x5,//normally 4
 };
 
@@ -249,7 +250,8 @@ struct Meta {
 
 	static METAOP_FUNC_DEF(Destroy)
 
-	static METAOP_FUNC_DEF(SerializeAsync)
+	static MetaOpResult MetaOperation_SerializeAsync(void*, MetaClassDescription*,
+		MetaMemberDescription*, void*);
 
 	static METAOP_FUNC_DEF(SerializeMain)
 
@@ -427,7 +429,7 @@ public:
 
 	virtual void SwitchToMode(MetaStreamMode newMode,DataStream* inputOrOutputStream);//by lib, a useful function
 
-	MetaStream(const char* Name);
+	MetaStream();
 	~MetaStream();
 
 };

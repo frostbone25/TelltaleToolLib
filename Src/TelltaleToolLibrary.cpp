@@ -6,10 +6,6 @@
 #include "MetaInitialize.h"
 #include "HashDB/HashDB.h"
 
-#ifndef FORCE_EXCLUDE_TEditor
-#include "TelltaleEditor/TEditor.h"
-#endif
-
 i32 TelltaleToolLib_GetGameKeyIndex(const char* pGameID) {
     if (pGameID) {
         for (int i = 0; i < KEY_COUNT; i++) {

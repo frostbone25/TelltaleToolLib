@@ -20,13 +20,17 @@ typedef FILE* FileHandle;
 #define READ DataStreamMode::eMode_Read
 #define WRITE DataStreamMode::eMode_Write
 
+//Returns a new instance as an object directly 
 #define _OpenDataStreamFromDisc_(file_path, mode) DataStreamFileDisc(\
 PlatformSpecOpenFile(file_path,\
 	mode),\
 	mode)
 
+//Returns a new instance as a pointer which needs to be deleted. Most classes
+//will delete it when done with it (consumers)
 #define _OpenDataStreamFromDisc(file_path, mode) new _OpenDataStreamFromDisc_(file_path, mode)
 
+//With line terminator
 #define OpenDataStreamFromDisc(file_path, mode) _OpenDataStreamFromDisc(file_path, mode);
 
 //this is for windows, if on POSIX then include unistd and set the platform specific truncate function to truncate

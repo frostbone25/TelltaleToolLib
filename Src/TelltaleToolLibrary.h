@@ -5,15 +5,7 @@
 #ifndef _TTToolLib
 #define _TTToolLib
 
-#define _VERSION "5.9.2"
-
-//PLEASE NOTE: THIS LIBRARY IS DESIGNED ONLY FOR LITTLE ENDIAN SYSTEMS. IF YOUR TELLTALE FILES ARE IN BIG ENDIAN AND THE SYSTEM IS BIG ENDIAN
-//THEN YOU SHOULD BE OK. BUT TELLTALE FILES ARE NORMALLY IN LITTLE ENDIAN.
-
-//If you want to forcefully make sure telltale editor functions arent included and exported, define the macro below
-//If this macro is defined, CLI_Interface.cpp from the TelltaleEditor folder (if present and passed to compiler) will be compiled
-//but this does not effect anything since it doesnt export any functions apart from main (which isnt exported if built as a library)
-#define FORCE_EXCLUDE_TEditor
+#define _VERSION "6.1.2"
 
 #include <type_traits>
 #include <string>

@@ -40,6 +40,9 @@ struct AnimationValueInterfaceBase {
 
 	Symbol mName;
 	int mFlags;
+
+
+
 };
 
 template<typename T> struct AnimatedValueInterface : public AnimationValueInterfaceBase {};

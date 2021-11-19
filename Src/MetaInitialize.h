@@ -2421,12 +2421,19 @@ namespace MetaInit {
 			NEXTMEM2(cres, mResourceProperties, ChoreResource, prop, 0, mbViewResourceGroups);
 			NEXTMEM2(cres, mResourceGroupInclude, ChoreResource, Map_Symbol_float, 0, mResourceProperties);
 			NEXTMEM2(cres, mAAStatus, ChoreResource, aas, 0, mResourceGroupInclude);
-			//AA STATUS: in mcsm s1 its a long, not a AutoActStatus struct
-			//(so it has not block size), in season 2 it does, but in the struct
-			//like it is now so disable its serialization and and check version
-			//in serialize specialized
+			NEXTMEM1(cres, "mAAStatus", ALIAS, mAAStatus,
+				ChoreResource, long, 0, mAAStatus);
+			//TODO indexes, first is the max without autoactstatus
+			meta_cres_ALIAS.mGameIndexVersionRange.max = 
+				TelltaleToolLib_GetGameKeyIndex("MCSM");
+			//TODO index is first with autoactstatus, above is below - 1
+			meta_cres_mAAStatus.mGameIndexVersionRange.min = 
+				TelltaleToolLib_GetGameKeyIndex("MC2");
 			ADD(cres);
-			
+
+
+
+			// line 2430 fix aa status
 			//WHEN ADDING .ANM, DEFINET ALREADY BEEN DONE, GO UP AND EDIT
 		}
 		Initialize2();

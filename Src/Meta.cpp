@@ -127,7 +127,7 @@ const Symbol Symbol::sExportSymbol(0x805FECD924A749DB);
 const Symbol Symbol::sCoreSymbol(0x0A7C199CDCEFC0681);
 
 void SerializedVersionInfo::RetrieveVersionInfo(const char* versFileName, DataStream* stream) {
-	MetaStream meta(versFileName);
+	MetaStream meta;
 	meta.Open(stream, MetaStreamMode::eMetaStream_Read, { 0 });
 	u32 i;
 	meta.serialize_uint32(&i);
@@ -176,7 +176,7 @@ void SerializedVersionInfo::RetrieveVersionInfo(const char* versFileName, DataSt
 
 DataStream* SerializedVersionInfo::Save(const char* name) {
 	DataStream* stream = new DataStreamMemory(0, 0x100);
-	MetaStream meta(name);
+	MetaStream meta;
 	meta.mbDontDeleteStream = true;
 	meta.Open(stream, MetaStreamMode::eMetaStream_Write, { 0 });
 	u32 i = -1;
@@ -622,7 +622,7 @@ void MetaStream::serialize_Symbol(Symbol* symbol) {
 	}
 }
 
-MetaStream::MetaStream(const char* Name) {
+MetaStream::MetaStream() {
 	MetaStream* v1;
 	v1 = this;
 	this->mpReadWriteStream = 0i64;
@@ -844,7 +844,7 @@ bool MetaStream::Attach(DataStream* stream, MetaStreamMode mode, MetaStreamParam
 		if (!mStreamVersion)
 			this->mStreamVersion = 6;//MSV6
 		mParams = params;
-		mSection[0].mpStream = stream;
+		//mSection[0].mpStream = stream;
 		_SetSection(MetaStream::SectionType::eSection_Default);
 		return true;
 	}
@@ -900,7 +900,7 @@ u64 MetaStream::Close() {
 			if (!mpReadWriteStream)return 0;
 			_FinalizeStream();
 			_WriteHeader();
-			for (int i = (int)SectionType::eSection_Default; i < (int)SectionType::eSection_Count; i++) {
+			for (int i = (int)SectionType::eSection_Header; i < (int)SectionType::eSection_Count; i++) {
 				if (mSection[i].mpStream) {
 					mSection[i].mCompressedSize = mSection[i].mpStream->GetSize();
 					mSection[i].mpStream->Transfer(mpReadWriteStream, 0, mSection[i].mCompressedSize);
