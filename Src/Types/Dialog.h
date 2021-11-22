@@ -7,13 +7,54 @@
 #define _DLG
 
 #include "../Meta.hpp"
+#include "LanguageDB.h"
+#include "PropertySet.h"
+#include "Map.h"
+
+struct JiraRecord {
+
+};
+
+struct JiraRecordManager {
+	Map<String, JiraRecord*, std::less<String>> mRecords;
+
+	~JiraRecordManager() {
+		for (int i = 0; i < mRecords.GetSize(); i++) {
+			delete mRecords[i].second;
+		}
+		mRecords.ClearElements();
+	}
+
+};
 
 struct DlgObjID {
 	Symbol mID;
 };
 
+struct DlgObjIDOwner {
+	DlgObjID mDlgID;
+};
+
 //.DLOG FILES
-struct Dlg {
+struct Dlg : DlgObjIDOwner{
+
+	String mName;
+	long mVersion;
+	DlgObjID mDefFolderID;
+	LanguageDB mLangDB;
+	unsigned long mProjectID;
+	Symbol mResourceLocationID;
+	long mChronology;
+	Flags mFlags;
+	PropertySet mProdReportProps;
+	JiraRecordManager mJiraRecordManager;
+	bool mbHasToolOnlyData;
+
+	static METAOP_FUNC_IMPL__(SerializeAsync) {
+		CAST_METAOP(Dlg, dlog);
+
+		return eMetaOp_Succeed;
+	}
 
 };
 

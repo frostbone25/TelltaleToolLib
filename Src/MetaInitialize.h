@@ -2524,6 +2524,8 @@ namespace MetaInit {
 			NEXTMEM2(pose, mSamples, SkeletonPoseValue, DCArray_sample, 0, mBones);
 			ADD(pose);
 
+
+
 		}
 		Initialize2();
 		Initialize3();
