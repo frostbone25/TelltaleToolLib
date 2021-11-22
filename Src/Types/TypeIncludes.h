@@ -57,3 +57,4 @@
 #include "DlgSystemSettings.h"
 #include "LanguageDatabase.h"
 #include "PhonemeTable.h"
+#include "Procedural.h"

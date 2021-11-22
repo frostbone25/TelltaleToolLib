@@ -29,7 +29,7 @@ template<typename T>
 struct KeyframedValue : public KeyframedValueInterface , public AnimatedValueInterface<T> {//bases: animatedvalueinterface
 
 	struct Sample {
-		float mTime, mRecipTimeToNextSample;
+		float mTime , mRecipTimeToNextSample;//recip not serialized, can be calc 1/mTime
 		bool mbInterpolateToNextKey;
 		EnumeTangentModes mTangentMode;
 		T mValue;
@@ -37,6 +37,14 @@ struct KeyframedValue : public KeyframedValueInterface , public AnimatedValueInt
 
 	T mMinVal, mMaxVal;
 	DCArray<KeyframedValue<T>::Sample> mSamples;
+
+	virtual MetaClassDescription* GetMetaClassDescription() override {
+		return ::GetMetaClassDescription<KeyframedValue<T>>();
+	}
+
+	virtual void* GetMetaClassObjPointer() override {
+		return this;
+	}
 
 };
 

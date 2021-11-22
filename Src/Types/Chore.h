@@ -9,7 +9,7 @@
 #include "../Meta.hpp"
 #include "DCArray.h"
 #include "Map.h"
-#include "LocalizationRegistry.h"
+#include "LanguageDB.h"
 #include "PropertySet.h"
 #include "ObjectSpaceIntrinsics.h"
 #include "Rules.h"
@@ -17,29 +17,7 @@
 #include "Animation.h"
 
 struct Chore;
-
-//.LOOK FILES
-struct Procedural_LookAt {
-
-	struct EnumLookAtComputeStage : EnumBase {
-		long mVal;//0 = idle look at, 1 = dialog chore look at, 2 = final look at
-	};
-
-	String mHostNode;
-	String mTargetAgent;
-	String mTargetNode;
-	Vector3 mTargetOffset;
-	bool mbUsePrivateNode;
-	AnimOrChore mhXAxisChore;
-	AnimOrChore mhYAxisChore;
-	bool mbRotateHostNode;
-	float mLastLRAngle;
-	float mLastUDAngle;
-	float mLastLRWeight;
-	float mLastUDWeight;
-	EnumLookAtComputeStage mLookAtComputeStage;
-
-};
+struct Procedural_LookAt;
 
 struct PathBase {
 
@@ -208,7 +186,7 @@ struct DependencyLoader {
 		}
 		if (b) {
 			if (meta->IsWrite()) {
-				meta->serialize_uint64(_DCArrayString->mHash);
+				meta->serialize_uint64(&_DCArrayString->mHash);
 				PerformMetaSerializeFull(meta, loader->mpResNames, _DCArrayString);
 			}
 			else {
@@ -306,8 +284,6 @@ struct ChoreResource {
 		eMoodIdlePersists = 8,
 		e_LibInterpreted_IsChoreCut = 0x1000
 	};
-
-	Flags mFlags;
 
 	ChoreResource() {
 		mhObjectEmbedded = NULL;

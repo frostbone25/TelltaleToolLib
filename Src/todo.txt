@@ -1,9 +1,8 @@
 TODO LIST:
 
-- CHORE VERSIONING - AND AA STATUS
 - T3BULLET (just add binary buffer or something, it contains serialized bullet phys lib data)
 - DIALOG
-- ANM
+- ANM WRITING
 - D3DMESH
 - META VERSIONING - GO THROUGH ALL TYPES AND ADD MEMBER DESC VERSIONS
 

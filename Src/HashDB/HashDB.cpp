@@ -22,6 +22,8 @@ HashDatabase::Page** HashDatabase::Pages() {
 }
 
 void HashDatabase::FindEntry(HashDatabase::Page* page, u64 crc, String* result) {
+	if (!result || !crc)
+		return;
 	if (page) {
 		if (!(cached_page && cached_page == page)) {
 			this->db_stream->SetPosition(page->offset, DataStreamSeekType::eSeekType_Begin);

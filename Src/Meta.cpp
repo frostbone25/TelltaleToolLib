@@ -1336,14 +1336,14 @@ METAOP_FUNC_IMPL__(SerializeIntrinsicAsyncString) {
 
 
 //pObj = object to serialize, pUserData = metastream
-METAOP_FUNC_IMPL(SerializeAsync) {
+MetaOpResult Meta::MetaOperation_SerializeAsync(void* pObj, MetaClassDescription* pObjDescription, MetaMemberDescription* pCtx,void* pUserData) {
 	if (!pObjDescription)return eMetaOp_Fail;
 	if (pObjDescription->mFlags.mFlags & (int)MetaFlag::MetaFlag_MetaSerializeDisable ||
-		pContextDescription && pContextDescription->mFlags & (int)MetaFlag::MetaFlag_MetaSerializeDisable)
+		pCtx && pCtx->mFlags & (int)MetaFlag::MetaFlag_MetaSerializeDisable)
 		return eMetaOp_Invalid;
 	MetaStream* stream = static_cast<MetaStream*>(pUserData);
-	if (pContextDescription && pContextDescription->mpName) {
-		stream->BeginObject(pContextDescription->mpName, NULL);
+	if (pCtx && pCtx->mpName) {
+		stream->BeginObject(pCtx->mpName, NULL);
 	}
 	else stream->BeginAnonObject(NULL);
 	if (stream->mMode == MetaStreamMode::eMetaStream_Write) {
@@ -1382,8 +1382,8 @@ METAOP_FUNC_IMPL(SerializeAsync) {
 				i++;
 			}
 		}
-		if (pContextDescription && pContextDescription->mpName) {
-			stream->EndObject(pContextDescription->mpName);
+		if (pCtx && pCtx->mpName) {
+			stream->EndObject(pCtx->mpName);
 		}
 		else stream->EndAnonObject(NULL);
 		return eMetaOp_Succeed;
@@ -1418,8 +1418,8 @@ METAOP_FUNC_IMPL(SerializeAsync) {
 			stream->EndBlock();
 		}
 	}
-	if (pContextDescription && pContextDescription->mpName) {
-		stream->EndObject(pContextDescription->mpName);
+	if (pCtx && pCtx->mpName) {
+		stream->EndObject(pCtx->mpName);
 	}
 	else stream->EndAnonObject(NULL);
 	return eMetaOp_Succeed;
@@ -1427,13 +1427,13 @@ METAOP_FUNC_IMPL(SerializeAsync) {
 
 MetaOpResult PerformMetaSerializeFull(MetaStream* pStream, void* pObj, MetaClassDescription* pDesc) {
 	if (!pStream || !pDesc)return eMetaOp_Fail;
-	MetaOperation async, main;
+	MetaOperation async;// , main;
 	async = pDesc->GetOperationSpecialization(74);
-	main = pDesc->GetOperationSpecialization(75);
+	//main = pDesc->GetOperationSpecialization(75);
 	if (!async)async = Meta::MetaOperation_SerializeAsync;
-	if (!main)main = Meta::MetaOperation_SerializeMain;
+	//if (!main)main = Meta::MetaOperation_SerializeMain;
 	MetaOpResult result = async(pObj, pDesc, NULL, pStream);
-	if (result == eMetaOp_Succeed)result = main(pObj, pDesc, NULL, pStream);
+	//if (result == eMetaOp_Succeed)result = main(pObj, pDesc, NULL, pStream);
 	return result;
 }
 

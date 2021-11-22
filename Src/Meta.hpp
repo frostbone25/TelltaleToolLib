@@ -220,10 +220,10 @@ struct ColorHDR {
 	float r, g, b, intensity;
 };
 
-struct Meta {
+namespace Meta {
 
 	//set the version crc in the serializedversioninfo ( IS IMPLEMENTED, intellisense my ass)
-	static MetaOpResult MetaOperation_SerializedVersionInfo(void* pObj,
+	MetaOpResult MetaOperation_SerializedVersionInfo(void* pObj,
 		MetaClassDescription* pObjDescription, MetaMemberDescription* pContextDesc,
 		void* pUserData);
 
@@ -244,20 +244,20 @@ struct Meta {
 		MetaClassDescription* mpFromObjDescription;
 	};
 
-	static METAOP_FUNC_DEF(GetObjectName)
+	METAOP_FUNC_DEF(GetObjectName)
 
-	static METAOP_FUNC_DEF(EnumerateMembers)
+	METAOP_FUNC_DEF(EnumerateMembers)
 
-	static METAOP_FUNC_DEF(Destroy)
+	METAOP_FUNC_DEF(Destroy)
 
-	static MetaOpResult MetaOperation_SerializeAsync(void*, MetaClassDescription*,
+	MetaOpResult MetaOperation_SerializeAsync(void*, MetaClassDescription*,
 		MetaMemberDescription*, void*);
 
-	static METAOP_FUNC_DEF(SerializeMain)
+	METAOP_FUNC_DEF(SerializeMain)
 
-	static METAOP_FUNC_DEF(Equivalence)
+	METAOP_FUNC_DEF(Equivalence)
 
-	static METAOP_FUNC_DEF(AsyncSave)
+	METAOP_FUNC_DEF(AsyncSave)
 
 };
 
@@ -280,7 +280,7 @@ class MetaStream {
 
 public:
 
-	enum class RuntimeFlags {
+	enum RuntimeFlags {
 		eWriteback = 0x1,
 		eStreamIsCompiledVersion = 0x2,
 		eIsUndo = 0x4
@@ -1253,8 +1253,6 @@ namespace RecordingUtils {
 
 }
 
-struct PathBase {};
-
 template<typename T>
 MetaClassDescription* GetMetaClassDescription() {
 	MetaClassDescription* clazz = TelltaleToolLib_GetFirstMetaClassDescription();
@@ -1266,45 +1264,5 @@ MetaClassDescription* GetMetaClassDescription() {
 	}
 	return NULL;
 }
-
-/*struct WalkPath {
-	Set<int, std::less<int>> mTrianglesInPath;
-	Handle<WalkBoxes> mhBoxes;
-	Vector3 mRequestedStart, mRequestedEnd, mPathStart, mPathEnd,
-		mPathStartDir, mPathEndDir;
-	String mName;
-	mutable DCArray<PathBase> mPaths;
-
-	static METAOP_FUNC_IMPL__(SerializeAsync) {
-		MetaOpResult r = Meta::MetaOperation_SerializeAsync(pObj,
-			pObjDescription, pContextDescription, pUserData);
-		if (r != eMetaOp_Succeed)
-			return r;
-		MetaStream* meta = static_cast<MetaStream*>(pUserData);
-		WalkPath* o = (WalkPath*)pObj;
-		bool iswrite = meta->mMode == MetaStreamMode::eMetaStream_Write;
-		u32 paths = o->mPaths.GetSize();
-		MetaClassDescription* pathBaseDescription = GetMetaClassDescription<PathBase>();
-		meta->serialize_uint32(&paths);
-		for (int i = 0; i < paths; i++) {
-			if (iswrite) {
-				meta->serialize_uint64(&pathBaseDescription->mHash);
-				r = PerformMetaSerializeFull(meta, o->mPaths.mpStorage + i, pathBaseDescription);
-				if (r != eMetaOp_Succeed)
-					return r;
-			}
-			else {
-				u64 crc = 0;
-				meta->serialize_uint64(&crc);
-				if (crc != pathBaseDescription->mHash) {
-					TelltaleToolLib_RaiseError("PathBase ", ErrorSeverity::ERR);
-					return eMetaOp_Fail;
-				}
-			}
-		}
-		return eMetaOp_Succeed;
-	}
-
-};*/
 
 #endif

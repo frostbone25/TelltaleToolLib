@@ -7,7 +7,26 @@
 #define _ANIMATED_VALUE_INTERFACE
 
 #include "../Meta.hpp"
+#include "ObjectSpaceIntrinsics.h"
 #include "../TelltaleToolLibrary.h"
+
+struct AnimationValueSerializeContext {
+	MetaStream* mStream;
+	char* mpBuffer;
+	int mBufferSize;
+	int mBufferOffset;
+
+	void BeginValue() {
+		mBufferOffset = (mBufferOffset + 0x1F) & 0xFFFFFFE0;
+	}
+
+	char* Allocate(int size) {
+		int o = mBufferOffset;
+		mBufferOffset += ((size + 3) & 0xFFFFFFFC);
+		return &mpBuffer[o];
+	}
+
+};
 
 struct AnimationValueInterfaceBase {
 
@@ -39,12 +58,208 @@ struct AnimationValueInterfaceBase {
 	};
 
 	Symbol mName;
-	int mFlags;
+	u32 mFlags;
 
+	virtual MetaClassDescription* GetMetaClassDescription() {
+		return ::GetMetaClassDescription<AnimationValueInterfaceBase>();
+	}
 
+	virtual MetaClassDescription* GetValueClassDescription() {
+		return NULL;
+	}
+
+	virtual void* GetMetaClassObjPointer() {
+		return this;
+	}
+
+	INLINE bool GetAdditive() {
+		//if dirty, clearmixer etc
+		return !(mFlags & Flags::eAdditive);
+	}
+
+	INLINE bool GetActive() {
+		return !(mFlags & Flags::eDisabled);
+	}
+
+	virtual float GetMinTime() {
+		return 10'000.0f;
+	}
+
+	INLINE void SetType(int type) {
+		mFlags |= (type << 24);
+	}
+
+	virtual MetaOpResult SerializeIn(AnimationValueSerializeContext* context, u32 version) {
+		return PerformMetaSerializeFull(context->mStream, GetMetaClassObjPointer(), GetMetaClassDescription());
+	}
+
+	virtual void SerializeOut(MetaStream* stream) {
+		PerformMetaSerializeFull(stream, GetMetaClassObjPointer(), GetMetaClassDescription());
+	}
+
+	virtual ~AnimationValueInterfaceBase() {}
 
 };
 
-template<typename T> struct AnimatedValueInterface : public AnimationValueInterfaceBase {};
+template<typename T> struct AnimatedValueInterface : AnimationValueInterfaceBase {
+
+	virtual MetaClassDescription* GetValueClassDescription() override {
+		return ::GetMetaClassDescription<T>();
+	}
+
+	virtual MetaClassDescription* GetMetaClassDescription() override {
+		return ::GetMetaClassDescription<AnimatedValueInterface<T>>();
+	}
+
+};
+
+struct Float4 {
+	float v[4];//most likely platform specific for accel computation
+};
+
+struct SkeletonPose {
+	Float4* mEntries;
+
+	SkeletonPose() {
+		mEntries = NULL;
+	}
+
+	void SetTransform(int i, Transform* src) {
+		mEntries[0].v[(i & 3) + 4 * (7 * (i / 4))] = src->mTrans.x;
+		mEntries[1].v[(i & 3) + 4 * (7 * (i / 4))] = src->mTrans.y;
+		mEntries[2].v[(i & 3) + 4 * (7 * (i / 4))] = src->mTrans.z;
+		mEntries[3].v[(i & 3) + 4 * (7 * (i / 4))] = src->mRot.x;
+		mEntries[4].v[(i & 3) + 4 * (7 * (i / 4))] = src->mRot.y;
+		mEntries[5].v[(i & 3) + 4 * (7 * (i / 4))] = src->mRot.z;
+		mEntries[6].v[(i & 3) + 4 * (7 * (i / 4))] = src->mRot.w;
+	}
+
+	void GetTransform(Transform* dst, int i) {
+		int index = (i & 3) + 28 * (i / 4);
+		dst->mTrans.x = mEntries[0].v[index];
+		dst->mTrans.y = mEntries[1].v[index];
+		dst->mTrans.z = mEntries[2].v[index];
+		dst->mRot.x = mEntries[3].v[index];
+		dst->mRot.y = mEntries[4].v[index];
+		dst->mRot.z = mEntries[5].v[index];
+		dst->mRot.w = mEntries[6].v[index];
+	}
+
+	~SkeletonPose() = default;
+
+};
+
+struct CompressedSkeletonPoseKeys2 : AnimationValueInterfaceBase {
+
+	//format for data header in mpData once serialized in
+	struct Header {
+		Vector3 mMinDeltaV, mRangeDeltaV, mMinDeltaQ, mRangeDeltaQ, mMinVector, mRangeVector;
+		int mRangeTime, mBoneCount, mSampleDataSize;
+	};
+
+	char* mpData;
+	u32 mDataSize;
+	bool mDataExternallyOwned;
+
+	CompressedSkeletonPoseKeys2() {
+		mpData = NULL;
+		mDataSize = 0;
+		mDataExternallyOwned = false;
+	}
+
+	virtual void SerializeOut(MetaStream* stream) override {
+		stream->serialize_uint32(&mDataSize);
+		stream->serialize_bytes(mpData, mDataSize);
+	}
+
+	virtual void* GetMetaClassObjPointer() override {
+		return this;
+	}
+
+	virtual MetaOpResult SerializeIn(AnimationValueSerializeContext* context, u32 version) override {
+		context->mStream->serialize_uint32(&mDataSize);
+		mDataExternallyOwned = true;
+		mpData = context->Allocate(mDataSize);
+		context->mStream->serialize_bytes(mpData, mDataSize);
+		return eMetaOp_Succeed;
+	}
+
+	virtual MetaClassDescription* GetValueClassDescription() override {
+		return ::GetMetaClassDescription<SkeletonPose>();
+	}
+
+	virtual MetaClassDescription* GetMetaClassDescription() override {
+		return ::GetMetaClassDescription<CompressedSkeletonPoseKeys2>();
+	}
+
+	INLINE void _ReleaseData() {
+		if (!mDataExternallyOwned && mpData && mDataSize > 0) {
+			delete[] mpData;
+			mpData = NULL;
+			mDataSize = 0;
+			mDataExternallyOwned = false;
+		}
+	}
+
+	~CompressedSkeletonPoseKeys2() {
+		_ReleaseData();
+	}
+
+};
+
+struct CompressedSkeletonPoseKeys : AnimationValueInterfaceBase {
+
+	//format for data header in mpData once serialized in
+	struct Header {
+		Vector4 mMinDeltaV, mRangeDeltaV, mMinDeltaQ, mRangeDeltaQ, mMinVector, mRangeVector;
+		int mBoneCount, mSampleCount, mValueCount, mBlockCount;
+	};
+
+	char* mpData;
+	u32 mDataSize;
+	bool mDataExternallyOwned;
+
+	CompressedSkeletonPoseKeys() {
+		mpData = NULL;
+		mDataSize = 0;
+		mDataExternallyOwned = false;
+		mFlags = 0;
+	}
+
+	virtual void* GetMetaClassObjPointer() override {
+		return this;
+	}
+
+	virtual MetaOpResult SerializeIn(AnimationValueSerializeContext* context, u32 version) override {
+		context->mStream->serialize_uint32(&mDataSize);
+		mDataExternallyOwned = true;
+		mpData = context->Allocate((mDataSize + 0x1f) & 0xFFFFFFE0);
+		context->mStream->serialize_bytes(mpData, mDataSize);
+		return eMetaOp_Succeed;
+	}
+
+	virtual MetaClassDescription* GetValueClassDescription() override {
+		return ::GetMetaClassDescription<SkeletonPose>();
+	}
+
+	virtual MetaClassDescription* GetMetaClassDescription() override {
+		return ::GetMetaClassDescription<CompressedSkeletonPoseKeys>();
+	}
+
+	virtual void SerializeOut(MetaStream* stream) override {
+		stream->serialize_uint32(&mDataSize);
+		stream->serialize_bytes(mpData, mDataSize);
+	}
+
+	~CompressedSkeletonPoseKeys() {
+		if (!mDataExternallyOwned && mpData && mDataSize > 0) {
+			delete[] mpData;
+			mDataExternallyOwned = false;
+			mpData = NULL;
+			mDataSize = 0;
+		}
+	}
+
+};
 
 #endif

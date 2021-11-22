@@ -191,6 +191,7 @@
     <ClInclude Include="Src\Types\ParticleSprite.h" />
     <ClInclude Include="Src\Types\PhonemeTable.h" />
     <ClInclude Include="Src\Types\PreloadPackage.h" />
+    <ClInclude Include="Src\Types\Procedural.h" />
     <ClInclude Include="Src\Types\PropertySet.h" />
     <ClInclude Include="Src\Types\Rect.h" />
     <ClInclude Include="Src\Types\ResourceBundle.h" />
@@ -232,7 +233,6 @@
     <ClCompile Include="Src\Meta.cpp" />
     <ClCompile Include="Src\CLI\CLI_Interface.cpp" />
     <ClCompile Include="Src\TelltaleToolLibrary.cpp" />
-    <ClCompile Include="Src\Test\main.cpp" />
     <ClCompile Include="Src\TTArchive2.cpp" />
     <ClCompile Include="Src\Types\EventStorage.cpp" />
     <ClCompile Include="Src\Types\T3Texture.cpp" />

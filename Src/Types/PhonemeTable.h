@@ -11,6 +11,16 @@
 #include "Map.h"
 #include "AnimOrChore.h"
 
+struct PhonemeKey {
+	Symbol mPhoneme;
+	float mFadeInTime, mHoldTime, mFadeOutTime, mTargetContribution;
+	
+	static METAOP_FUNC_IMPL__(SerializeAsync) {
+		return Meta::MetaOperation_SerializeAsync(pObj, pObjDescription, pContextDescription, pUserData);
+	}
+
+};
+
 //.PTABLE FILES
 struct PhonemeTable {
 	

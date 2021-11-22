@@ -3,11 +3,7 @@
 // the engine and require that if you use this code or library, you give credit to me and
 // the amazing Telltale Games.
 
-//DO NOT DELETE THIS HEADER IF YOU ARE USING TEDITOR.H
-
 #include "../TelltaleToolLibrary.h"
-
-// Copyright Lucas Saragosa - Part of the Telltale Editor project. Some Job semantics from Telltale. Implementation is by me.
 
 #include "../Types/DCArray.h"
 #include <iostream>
@@ -31,6 +27,7 @@ namespace TEditorCLI {
 
 	void _PrintUsage() {
 		//"\tTEditor_CLI.exe\n\n"
+		//creating archive wont work since it would open to many file streams (512 max) for lots of files
 		printf("Usage:\n"
 			"<> are required arguments, [] are non required, ':' seperates input strings. \n\n\tUsage: TEditor_CLI.exe <game_id> "
 			"[options] \n\t\t<extractarc:createarc:dump:import:export> [args]\n\nSee the GameIDs.txt for game IDs.\n\nOperation Usage Examples:\n"
@@ -57,6 +54,8 @@ namespace TEditorCLI {
 	}
 
 	int TEditor_Main(int argn, char* argv[]) {
+		printf("need to fix! CLI not available at the moment. please contact me (github) if you feel I should remake it");
+		exit(1);
 		DCArrayNM<char*> args;
 		args.mpStorage = argv + 1;
 		args.mSize = argn - 1;
@@ -453,20 +452,87 @@ struct _LeakSlave {
 	}
 };
 
-void _testing_func() {
-	TelltaleToolLib_Initialize("MCSM");
+void _anm_chk() {
+	TelltaleToolLib_Initialize("FABLES");
 
 	TelltaleToolLib_SetGlobalHashDatabaseFromStream(
 		_OpenDataStreamFromDisc("c:/users/lucas/desktop/My Stuff/Projects/HashDB Creator/LibTelltale DB/LibTelltale.HashDB",
 			DataStreamMode::eMode_Read));
 
-	DataStream* stream = OpenDataStreamFromDisc("C:/users/lucas/documents/telltale games/minecraft - story mode"
-		"/_saveslot1_autosave.bundle", READ);
+	struct dirent* dp;
+	static char dir1[1000];
+	DIR* dir = opendir("D:/games/telltale archives/wolf among us");
+	const char* s = "D:/games/telltale archives/wolf among us/";
+	int l = strlen(s);
+	memcpy(dir1, s, l);
+	std::string f;
+	static u64 array[0x1000];
+	while (dp = readdir(dir)) {
+		if (dp->d_type == DT_REG && dp->d_name[dp->d_namlen-1] == 'm' && dp->d_name[dp->d_namlen - 2] == 'n'
+			&& dp->d_name[dp->d_namlen - 3] == 'a') {
+			MetaStream meta{};
+			memcpy(dir1 + l, dp->d_name, dp->d_namlen + 1);
+			meta.Open(_OpenDataStreamFromDisc(dir1, DataStreamMode::eMode_Read), MetaStreamMode::eMetaStream_Read, { 0 });
+			printf("- done %s\n",dir1);
+			meta.SetPos(0x25);
+			u32 types = 0;
+			u32 shit = 0;
+			u64 crc = 0;
+			meta.serialize_uint32(&types);
+			for (int i = 0; i < types; i++) {
+				meta.serialize_uint64(&crc);
+				meta.serialize_uint32(&shit);
+				for (int x = 0; x < 0x1000; x++) {
+					if (!array[x]) {
+						array[x] = crc;
+						goto end;
+					}
+					else {
+						if (array[x] == crc)
+							goto end;
+					}
+				}
+				printf("TOO MANY TYPES!!!\n");
+			end:
+				continue;
+			}
+		}
+	}
+	closedir(dir);
+	printf("- done\n");
+	u64 c;
+	int i = 0;
+	while ((c = array[i]) != 0) {
+		printf("Type: %llx\n", c);
+		i++;
+	}
+}
 
+#include "../Types/Animation.h"
+#include "../Types/KeyframedValue.h"
+
+void _testing_func() {
+	TelltaleToolLib_Initialize("FABLES");
+
+	TelltaleToolLib_SetGlobalHashDatabaseFromStream(
+		_OpenDataStreamFromDisc("c:/users/lucas/desktop/My Stuff/Projects/HashDB Creator/LibTelltale DB/LibTelltale.HashDB",
+			DataStreamMode::eMode_Read));
+
+	DataStream* stream = OpenDataStreamFromDisc("D:/games/telltale archives/minecraft story mode - season 1 & 2"
+		"/367088414.anm", READ);
 	{
-		MetaStream meta("in.bin");
+		MetaStream meta{};
 		meta.Open(stream, MetaStreamMode::eMetaStream_Read, { 0 });
-
+		Animation anm{};
+		PerformMetaSerializeAsync(&meta, &anm);
+		String r{};
+		TelltaleToolLib_GetGlobalHashDatabase()->FindEntry(NULL, anm.mName.GetCRC(), &r);
+		printf("Animation %s:\n", r.c_str());
+		for (int i = 0; i < anm.mValues.GetSize(); i++) {
+			AnimationValueInterfaceBase* base = anm.mValues[i];
+			TelltaleToolLib_GetGlobalHashDatabase()->FindEntry(NULL, base->mName.GetCRC(), &r);
+			printf("Animation value %s, flags %x, type %s\n", r.c_str(), base->mFlags,base->GetMetaClassDescription()->mpTypeInfoName);
+		}
 	}
 }
 
@@ -475,8 +541,8 @@ int main(int argn, char* argv[]) {
 	_LeakSlave _s;
 
 	{
+		//_testing_func();
 		_testing_func();
-
 	}
 
 	return 0;

@@ -295,7 +295,8 @@ MetaOperationDescription::ID; meta_##Parent##_##ID.mpOpFn = Func; meta_##Parent#
 DEFINEM(anmi_##_name##, base);\
 meta_anmi_##_name##_base.mpName = "Baseclass_AnimationValueInterfaceBase";\
 meta_anmi_##_name##_base.mpMemberDesc = &meta_anminterface;\
-meta_anmi_##_name##_base.mOffset = offsetof(AnimatedValueInterface<_Ty>::AnimationValueInterfaceBase,mName);\
+meta_anmi_##_name##_base.mFlags |= 0x10;\
+meta_anmi_##_name##_base.mOffset = (i64)((AnimationValueInterfaceBase*)((AnimatedValueInterface<_Ty>*)NULL));\
 meta_anmi_##_name##.mpFirstMember = &meta_anmi_##_name##_base;\
 ADD(anmi_##_name##);
 
@@ -318,11 +319,13 @@ DEFINET2(kfv_##_name##, KeyframedValue<_Ty>);\
 DEFINEM(kfv_##_name##, animatedvalueinterface);\
 meta_kfv_##_name##_animatedvalueinterface.mpName = "Baseclass_AnimatedValueInterface<T>";\
 meta_kfv_##_name##_animatedvalueinterface.mpMemberDesc = &meta_anmi_##_name##;\
-meta_kfv_##_name##_animatedvalueinterface.mOffset = offsetof(KeyframedValue<_Ty>,mName);\
+meta_kfv_##_name##_animatedvalueinterface.mFlags |= 0x10;\
+meta_kfv_##_name##_animatedvalueinterface.mOffset = (i64)((AnimatedValueInterface<_Ty>*)((KeyframedValue<_Ty>*)NULL));\
 DEFINEM(kfv_##_name##, keyframedvalueinterface);\
 meta_kfv_##_name##_keyframedvalueinterface.mpName = "Baseclass_KeyframedValueInterface";\
 meta_kfv_##_name##_keyframedvalueinterface.mpMemberDesc = &meta_keyframedvalueinterface;\
-meta_kfv_##_name##_keyframedvalueinterface.mOffset = 0;\
+meta_kfv_##_name##_keyframedvalueinterface.mFlags |= 0x10;\
+meta_kfv_##_name##_keyframedvalueinterface.mOffset = (i64)((KeyframedValueInterface*)((KeyframedValue<_Ty>*)NULL));\
 meta_kfv_##_name##_animatedvalueinterface.mpNextMember = &meta_kfv_##_name##_keyframedvalueinterface;\
 meta_kfv_##_name##.mpFirstMember = &meta_kfv_##_name##_animatedvalueinterface;\
 NEXTMEM2(kfv_##_name##, mMinVal, KeyframedValue<_Ty>, _TyMetaVar, 0, animatedvalueinterface);\
@@ -2393,9 +2396,18 @@ namespace MetaInit {
 
 			DEFINEDCARRAY2(ChoreResource::Block, choreblock);
 
+			DEFINEDCARRAY2(AnimationValueInterfaceBase*, anminterfacebase);
+
 			DEFINET2(anm, Animation);
 			EXT(anm, anm);
 			SERIALIZER(anm, Animation);
+			FIRSTMEM2(anm, mVersion, Animation, long, 0);
+			NEXTMEM2(anm, mFlags, Animation, long, 0, mVersion);
+			NEXTMEM2(anm, mName, Animation, symbol, 0, mFlags);
+			NEXTMEM2(anm, mLength, Animation, float, 0, mName);
+			NEXTMEM2(anm, mAdditiveMask, Animation, float, 0, mLength);
+			NEXTMEM2(anm, mValues, Animation, DCArray_anminterfacebase, MetaFlag::MetaFlag_MetaSerializeDisable, mAdditiveMask);
+			NEXTMEM2(anm, mToolProps, Animation, tp, MetaFlag::MetaFlag_EditorHide | MetaFlag::MetaFlag_SkipObjectState, mValues);
 			ADD(anm);
 
 			DEFINET2(cres, ChoreResource);
@@ -2423,18 +2435,49 @@ namespace MetaInit {
 			NEXTMEM2(cres, mAAStatus, ChoreResource, aas, 0, mResourceGroupInclude);
 			NEXTMEM1(cres, "mAAStatus", ALIAS, mAAStatus,
 				ChoreResource, long, 0, mAAStatus);
-			//TODO indexes, first is the max without autoactstatus
 			meta_cres_ALIAS.mGameIndexVersionRange.max = 
 				TelltaleToolLib_GetGameKeyIndex("MCSM");
-			//TODO index is first with autoactstatus, above is below - 1
 			meta_cres_mAAStatus.mGameIndexVersionRange.min = 
-				TelltaleToolLib_GetGameKeyIndex("MC2");
+				TelltaleToolLib_GetGameKeyIndex("MICHONNE");
 			ADD(cres);
 
+			DEFINET2(pkey, PhonemeKey);
+			FIRSTMEM2(pkey, mPhoneme, PhonemeKey, symbol, 0);
+			NEXTMEM2(pkey, mFadeInTime, PhonemeKey, float, 0, mPhoneme);
+			NEXTMEM2(pkey, mHoldTime, PhonemeKey, float, 0, mFadeInTime);
+			NEXTMEM2(pkey, mFadeOutTime, PhonemeKey, float, 0, mHoldTime);
+			NEXTMEM2(pkey, mTargetContribution, PhonemeKey, float, 0, mFadeOutTime);
+			SERIALIZER(pkey, PhonemeKey);
+			ADD(pkey);
 
+			DEFINEKEYFRAMEDVALUE(Vector3,Vector3,vec3);
+			DEFINEKEYFRAMEDVALUE(Transform, Transform, transform);
+			DEFINEKEYFRAMEDVALUE(bool, bool, bool);
+			DEFINEKEYFRAMEDVALUE(String, String, string);
+			DEFINEKEYFRAMEDVALUE(PhonemeKey, PhonemeKey, pkey);
+			if (meta_kfv_String.mbNameIsHeapAllocated) {
+				free((void*)meta_kfv_String.mpTypeInfoName);
+				meta_kfv_String.mbNameIsHeapAllocated = false;
+			}
+			meta_kfv_String.mpTypeInfoName = "KeyframedValue<String>";//typedef string
+			meta_kfv_String.mHash = CRC64_CaseInsensitive(0, meta_kfv_String.mpTypeInfoName);
+			DEFINET2(spose, SkeletonPose);
+			ADD(spose);
 
-			// line 2430 fix aa status
-			//WHEN ADDING .ANM, DEFINET ALREADY BEEN DONE, GO UP AND EDIT
+			DEFINET2(sklk, CompressedSkeletonPoseKeys);
+			FIRSTMEM(sklk, "Baseclass_AnimationValueInterfaceBase", mName, 
+				CompressedSkeletonPoseKeys, anminterface, MetaFlag::MetaFlag_BaseClass);
+			meta_sklk_mName.mOffset = (i64)((AnimationValueInterfaceBase*)((CompressedSkeletonPoseKeys*)NULL));
+			NEXTMEM2(sklk, mDataSize, CompressedSkeletonPoseKeys, long, 0, mName);
+			ADD(sklk);
+
+			DEFINET2(sklk2, CompressedSkeletonPoseKeys2);
+			FIRSTMEM(sklk2, "Baseclass_AnimationValueInterfaceBase", mName,
+				CompressedSkeletonPoseKeys2, anminterface, MetaFlag::MetaFlag_BaseClass);
+			meta_sklk2_mName.mOffset = (i64)((AnimationValueInterfaceBase*)((CompressedSkeletonPoseKeys2*)NULL));
+			NEXTMEM2(sklk2, mDataSize, CompressedSkeletonPoseKeys2, long, 0, mName);
+			ADD(sklk2);
+
 		}
 		Initialize2();
 		Initialize3();
