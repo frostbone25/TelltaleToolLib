@@ -518,21 +518,26 @@ void _testing_func() {
 		_OpenDataStreamFromDisc("c:/users/lucas/desktop/My Stuff/Projects/HashDB Creator/LibTelltale DB/LibTelltale.HashDB",
 			DataStreamMode::eMode_Read));
 
-	DataStream* stream = OpenDataStreamFromDisc("D:/games/telltale archives/minecraft story mode - season 1 & 2"
-		"/367088414.anm", READ);
+	DataStream* stream = OpenDataStreamFromDisc(
+		"C:/Users/lucas/Desktop/TTArch"
+		"/obj_cloudAnimation.anm", READ);
 	{
 		MetaStream meta{};
 		meta.Open(stream, MetaStreamMode::eMetaStream_Read, { 0 });
 		Animation anm{};
 		PerformMetaSerializeAsync(&meta, &anm);
-		String r{};
-		TelltaleToolLib_GetGlobalHashDatabase()->FindEntry(NULL, anm.mName.GetCRC(), &r);
-		printf("Animation %s:\n", r.c_str());
+
 		for (int i = 0; i < anm.mValues.GetSize(); i++) {
 			AnimationValueInterfaceBase* base = anm.mValues[i];
-			TelltaleToolLib_GetGlobalHashDatabase()->FindEntry(NULL, base->mName.GetCRC(), &r);
-			printf("Animation value %s, flags %x, type %s\n", r.c_str(), base->mFlags,base->GetMetaClassDescription()->mpTypeInfoName);
+			printf("Animation value flags %x, type %s\n", 
+				base->mFlags,base->GetMetaClassDescription()->mpTypeInfoName);
 		}
+
+		meta.SwitchToMode(MetaStreamMode::eMetaStream_Write,
+			_OpenDataStreamFromDisc("c:/users/lucas/desktop/o.anm",
+				DataStreamMode::eMode_Write));
+		PerformMetaSerializeAsync(&meta, &anm);
+		printf("-done\n");
 	}
 }
 

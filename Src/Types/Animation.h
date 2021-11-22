@@ -26,6 +26,16 @@ struct Animation {
 	u32 mValueDataBufferSize;//no ser
 	void* mpValueDataBuffer;//no ser - a runtime buffer for animation data. size is serialized. might be needed for some value types
 
+	void AddValue(AnimationValueInterfaceBase* i) {
+		u16 version = i->mVersion;
+		for (int x = 0; x < mValues.GetSize(); x++) {
+			if (mValues[x]->mVersion != version)
+				version = mValues[x]->mVersion;
+		}
+		i->mVersion = version;
+		mValues.AddElement(0, NULL, &i);
+	}
+
 	void _DeleteData() {
 		for (int i = 0; i < mValues.GetSize(); i++) {
 			MetaClassDescription* c = mValues[i]->GetMetaClassDescription();
@@ -57,11 +67,90 @@ struct Animation {
 		u32 totalNumOfInterfaces = anm->mValues.GetSize();
 		meta->serialize_uint32(&totalNumOfInterfaces);
 		if (meta->IsWrite()) {
-			//telltale didnt have any writing code (probably made from maya)
-			//so ill wing it latr - make sure version >= 4
-			TelltaleToolLib_RaiseError("Cannot serialize Animations in write mode due to it not"
-				" being supported (yet hopefully).", ErrorSeverity::WARN);
-			return eMetaOp_Fail;
+			if (anm->mVersion > 5 || anm->mVersion < 4) {
+				TelltaleToolLib_RaiseError(
+					"Can only serialize animation versions 4&5", ErrorSeverity::ERR);
+				return eMetaOp_Fail;
+			}
+			meta->serialize_uint32(&anm->mValueDataBufferSize);
+
+			struct __serialize_td {
+				MetaClassDescription* _type;
+				u16 _version;
+				u16 _num;
+			};
+
+			DCArray<__serialize_td> types{};
+			__serialize_td s{};
+			bool b = false;
+			for (int i = 0; i < anm->mValues.GetSize(); i++) {
+				b = false;
+				AnimationValueInterfaceBase* iface = anm->mValues[i];
+				for (int j = 0; j < types.GetSize(); j++) {
+					__serialize_td* p = types.mpStorage + j;
+					if (p->_type == iface->GetMetaClassDescription()) {
+						++p->_num;
+						if (iface->mVersion != p->_version) {
+							TelltaleToolLib_RaiseError(
+								"Detected trying to serialize corrupt animation value"
+								": versions mismatch (use AddValue(..))!",
+								ErrorSeverity::ERR);
+							return eMetaOp_Fail;
+						}
+						b = true;
+						break;
+					}
+				}
+				if (!b) {
+					s._num = 1;
+					s._type = iface->GetMetaClassDescription();
+					s._version = iface->mVersion;
+					types.AddElement(0, NULL, &s);
+				}
+			}
+			u32 size = types.GetSize();
+			meta->serialize_uint32(&size);
+			for (int i = 0; i < size; i++) {
+				__serialize_td* p = types.mpStorage + i;
+				meta->serialize_uint64(&p->_type->mHash);
+				meta->serialize_uint16(&p->_num);
+				meta->serialize_uint16(&p->_version);
+			}
+			for (int i = 0; i < size; i++) {
+				__serialize_td* p = types.mpStorage + i;
+				for (int x = 0; x < anm->mValues.GetSize(); x++) {
+					AnimationValueInterfaceBase* iface = anm->mValues[x];
+					if (iface->GetMetaClassDescription() == p->_type) {
+						iface->SerializeOut(meta);
+					}
+				}
+			}
+			for (int i = 0; i < size; i++) {
+				__serialize_td* p = types.mpStorage + i;
+				for (int x = 0; x < anm->mValues.GetSize(); x++) {
+					AnimationValueInterfaceBase* iface = anm->mValues[x];
+					if (iface->GetMetaClassDescription() == p->_type) {
+						meta->serialize_uint32(&iface->mFlags);
+					}
+				}
+			}
+			if (anm->mValues.GetSize() > 0) {
+				u16 v = 0;
+				meta->serialize_uint16(&v);
+				u64 crc = 0;
+				for (int i = 0; i < size; i++) {
+					__serialize_td* p = types.mpStorage + i;
+					for (int x = 0; x < anm->mValues.GetSize(); x++) {
+						AnimationValueInterfaceBase* iface = anm->mValues[x];
+						if (iface->GetMetaClassDescription() == p->_type) {
+							crc = iface->mName.GetCRC();
+							meta->serialize_uint64(&crc);
+						}
+					}
+				}
+			}
+			meta->EndBlock();
+			return eMetaOp_Succeed;
 		}
 		else {
 			MetaClassDescription* interfaceDesc = 
@@ -107,6 +196,7 @@ struct Animation {
 				//}
 				if (dataBufferSize > 0) {
 					anm->mpValueDataBuffer = (char*)malloc(dataBufferSize);
+					anm->mValueDataBufferSize = dataBufferSize;
 					if (!anm->mpValueDataBuffer) {
 						free(classDescriptions);
 						TelltaleToolLib_RaiseError("Could not allocate "
@@ -139,6 +229,7 @@ struct Animation {
 							}
 							context.BeginValue();
 							//r = eMetaOp_Succeed;
+							base->mVersion = (u16)ver;
 							r=base->SerializeIn(&context, ver);
 							if (r != eMetaOp_Succeed) {
 								static char temp1[350];

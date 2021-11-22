@@ -2455,6 +2455,23 @@ namespace MetaInit {
 			DEFINEKEYFRAMEDVALUE(bool, bool, bool);
 			DEFINEKEYFRAMEDVALUE(String, String, string);
 			DEFINEKEYFRAMEDVALUE(PhonemeKey, PhonemeKey, pkey);
+
+			if (meta_kfv_String_sample.mbNameIsHeapAllocated) {
+				free((void*)meta_kfv_String_sample.mpTypeInfoName);
+				meta_kfv_String_sample.mbNameIsHeapAllocated = false;
+			}
+			meta_kfv_String_sample.mpTypeInfoName = "KeyframedValue<String>::Sample";//typedef string
+			meta_kfv_String_sample.mHash = CRC64_CaseInsensitive(0, 
+				meta_kfv_String_sample.mpTypeInfoName);
+			
+			if (meta_anmi_String.mbNameIsHeapAllocated) {
+				free((void*)meta_anmi_String.mpTypeInfoName);
+				meta_anmi_String.mbNameIsHeapAllocated = false;
+			}
+			meta_anmi_String.mpTypeInfoName = "AnimatedValueInterface<String>";//typedef string
+			meta_anmi_String.mHash = CRC64_CaseInsensitive(0, meta_anmi_String.mpTypeInfoName);
+
+
 			if (meta_kfv_String.mbNameIsHeapAllocated) {
 				free((void*)meta_kfv_String.mpTypeInfoName);
 				meta_kfv_String.mbNameIsHeapAllocated = false;
@@ -2477,6 +2494,35 @@ namespace MetaInit {
 			meta_sklk2_mName.mOffset = (i64)((AnimationValueInterfaceBase*)((CompressedSkeletonPoseKeys2*)NULL));
 			NEXTMEM2(sklk2, mDataSize, CompressedSkeletonPoseKeys2, long, 0, mName);
 			ADD(sklk2);
+
+			DEFINET2(sbentry, SkeletonPoseValue::BoneEntry);
+			FIRSTMEM2(sbentry, mName, SkeletonPoseValue::BoneEntry, symbol, 0);
+			NEXTMEM2(sbentry, mFlags, SkeletonPoseValue::BoneEntry, long, 0, mName);
+			ADD(sbentry);
+			
+			DEFINEDCARRAY(Transform);
+
+			DEFINET2(sample, SkeletonPoseValue::Sample);
+			FIRSTMEM2(sample, mTime, SkeletonPoseValue::Sample, float, 0);
+			NEXTMEM2(sample, mRecipTimeToNextSample, SkeletonPoseValue::Sample,
+				float, 0, mTime);
+			NEXTMEM2(sample, mValues, SkeletonPoseValue::Sample, DCArray_Transform,
+				0, mRecipTimeToNextSample);
+			NEXTMEM2(sample, mTangents, SkeletonPoseValue::Sample, DCArray_i32, 0,
+				mValues);
+			ADD(sample);
+
+			DEFINEDCARRAY2(SkeletonPoseValue::Sample, sample);
+			DEFINEDCARRAY2(SkeletonPoseValue::BoneEntry, bentry);
+
+			DEFINET2(pose, SkeletonPoseValue);
+			FIRSTMEM(pose, "Baseclass_AnimationValueInterfaceBase", mName,
+				SkeletonPoseValue , anminterface, MetaFlag::MetaFlag_BaseClass);
+			meta_pose_mName.mOffset = (i64)((AnimationValueInterfaceBase*)
+				((SkeletonPoseValue*)NULL));
+			NEXTMEM2(pose, mBones, SkeletonPoseValue, DCArray_bentry, 0, mName);
+			NEXTMEM2(pose, mSamples, SkeletonPoseValue, DCArray_sample, 0, mBones);
+			ADD(pose);
 
 		}
 		Initialize2();

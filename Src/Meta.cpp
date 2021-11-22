@@ -820,7 +820,7 @@ bool MetaStream::_SetSection(SectionType s) {
 		return true;
 	}
 	if (!sect.mbEnable || mMode != MetaStreamMode::eMetaStream_Write)return false;
-	sect.mpStream = new DataStreamMemory(0x4000ui64, 0x4000ui64);
+	sect.mpStream = new DataStreamMemory(0, 0x4000ui64);
 	mCurrentSection = s;
 	return true;
 }

@@ -59,6 +59,10 @@ struct AnimationValueInterfaceBase {
 
 	Symbol mName;
 	u32 mFlags;
+	//DO NOT TOUCH
+	u16 mVersion;
+	 
+	AnimationValueInterfaceBase() :mFlags(0), mVersion(0){}
 
 	virtual MetaClassDescription* GetMetaClassDescription() {
 		return ::GetMetaClassDescription<AnimationValueInterfaceBase>();
@@ -204,6 +208,37 @@ struct CompressedSkeletonPoseKeys2 : AnimationValueInterfaceBase {
 	~CompressedSkeletonPoseKeys2() {
 		_ReleaseData();
 	}
+
+};
+
+struct SkeletonPoseValue : AnimationValueInterfaceBase{
+
+	struct Sample {
+		float mTime;
+		float mRecipTimeToNextSample;
+		DCArray<Transform> mValues;
+		DCArray<int> mTangents;
+	};
+
+	struct BoneEntry {
+		Symbol mName;
+		u32 mFlags;
+	};
+
+	virtual MetaClassDescription* GetValueClassDescription() override {
+		return ::GetMetaClassDescription<SkeletonPose>();
+	}
+
+	virtual void* GetMetaClassObjPointer() override {
+		return this;
+	}
+
+	virtual MetaClassDescription* GetMetaClassDescription() override {
+		return ::GetMetaClassDescription<SkeletonPoseValue>();
+	}
+
+	DCArray<BoneEntry> mBones;
+	DCArray<Sample> mSamples;
 
 };
 
