@@ -18,9 +18,6 @@
 
 //set to false to disallow the debug section of meta stream files to be loaded. default true
 #define METASTREAM_ENABLE_DEBUG true
-//Default to false, if true then data will be written to the debug section. The debug section is never read in the release
-//mode of games (so all telltale games) so this does not really affect anything.
-#define METASTREAM_ENABLE_DEBUGSECTION_WRITE false
 
 #if defined(__BYTE_ORDER) && __BYTE_ORDER == __BIG_ENDIAN || \
     defined(__BIG_ENDIAN__) || \

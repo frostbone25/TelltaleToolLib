@@ -580,13 +580,15 @@ void MetaStream::EndDebugSection() {
 }
 
 bool MetaStream::BeginDebugSection() {
-#if METASTREAM_ENABLE_DEBUGSECTION_WRITE == true
 	if ((mCurrentSection == SectionType::eSection_Default && !mDebugSectionDepth && _SetSection(SectionType::eSection_Debug))
 		|| (mCurrentSection == SectionType::eSection_Debug && mDebugSectionDepth > 0)) {
+		if (IsRead() && !mSection[2].mpStream->GetSize()) {
+			_SetSection(eSection_Default);
+			return false;
+		}
 		mDebugSectionDepth++;
 		return true;
 	}
-#endif
 	return false;
 }
 
