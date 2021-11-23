@@ -36,7 +36,7 @@ struct DlgObjIDOwner {
 };
 
 //.DLOG FILES
-struct Dlg : DlgObjIDOwner{
+struct Dlg : DlgObjIDOwner, UID::Generator {//UID im not 100% sure since its only in older games, looks like a UID 
 
 	String mName;
 	long mVersion;
@@ -45,7 +45,8 @@ struct Dlg : DlgObjIDOwner{
 	unsigned long mProjectID;
 	Symbol mResourceLocationID;
 	long mChronology;
-	Flags mFlags;
+	Flags mFlags;//values in DlgNode::ClassFlags
+	DependencyLoader<1> mDependencies;
 	PropertySet mProdReportProps;
 	JiraRecordManager mJiraRecordManager;
 	bool mbHasToolOnlyData;

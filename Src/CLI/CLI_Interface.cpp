@@ -461,40 +461,24 @@ void _anm_chk() {
 
 	struct dirent* dp;
 	static char dir1[1000];
-	DIR* dir = opendir("D:/games/telltale archives/wolf among us");
-	const char* s = "D:/games/telltale archives/wolf among us/";
+	DIR* dir = opendir("D:/games/telltale archives/tales from the borderlands");
+	const char* s = "D:/games/telltale archives/tales from the borderlands/";//TODO check games
 	int l = strlen(s);
 	memcpy(dir1, s, l);
 	std::string f;
 	static u64 array[0x1000];
 	while (dp = readdir(dir)) {
-		if (dp->d_type == DT_REG && dp->d_name[dp->d_namlen-1] == 'm' && dp->d_name[dp->d_namlen - 2] == 'n'
-			&& dp->d_name[dp->d_namlen - 3] == 'a') {
+		if (dp->d_type == DT_REG && dp->d_name[dp->d_namlen-1] == 'g' && dp->d_name[dp->d_namlen - 2] == 'o'
+			&& dp->d_name[dp->d_namlen - 3] == 'l' && dp->d_name[dp->d_namlen - 4] == 'd') {
 			MetaStream meta{};
 			memcpy(dir1 + l, dp->d_name, dp->d_namlen + 1);
 			meta.Open(_OpenDataStreamFromDisc(dir1, DataStreamMode::eMode_Read), MetaStreamMode::eMetaStream_Read, { 0 });
 			printf("- done %s\n",dir1);
-			meta.SetPos(0x25);
-			u32 types = 0;
-			u32 shit = 0;
-			u64 crc = 0;
-			meta.serialize_uint32(&types);
-			for (int i = 0; i < types; i++) {
-				meta.serialize_uint64(&crc);
-				meta.serialize_uint32(&shit);
-				for (int x = 0; x < 0x1000; x++) {
-					if (!array[x]) {
-						array[x] = crc;
-						goto end;
-					}
-					else {
-						if (array[x] == crc)
-							goto end;
-					}
-				}
-				printf("TOO MANY TYPES!!!\n");
-			end:
-				continue;
+			meta.SetPos(0x10);
+			u64 d = 0;
+			meta.serialize_uint64(&d);
+			if (d != 8) {
+				printf("%s !!!!!!!!!!!!!!!\n",dir1);
 			}
 		}
 	}
@@ -546,8 +530,7 @@ int main(int argn, char* argv[]) {
 	_LeakSlave _s;
 
 	{
-		//_testing_func();
-		_testing_func();
+		_anm_chk();
 	}
 
 	return 0;

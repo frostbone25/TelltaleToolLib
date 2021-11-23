@@ -767,6 +767,12 @@ namespace MetaInit {
 			DEFINEDCARRAY(Symbol);
 			DEFINEDCARRAY(bool);
 			DEFINEDCARRAY(String);
+			if (meta_DCArray_String.mbNameIsHeapAllocated) {
+				free((void*)meta_DCArray_String.mpTypeInfoName);
+				meta_DCArray_String.mbNameIsHeapAllocated = false;
+			}
+			meta_DCArray_String.mpTypeInfoName = "DCArray<String>";//string is std::basic_string<...> etc
+			meta_DCArray_String.mHash = CRC64_CaseInsensitive(0, meta_DCArray_String.mpTypeInfoName);
 			DEFINESET(i32);
 			DEFINESET(String);
 			DEFINESET(u32);

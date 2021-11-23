@@ -230,7 +230,7 @@ public:
 				if (!page)return eMetaOp_SymbolNotFoundInDB;
 			}
 			for (int i = 0; i < parents; i++) {
-				if (prop->mPropVersion == 1) {
+				/*if (prop->mPropVersion == 1) {
 					Symbol sym = prop->mParentList[i].
 						mhParent.mHandleObjectInfo.mObjectName;
 					String str;
@@ -242,7 +242,10 @@ public:
 					Symbol sym = prop->mParentList[i].
 						mhParent.mHandleObjectInfo.mObjectName;
 					stream->serialize_Symbol(&sym);
-				}
+				}*/
+				Symbol sym = prop->mParentList[i].
+					mhParent.mHandleObjectInfo.mObjectName;
+				stream->serialize_Symbol(&sym);
 			}
 			if (prop->mPropVersion == 1) {
 				stream->EndBlock();
@@ -280,7 +283,7 @@ public:
 		}
 		else if (stream->mMode == MetaStreamMode::eMetaStream_Read) {
 			for (int i = 0; i < parents; i++) {
-				if (prop->mPropVersion == 1) {
+				/*if (prop->mPropVersion == 1) {
 					String str;
 					stream->serialize_String(&str);
 					Symbol sym(str.c_str());
@@ -290,7 +293,14 @@ public:
 					Symbol sym;
 					stream->serialize_Symbol(&sym);
 					prop->mParentList.AddElement(0, NULL, &sym);
-				}
+				}*/
+				Symbol sym;
+				stream->serialize_Symbol(&sym);
+				prop->mParentList.AddElement(0, NULL, &sym);
+			}
+			if (prop->mPropVersion == 1) {
+				stream->EndBlock();
+				stream->BeginBlock();
 			}
 			u32 numtypes = 0;
 			u32 numvalues = 0;
@@ -303,8 +313,9 @@ public:
 						(typeSymbol.GetCRC());
 				if (!typeDesc) {
 #ifdef DEBUGMODE
-					printf("COULD NOT FIND PROPERTY TYPE OF CRC %llx!\n", typeSymbol.GetCRC());
+					printf("Property class type not found for type with symbol %llx!\n", typeSymbol.GetCRC());
 #endif
+					TelltaleToolLib_RaiseError("Property type in property set not supported (run in debug for to print the CRC)", ErrorSeverity::ERR);
 					return eMetaOp_Fail;
 				}
 				stream->serialize_uint32(&numvalues);

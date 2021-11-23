@@ -19,8 +19,6 @@ struct Animation {
 	Symbol mName;
 	float mLength;
 	float mAdditiveMask;
-	//if you add to this array, you are responsible to delete the pointer
-	//this is because these point to memory in the value buffer (smart telltale, saves allocations)
 	DCArray<AnimationValueInterfaceBase*> mValues;//not serialized/see spec. 
 	ToolProps mToolProps;
 	u32 mValueDataBufferSize;//no ser
