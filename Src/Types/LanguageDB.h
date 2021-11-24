@@ -22,6 +22,16 @@ struct LocalizeInfo {
 	Flags mFlags;
 };
 
+struct LanguageResProxy {
+
+	struct Pending {
+		String mPrefix, mText;
+		Flags mFlags;
+	};
+
+	u32 mID;
+};
+
 struct LanguageResLocal {
 	String mPrefix;
 	String mText;

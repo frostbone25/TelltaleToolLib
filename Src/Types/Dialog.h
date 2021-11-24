@@ -9,7 +9,9 @@
 #include "../Meta.hpp"
 #include "LanguageDB.h"
 #include "PropertySet.h"
+#include "Set.h"
 #include "Map.h"
+#include "T3Texture.h"
 #include "HandleObjectInfo.h"
 #include "Chore.h"
 #include "Rules.h"
@@ -149,6 +151,7 @@ namespace DlgConstants {
 		eChildConditional = 0x18
 	};
 	enum DlgChildClassID {
+		eInvalid = 0xFFFFFFFF,
 		eChildClassStart = 0x63,
 		eChildClassChoice = 0x64,
 		eChildClassChoicesChildPre = 0x65,
@@ -221,8 +224,20 @@ struct DlgVisibilityConditionsOwner {
 	DlgVisibilityConditions mVisCond;
 };
 
+struct DlgStatePropKeyOwner {
+	Map<int, Symbol, std::less<int>> mPropKeys;
+	virtual ~DlgStatePropKeyOwner() {}
+};
+
 struct DlgChild : DlgChainHead, DlgVisibilityConditionsOwner, DlgObjectPropsOwner{
+	Symbol mName;
 	DlgNodeLink mParent;
+	virtual MetaClassDescription* GetMetaClassDescription() {
+		return ::GetMetaClassDescription<DlgChild>();
+	}
+	virtual DlgConstants::DlgChildClassID GetTypeID() {
+		return DlgConstants::DlgChildClassID::eInvalid;
+	}
 };
 
 struct DlgChildSet {
@@ -238,7 +253,15 @@ struct DlgChildSet {
 
 	~DlgChildSet() {
 		_DeleteData();
-	}	
+	}
+
+	virtual MetaClassDescription* GetMetaClassDescription() {
+		return ::GetMetaClassDescription<DlgChildSet>();
+	}
+
+	virtual MetaClassDescription* GetChildDesc() {
+		return ::GetMetaClassDescription<DlgChild>();
+	}
 
 };
 
@@ -253,7 +276,8 @@ struct DlgFolder : DlgObjIDOwner, DlgObjectPropsOwner, DlgChildSet, UID::Owner {
 
 };
 
-struct DlgNode : DlgObjIDOwner, DlgVisibilityConditionsOwner, DlgObjectPropsOwner, UID::Owner {
+struct DlgNode : DlgObjIDOwner, DlgObjectPropsOwner, 
+	DlgStatePropKeyOwner, DlgVisibilityConditionsOwner, UID::Owner {
 
 	DlgNodeLink mPrev, mNext;
 	Symbol mName;
@@ -303,38 +327,299 @@ struct DlgNodeCancelChoices : DlgNode {
 	}
 
 };
+struct DlgCondition : DlgObjIDOwner{};
 
-//TYPES TODO 
+struct DlgConditionSet {
+	DCArray<DlgCondition*> mConditions;
+	virtual ~DlgConditionSet() {
+		for (int i = 0; i < mConditions.GetSize(); i++)
+			delete mConditions[i];
+		mConditions.ClearElements();
+	}
+};
 
-struct DlgChildSetChoice {
+struct DlgChoice : DlgChild, DlgConditionSet {
+	virtual MetaClassDescription* GetMetaClassDescription() {
+		return ::GetMetaClassDescription<DlgChoice>();
+	}
+	virtual DlgConstants::DlgChildClassID GetTypeID() override {
+		return DlgConstants::DlgChildClassID::eChildClassChoice;
+	}
+};
+
+struct DlgChildSetChoice : DlgChildSet {
+	virtual MetaClassDescription* GetChildDesc() override {
+		return ::GetMetaClassDescription<DlgChoice>();
+	}
+	virtual MetaClassDescription* GetMetaClassDescription() override {
+		return ::GetMetaClassDescription<DlgChildSetChoice>();
+	}
+};
+
+struct DlgChoicesChildPre : DlgChild {
+	virtual MetaClassDescription* GetMetaClassDescription() {
+		return ::GetMetaClassDescription<DlgChoicesChildPre>();
+	}
+	virtual DlgConstants::DlgChildClassID GetTypeID() override {
+		return DlgConstants::DlgChildClassID::eChildClassChoicesChildPre;
+	}
+};
+
+struct DlgChoicesChildPost : DlgChild {
+	virtual MetaClassDescription* GetMetaClassDescription() {
+		return ::GetMetaClassDescription<DlgChoicesChildPost>();
+	}
+	virtual DlgConstants::DlgChildClassID GetTypeID() override {
+		return DlgConstants::DlgChildClassID::eChildClassChoicesChildPost;
+	}
+};
+
+struct DlgChildSetChoicesChildPre : DlgChildSet {
+	virtual MetaClassDescription* GetMetaClassDescription() override {
+		return ::GetMetaClassDescription<DlgChildSetChoicesChildPre>();
+	}
+	virtual MetaClassDescription* GetChildDesc() override {
+		return ::GetMetaClassDescription<DlgChoicesChildPre>();
+	}
+};
+
+struct DlgChildSetChoicesChildPost : DlgChildSet {
+	virtual MetaClassDescription* GetMetaClassDescription() override {
+		return ::GetMetaClassDescription<DlgChildSetChoicesChildPost>();
+	}
+	virtual MetaClassDescription* GetChildDesc() override {
+		return ::GetMetaClassDescription<DlgChoicesChildPost>();
+	}
+};
+
+struct DlgConditionalCase : DlgChild {
+	virtual MetaClassDescription* GetMetaClassDescription() override {
+		return ::GetMetaClassDescription<DlgConditionalCase>();
+	}
+	virtual DlgConstants::DlgChildClassID GetTypeID() override {
+		return DlgConstants::DlgChildClassID::eChildClassCase;
+	}
+};
+
+struct DlgChildSetConditionalCase : DlgChildSet {
+	virtual MetaClassDescription* GetMetaClassDescription() override {
+		return ::GetMetaClassDescription<DlgChildSetConditionalCase>();
+	}
+	virtual MetaClassDescription* GetChildDesc() override {
+		return ::GetMetaClassDescription<DlgConditionalCase>();
+	}
+};
+
+struct DateStamp {
+	u8 mSec, mMin, mHour, mMday, mMon, mYear, mWday, mIsdst;//no clue on last
+	u16 mYday;//365>2^8-1
+};
+
+struct Note : UID::Generator, UID::Owner {
+
+	struct Entry : UID::Owner, DlgObjIDOwner {
+		String mAuthor;
+		DateStamp mStamp;
+		String mCategory;
+		String mText;
+	};
+
+	DCArray<Entry*> mEntries;
+	String mName;
 
 };
 
-struct DlgChildSetChoicesChildPre {
+struct NoteCollection : UID::Generator{
+	MetaClassDescription* GetMetaClassDescription() {
+		return ::GetMetaClassDescription <NoteCollection>();
+	}
+	Map<int, Note*, std::less<int>> mNotes;
+	~NoteCollection() {
+		for (int i = 0; i < mNotes.GetSize(); i++)
+			delete mNotes[i].second;
+		mNotes.ClearElements();
+	}
+};
+
+struct DlgNodeCriteria {
+
+	enum TestT {
+		eRequired = 1,
+		eForbidden = 2
+	};
+
+	enum ThresholdT {
+		eAny = 1, eAll = 2
+	};
+
+	enum DefaultResultT {
+		 eDefaultToPass = 1,
+		 eDefaultToNotPass = 2,
+		 eDefaultToNotPassUnlessTransparent =3
+	};
+
+	struct EnumTestT {
+		TestT mVal;
+	};
+
+	struct EnumThresholdT {
+		ThresholdT mVal;
+	};
+
+	struct EnumDefaultResultT {
+		DefaultResultT mVal;
+	};
+
+	EnumTestT mTestType;
+	ThresholdT mFlagsThreshold, mCriteriaThreshold;
+	DefaultResultT mDefaultResult;
+	Flags mClassFlags;//dlgconstants class flags
+	Set<int> mClassIDs;
+
 
 };
 
-struct DlgChildSetChoicesChildPost {
-
+struct DlgLine : UID::Owner, DlgObjIDOwner{
+	LanguageResProxy mLangResProxy;
 };
 
-struct DlgChildSetConditionalCase {
-
-};
-
-struct NoteCollection {//add to its own header if its a file type with extension (i think its .notes)
-
-};
-
-struct DlgLineCollection {
-
+struct DlgLineCollection : UID::Generator {
+	Map<int, DlgLine*, std::less<int>> mLines;
+	MetaClassDescription* GetMetaClassDescription() {
+		return ::GetMetaClassDescription<DlgLineCollection>();
+	}
+	~DlgLineCollection() {
+		for (int i = 0; i < mLines.GetSize(); i++)
+			delete mLines[i].second;
+		mLines.ClearElements();
+	}
 };
 
 // --
 //note dlgnodejump is below Dlg struct since it uses it handle
 
-//start from notes
+struct DlgNodeStats : DlgNode {
 
+	struct Cohort : DlgChild {
+
+		virtual MetaClassDescription* GetMetaClassDescription() {
+			return ::GetMetaClassDescription<Cohort>();
+		}
+
+		virtual DlgConstants::DlgChildClassID GetTypeID() override {
+			return DlgConstants::DlgChildClassID::eChildClassCohort;
+		}
+
+	};
+
+	struct DlgChildSetCohort : DlgChildSet {
+		virtual MetaClassDescription* GetMetaClassDescription() override {
+			return ::GetMetaClassDescription<DlgChildSetCohort>();
+		}
+		virtual MetaClassDescription* GetChildDesc() override {
+			return ::GetMetaClassDescription<Cohort>();//todo make sure child set
+			//derivers implement child desc
+		}
+	};
+
+	enum StatsType {
+		kChoices = 1,
+		kExtended = 2,
+		kCrowdPlay = 3,
+		kRelationships = 4
+	};
+
+	struct EnumStatsType : EnumBase {
+		StatsType mVal;
+	};
+
+	DlgChildSetCohort mCohorts;
+	EnumStatsType mStatsType;
+	Handle<T3Texture> mhImage;
+	LanguageResProxy mDisplayText;
+
+	virtual MetaClassDescription* GetMetaClassDescription() override {
+		return ::GetMetaClassDescription<DlgNodeStats>();
+	}
+
+	virtual DlgConstants::DlgNodeClassID GetClassID() override {
+		return DlgConstants::DlgNodeClassID::eNodeStats;
+	}
+
+};
+
+struct DlgNodeStoryBoard : DlgNode {
+
+	Symbol mStoryBoardImage;
+
+	virtual MetaClassDescription* GetMetaClassDescription() override {
+		return ::GetMetaClassDescription<DlgNodeStoryBoard>();
+	}
+
+	virtual DlgConstants::DlgNodeClassID GetClassID() override {
+		return DlgConstants::DlgNodeClassID::eNodeStoryboard;
+	}
+
+};
+
+struct DlgNodeMarker : DlgNode {
+	//marker node, empty
+	virtual MetaClassDescription* GetMetaClassDescription() override {
+		return ::GetMetaClassDescription<DlgNodeMarker>();
+	}
+
+	virtual DlgConstants::DlgNodeClassID GetClassID() override {
+		return DlgConstants::DlgNodeClassID::eNodeMarker;
+	}
+
+};
+
+struct DlgNodeText : DlgNode {
+
+	LanguageResProxy mLangResProxy;
+
+	virtual MetaClassDescription* GetMetaClassDescription() override {
+		return ::GetMetaClassDescription<DlgNodeText>();
+	}
+
+	virtual DlgConstants::DlgNodeClassID GetClassID() override {
+		return DlgConstants::DlgNodeClassID::eNodeText;
+	}
+
+};
+
+struct DlgNodeParallel : DlgNode {
+
+	struct PElement : DlgChild {
+		virtual MetaClassDescription* GetMetaClassDescription() {
+			return ::GetMetaClassDescription<PElement>();
+		}
+		virtual DlgConstants::DlgChildClassID GetTypeID() override {
+			return DlgConstants::DlgChildClassID::eChildClassPElement;
+		}
+	};
+
+	struct DlgChildSetElement : DlgChildSet {
+		virtual MetaClassDescription* GetMetaClassDescription() override {
+			return ::GetMetaClassDescription<DlgChildSetElement>();
+		}
+		virtual MetaClassDescription* GetChildDesc() override {
+			return ::GetMetaClassDescription<PElement>();
+		}
+	};
+
+	DlgChildSetElement mPElements;//parallel elements
+	DlgNodeCriteria mElemUseCriteria;
+
+	virtual MetaClassDescription* GetMetaClassDescription() override {
+		return ::GetMetaClassDescription<DlgNodeParallel>();
+	}
+
+	virtual DlgConstants::DlgNodeClassID GetClassID() override {
+		return DlgConstants::DlgNodeClassID::eNodeParallel;
+	}
+
+};
 
 struct DlgNodeLogic : DlgNode {
 
@@ -476,6 +761,87 @@ struct DlgNodeChoices : DlgNode {
 
 };
 
+struct DlgNodeSequence : DlgNode {
+
+	struct DlgChildSetElement : DlgChildSet {
+		virtual MetaClassDescription* GetMetaClassDescription() override {
+			return ::GetMetaClassDescription<DlgChildSetElement>();
+		}
+	};
+
+	enum PlaybackModeT {
+		eSequential = 1,
+		eShuffle = 2
+	};
+
+	enum PlayPositionT {
+		eUnspecified =1,
+		eFirst =2,
+		eLast = 3
+	};
+
+	enum RepeatT {
+		eIndefinitely = 1,
+		eOne = 2,
+		eTwo = 3,
+		eThree = 4,
+		eFour = 5,
+		eFive = 6,
+		eSix = 7,
+		eMaxPlusOne = 8
+	};
+
+	enum LifetimeModeT {
+		eLooping = 1,
+		eSingleSequence = 2,
+		eSingleSequenceRepeatFinal = 3
+	};
+
+	PlaybackModeT mPlaybackMode;
+	LifetimeModeT mLifetimeMode;
+	DlgChildSetElement mElements;
+	DlgNodeCriteria mElemUseCriteria;
+
+	virtual MetaClassDescription* GetMetaClassDescription() override {
+		return ::GetMetaClassDescription<DlgNodeSequence>();
+	}
+
+	virtual DlgConstants::DlgNodeClassID GetClassID() override {
+		return DlgConstants::DlgNodeClassID::eNodeSequence;
+	}
+
+};
+
+struct DlgNodeScript : DlgNode {
+
+	String mScriptText;
+	bool mbBlocking;
+	bool mbExecuteOnInstanceRetire;
+
+	virtual MetaClassDescription* GetMetaClassDescription() override {
+		return ::GetMetaClassDescription<DlgNodeScript>();
+	}
+
+	virtual DlgConstants::DlgNodeClassID GetClassID() override {
+		return DlgConstants::DlgNodeClassID::eNodeScript;
+	}
+
+};
+
+struct DlgNodeNotes : DlgNode {
+
+	String mNoteText;
+
+	virtual MetaClassDescription* GetMetaClassDescription() override {
+		return ::GetMetaClassDescription<DlgNodeNotes>();
+	}
+
+	virtual DlgConstants::DlgNodeClassID GetClassID() override {
+		return DlgConstants::DlgNodeClassID::eNodeNotes;
+	}
+
+};
+
 /*
 struct DlgNode : DlgNode {
 
@@ -488,6 +854,15 @@ struct DlgNode : DlgNode {
 	}
 
 };*/
+
+struct DlgFolderChild : DlgChild {
+	virtual MetaClassDescription* GetMetaClassDescription() {
+		return ::GetMetaClassDescription<DlgFolderChild>();
+	}
+	virtual DlgConstants::DlgChildClassID GetTypeID() override {
+		return DlgConstants::DlgChildClassID::eChildClassFolderChild;
+	}
+};
 
 //.DLOG FILES
 struct Dlg : DlgObjIDOwner, UID::Generator {//UID im not 100% sure since its only in older games, looks like a UID 

@@ -187,6 +187,7 @@
     <ClInclude Include="Src\Types\List.h" />
     <ClInclude Include="Src\Types\LocalizationRegistry.h" />
     <ClInclude Include="Src\Types\Map.h" />
+    <ClInclude Include="Src\Types\Note.h" />
     <ClInclude Include="Src\Types\ObjectSpaceIntrinsics.h" />
     <ClInclude Include="Src\Types\ParticleSprite.h" />
     <ClInclude Include="Src\Types\PhonemeTable.h" />
