@@ -2530,7 +2530,148 @@ namespace MetaInit {
 			NEXTMEM2(pose, mSamples, SkeletonPoseValue, DCArray_sample, 0, mBones);
 			ADD(pose);
 
+			DEFINET2(dlgid, DlgObjID);
+			FIRSTMEM2(dlgid, mID, DlgObjID, symbol, 0);
+			ADD(dlgid);
 
+			DEFINET2(dlgidowner, DlgObjIDOwner);
+			FIRSTMEM2(dlgidowner, mDlgObjID, DlgObjIDOwner, dlgid, 0x20);
+			ADD(dlgidowner);
+
+			DEFINET2(dlgprops, DlgObjectProps);
+			ADDFLAGS(dlgprops, MetaFlag::MetaFlag_NoPanelCaption);
+			SERIALIZER(dlgprops, DlgObjectProps);
+			FIRSTMEM2(dlgprops, mFlags, DlgObjectProps, flags, 0x20);
+			ADD(dlgprops);
+
+			DEFINET2(dlgpropo, DlgObjectPropsOwner);
+			FIRSTMEM2(dlgpropo, mDlgObjectProps, DlgObjectPropsOwner, dlgprops, 8);
+			ADD(dlgpropo);
+
+			DEFINET2(dlglink, DlgNodeLink);
+			FIRSTMEM(dlglink, "Baseclass_DlgObjIDOwner", mDlgObjID, DlgNodeLink, dlgidowner, 0x10);
+			meta_dlglink_mDlgObjID.mOffset = (i64)dynamic_cast<DlgObjIDOwner*>((DlgNodeLink*)NULL);
+			NEXTMEM2(dlglink, mRequiredCCType, DlgNodeLink, long, 0, mDlgObjID);
+			ADD(dlglink);
+
+			DEFINET2(dlghead, DlgChainHead);
+			FIRSTMEM(dlghead, "Baseclass_DlgObjIDOwner", mDlgObjID, DlgChainHead, dlgidowner, 0x10);
+			meta_dlghead_mDlgObjID.mOffset = (i64)dynamic_cast<DlgObjIDOwner*>((DlgChainHead*)NULL);
+			NEXTMEM2(dlghead, mLink, DlgChainHead, dlglink, 0, mDlgObjID);
+			ADD(dlghead);
+
+			DEFINET2(dlgdown, DlgDownstreamVisibilityConditions);
+			FIRSTMEM2(dlgdown, mNodeTypeFlags, DlgDownstreamVisibilityConditions, flags, 0);
+			NEXTMEM2(dlgdown, mMaxNumNodeEvals, DlgDownstreamVisibilityConditions, long, 0, mNodeTypeFlags);
+			ADD(dlgdown);
+
+			DEFINET2(dlgvcond, DlgVisibilityConditions);
+			FIRSTMEM2(dlgvcond, mbDiesOff, DlgVisibilityConditions, bool, 0);
+			NEXTMEM2(dlgvcond, mFlags, DlgVisibilityConditions, flags, 0, mbDiesOff);
+			NEXTMEM2(dlgvcond, mDownstreamVisCond, DlgVisibilityConditions,dlgdown, 0, mFlags);
+			NEXTMEM2(dlgvcond, mScriptVisCond, DlgVisibilityConditions, string, 0, mDownstreamVisCond);
+			ADD(dlgvcond);
+
+			DEFINET2(dlgvowner, DlgVisibilityConditionsOwner);
+			ADDFLAGS(dlgvowner, 8);
+			FIRSTMEM2(dlgvowner, mVisCond, DlgVisibilityConditionsOwner, dlgvcond, 0);
+			ADD(dlgvowner);
+
+			DEFINET2(dlgchild, DlgChild);
+			ADDFLAGS(dlgchild, 8);
+			FIRSTMEM(dlgchild, "Baseclass_DlgChainHead", mLink, DlgChainHead, dlghead, 0x10);
+			meta_dlgchild_mLink.mOffset = (i64)dynamic_cast<DlgObjIDOwner*>((DlgChild*)NULL);
+			NEXTMEM2(dlgchild, mName, DlgChild, symbol, 0, mLink);
+			NEXTMEM(dlgchild, "Baseclass_DlgVisibilityConditionsOwner", mVisCond, DlgChild, dlgvowner, 0x10, mName);
+			meta_dlgchild_mVisCond.mOffset = (i64)dynamic_cast<DlgVisibilityConditionsOwner*>((DlgChild*)NULL);
+			NEXTMEM(dlgchild, "Baseclass_DlgObjectPropsOwner", mDlgObjectProps, DlgChild, dlgpropo, 0x10, mVisCond);
+			meta_dlgchild_mDlgObjectProps.mOffset = (i64)dynamic_cast<DlgObjectPropsOwner*>((DlgChild*)NULL);
+			NEXTMEM2(dlgchild, mParent, DlgChild, dlglink, 0x20, mDlgObjectProps);
+			ADD(dlgchild);
+
+			DEFINEDCARRAY2(DlgChild*, childptr);
+
+			DEFINET2(dlgchildset, DlgChildSet);
+			FIRSTMEM2(dlgchildset, mChildren, DlgChildSet, DCArray_childptr, 0x20);
+			NEXTMEM2(dlgchildset, mParent, DlgChildSet, dlglink, 0x20, mChildren);
+			SERIALIZER(dlgchildset, DlgChildSet);
+			ADD(dlgchildset);
+
+			DEFINET2(dfolder, DlgFolder);
+			ADDFLAGS(dfolder, 8);
+			FIRSTMEM(dfolder, "Baseclass_DlgObjIDOwner", mDlgObjID, DlgFolder, dlgidowner, 0x30);
+			meta_dfolder_mDlgObjID.mOffset = (i64)dynamic_cast<DlgObjIDOwner*>((DlgFolder*)NULL);
+			NEXTMEM(dfolder, "Baseclass_DlgObjectPropsOwner", mDlgObjectProps, DlgFolder, dlgpropo, 0x10, mDlgObjID);
+			meta_dfolder_mDlgObjectProps.mOffset = (i64)dynamic_cast<DlgObjectPropsOwner*>((DlgFolder*)NULL);
+			NEXTMEM(dfolder, "Baseclass_DlgChildSet", mChildren, DlgFolder, dlgchildset, 0x10, mDlgObjectProps);
+			meta_dfolder_mChildren.mOffset = (i64)dynamic_cast<DlgChildSet*>((DlgFolder*)NULL);
+			NEXTMEM(dfolder, "Baseclass_UID::Owner", miUniqueID, DlgFolder, uidowner, 0x10, mChildren);
+			meta_dfolder_miUniqueID.mOffset = (i64)dynamic_cast<UID::Owner*>((DlgFolder*)NULL);
+			meta_dfolder_miUniqueID.mGameIndexVersionRange.min = TelltaleToolLib_GetGameKeyIndex("WD4");
+			NEXTMEM2(dfolder, mName, DlgFolder, symbol, 0, miUniqueID);
+			NEXTMEM2(dfolder, mProdReportProps, DlgFolder, prop, 0, mName);
+			ADD(dfolder);
+
+			DEFINET2(dnode, DlgNode);
+			ADDFLAGS(dnode, 8);
+			FIRSTMEM(dnode, "Baseclass_DlgObjIDOwner", mDlgObjID, DlgNode, dlgidowner, 0x30);
+			meta_dnode_mDlgObjID.mOffset = (i64)dynamic_cast<DlgObjIDOwner*>((DlgNode*)NULL);
+			NEXTMEM(dnode, "Baseclass_DlgVisibilityConditionsOwner", mVisCond, DlgNode, dlgvowner, 0x10, mDlgObjID);
+			meta_dnode_mVisCond.mOffset = (i64)dynamic_cast<DlgVisibilityConditionsOwner*>((DlgNode*)NULL);
+			NEXTMEM(dnode, "Baseclass_DlgObjectPropsOwner", mDlgObjectProps, DlgNode, dlgpropo, 0x10, mVisCond);
+			meta_dnode_mDlgObjectProps.mOffset = (i64)dynamic_cast<DlgObjectPropsOwner*>((DlgNode*)NULL);
+			NEXTMEM(dnode, "Baseclass_UID::Owner", miUniqueID, DlgNode, uidowner, 0x10, mDlgObjID);
+			meta_dnode_miUniqueID.mOffset = (i64)dynamic_cast<UID::Owner*>((DlgNode*)NULL);
+			meta_dnode_miUniqueID.mGameIndexVersionRange.min = TelltaleToolLib_GetGameKeyIndex("WD4");
+			NEXTMEM2(dnode, mPrev, DlgNode, dlglink, 0x20, miUniqueID);
+			NEXTMEM2(dnode, mNext, DlgNode, dlglink, 0x20, mPrev);
+			NEXTMEM2(dnode, mName, DlgNode, string, 0x20, mNext);
+			NEXTMEM2(dnode, mFlags, DlgNode, flags, 0x20, mName);
+			NEXTMEM2(dnode, mChainContextTypeID, DlgNode, long, 0x20, mFlags);
+			ADD(dnode);
+
+			DEFINET2(date, DateStamp);
+			FIRSTMEM2(date, mSec, DateStamp, __uint8, 0);
+			NEXTMEM2(date, mMin, DateStamp, __uint8, 0, mSec);
+			NEXTMEM2(date, mHour, DateStamp, __uint8, 0, mMin);
+			NEXTMEM2(date, mMday, DateStamp, __uint8, 0, mHour);
+			NEXTMEM2(date, mMon, DateStamp, __uint8, 0, mMday);
+			NEXTMEM2(date, mYear, DateStamp, __uint8, 0, mMon);
+			NEXTMEM2(date, mWday, DateStamp, __uint8, 0, mYear);
+			NEXTMEM2(date, mYday, DateStamp, ushort, 0, mWday);
+			NEXTMEM2(date, mIsdst, DateStamp, __uint8, 0, mYday);
+			ADD(date);
+
+			DEFINET2(notee, Note::Entry);
+			FIRSTMEM(notee, "Baseclass_UID::Owner", miUniqueID, Note::Entry, uidowner, 0x10);
+			meta_notee_miUniqueID.mOffset = (i64)dynamic_cast<UID::Owner*>((Note::Entry*)NULL);
+			NEXTMEM(notee, "Baseclass_DlgObjIDOwner", mDlgObjID, Note::Entry, dlgidowner, 0x10, miUniqueID);
+			meta_notee_mDlgObjID.mOffset = (i64)dynamic_cast<DlgObjIDOwner*>((Note::Entry*)NULL);
+			NEXTMEM2(notee, mAuthor, Note::Entry, string, 0, mDlgObjID);
+			NEXTMEM2(notee, mStamp, Note::Entry, date, 0, mAuthor);
+			NEXTMEM2(notee, mCategory, Note::Entry, string, 0, mStamp);
+			NEXTMEM2(notee, mText, Note::Entry, string, 0, mCategory);
+			ADD(notee);
+
+			DEFINEDCARRAY2(Note::Entry*, noteentryp);
+
+			DEFINET2(note, Note);
+			SERIALIZER(note, Note);
+			EXT(note, note);
+			FIRSTMEM2(note, mEntries, Note, DCArray_noteentryp, 1);
+			NEXTMEM2(note, mName, Note, string, 0, mEntries);
+			ADD(note);
+
+			DEFINEMAP2(int, Note*, int, notep, std::less<int>);
+
+			DEFINET2(notec, NoteCollection);
+			FIRSTMEM(notec, "Baseclass_UID::Generator", miNextUniqueID, NoteCollection, uidgen, 0x10);
+			meta_notec_miNextUniqueID.mOffset = (i64)dynamic_cast<UID::Generator*>((NoteCollection*)NULL);
+			NEXTMEM2(notec, mNotes, NoteCollection, Map_int_notep, 1, miNextUniqueID);
+			SERIALIZER(notec, NoteCollection);
+			ADD(notec);
+
+			//todo start from node criteria testT enum bases ew
 
 		}
 		Initialize2();

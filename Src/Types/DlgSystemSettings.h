@@ -63,6 +63,9 @@ struct DlgObjectPropsMap : public UID::Generator {
 
 //.DSS FILES
 struct DlgSystemSettings {
+
+	static constexpr const char* msSysFilename = "dialog_system_settings.dss";
+
 	DlgObjectPropsMap mPropsMapUser;
 	DlgObjectPropsMap mPropsMapProduction;
 };

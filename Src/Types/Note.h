@@ -3,8 +3,8 @@
 // the engine and require that if you use this code or library, you give credit to me and
 // the amazing Telltale Games.
 
-#ifndef _NOTES
-#define _NOTES
+#ifndef _NOTE
+#define _NOTE
 
 #include "Dialog.h"
 

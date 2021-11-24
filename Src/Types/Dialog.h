@@ -72,14 +72,14 @@ struct DlgObjID {
 
 struct DlgObjIDOwner {
 
-	DlgObjID mDlgID;
+	DlgObjID mDlgObjID;
 
 };
 
 
 struct DlgObjectProps {
 
-	enum PropsTypeT {
+	enum PropsTypeT : u32 {
 		eUserProps = 1,
 		eProductionProps = 2,
 		eToolProps = 4
@@ -88,10 +88,45 @@ struct DlgObjectProps {
 	PropertySet* mpUserProps, *mpProductionProps, *mpToolProps;
 	Flags mFlags;//PropsTypeT, makes sense to be an enum oh well
 
+	static METAOP_FUNC_IMPL__(SerializeAsync) {
+		CAST_METAOP(DlgObjectProps, obj);
+		if (obj->mpUserProps)
+			obj->mFlags |= PropsTypeT::eUserProps;
+		if (obj->mpProductionProps)
+			obj->mFlags |= PropsTypeT::eProductionProps;
+		if (obj->mpToolProps)
+			obj->mFlags |= PropsTypeT::eToolProps;
+		MetaOpResult r = Meta::MetaOperation_SerializeAsync(pObj, pObjDescription, pContextDescription, pUserData);
+		if (r == eMetaOp_Succeed) {
+			if (meta->IsRead()) {
+				u32 flags = obj->mFlags.mFlags;
+				obj->_DeleteData();
+				obj->mFlags = flags;
+			}
+			if (obj->mFlags.mFlags & eUserProps) {
+				if (!obj->mpUserProps)
+					obj->mpUserProps = new PropertySet();
+				PerformMetaSerializeAsync<PropertySet>(meta, obj->mpUserProps);
+			}
+			if (obj->mFlags.mFlags & eProductionProps) {
+				if (!obj->mpProductionProps)
+					obj->mpProductionProps = new PropertySet();
+				PerformMetaSerializeAsync<PropertySet>(meta, obj->mpProductionProps);
+			}
+			if (obj->mFlags.mFlags & eToolProps) {
+				if (!obj->mpToolProps)
+					obj->mpToolProps = new PropertySet();
+				PerformMetaSerializeAsync<PropertySet>(meta, obj->mpToolProps);
+			}
+		}
+		return r;
+	}
+
 	DlgObjectProps() {
 		mpUserProps = NULL;
 		mpProductionProps = NULL;
 		mpToolProps = NULL;
+		mFlags.mFlags = 0;
 	}
 
 	void _DeleteData() {
@@ -224,10 +259,10 @@ struct DlgVisibilityConditionsOwner {
 	DlgVisibilityConditions mVisCond;
 };
 
-struct DlgStatePropKeyOwner {
-	Map<int, Symbol, std::less<int>> mPropKeys;
-	virtual ~DlgStatePropKeyOwner() {}
-};
+//struct DlgStatePropKeyOwner { //state not serialized, dlgnode originally implements
+//	Map<int, Symbol, std::less<int>> mPropKeys;
+//	virtual ~DlgStatePropKeyOwner() {}
+//};
 
 struct DlgChild : DlgChainHead, DlgVisibilityConditionsOwner, DlgObjectPropsOwner{
 	Symbol mName;
@@ -242,9 +277,10 @@ struct DlgChild : DlgChainHead, DlgVisibilityConditionsOwner, DlgObjectPropsOwne
 
 struct DlgChildSet {
 	DCArray<DlgChild*> mChildren;
+	//not serialized
 	DlgNodeLink mParent;
 
-	void _DeleteData() {
+	INLINE void _DeleteData() {
 		for (int i = 0; i < mChildren.GetSize(); i++) {
 			delete mChildren[i];
 		}
@@ -253,6 +289,49 @@ struct DlgChildSet {
 
 	~DlgChildSet() {
 		_DeleteData();
+	}
+
+	static METAOP_FUNC_IMPL__(SerializeAsync) {
+		CAST_METAOP(DlgChildSet, set);
+		u32 num = set->mChildren.GetSize();
+		if (meta->IsRead())
+			set->_DeleteData();
+		meta->serialize_uint32(&num);
+		u64 crc;
+		MetaClassDescription* d;
+		MetaClassDescription* childDesc = ::GetMetaClassDescription<DlgChild>();
+		if (!childDesc) {
+			TelltaleToolLib_RaiseError("Cannot serialize dialog child set "
+				"until meta has been initialized (no DlgChild type)", ErrorSeverity::ERR);
+			return eMetaOp_Fail;
+		}
+		for (int i = 0; i < num; i++) {
+			if (meta->IsWrite()) {
+				DlgChild* child = set->mChildren[i];
+				crc = child->GetMetaClassDescription()->mHash;
+				meta->serialize_uint64(&crc);
+				MetaOpResult r = PerformMetaSerializeFull(meta, child, child->GetMetaClassDescription());
+				if (r != eMetaOp_Succeed)
+					return r;
+			}
+			else {
+				meta->serialize_uint64(&crc);
+				d = TelltaleToolLib_FindMetaClassDescription_ByHash(crc);
+				if (!d) {
+					TelltaleToolLib_RaiseError("Dialog child set contains unknown child type", ErrorSeverity::ERR);
+					return eMetaOp_Fail;
+				}
+				void* inst = d->New();
+				if (!inst)
+					return eMetaOp_OutOfMemory;
+				MetaOpResult r = PerformMetaSerializeFull(meta, inst, d);
+				if (r != eMetaOp_Succeed)
+					return r;
+				DlgChild* base = (DlgChild*)d->CastToBase(inst, childDesc);
+				set->mChildren.AddElement(0, NULL, &base);
+			}
+		}
+		return eMetaOp_Succeed;
 	}
 
 	virtual MetaClassDescription* GetMetaClassDescription() {
@@ -265,7 +344,7 @@ struct DlgChildSet {
 
 };
 
-struct DlgFolder : DlgObjIDOwner, DlgObjectPropsOwner, DlgChildSet, UID::Owner {
+struct DlgFolder : DlgObjIDOwner, DlgObjectPropsOwner, DlgChildSet, UID::Owner {//UIDs removed from WD4
 
 	Symbol mName;
 	PropertySet mProdReportProps;//production report properties
@@ -277,7 +356,7 @@ struct DlgFolder : DlgObjIDOwner, DlgObjectPropsOwner, DlgChildSet, UID::Owner {
 };
 
 struct DlgNode : DlgObjIDOwner, DlgObjectPropsOwner, 
-	DlgStatePropKeyOwner, DlgVisibilityConditionsOwner, UID::Owner {
+	DlgVisibilityConditionsOwner, UID::Owner {
 
 	DlgNodeLink mPrev, mNext;
 	Symbol mName;
@@ -411,7 +490,7 @@ struct DlgChildSetConditionalCase : DlgChildSet {
 };
 
 struct DateStamp {
-	u8 mSec, mMin, mHour, mMday, mMon, mYear, mWday, mIsdst;//no clue on last
+	u8 mSec, mMin, mHour, mMday, mMon, mYear, mWday, mIsdst;//direct 
 	u16 mYday;//365>2^8-1
 };
 
@@ -427,18 +506,89 @@ struct Note : UID::Generator, UID::Owner {
 	DCArray<Entry*> mEntries;
 	String mName;
 
+	INLINE void _DeleteData() {
+		for (int i = 0; i < mEntries.GetSize(); i++)
+			delete mEntries[i];
+		mEntries.ClearElements();
+	}
+
+	~Note() {
+		_DeleteData();
+	}
+
+	static METAOP_FUNC_IMPL__(SerializeAsync) {
+		CAST_METAOP(Note, note);
+		MetaOpResult r = Meta::MetaOperation_SerializeAsync(pObj, pObjDescription, pContextDescription, pUserData);
+		if (r == eMetaOp_Succeed) {
+			if (meta->IsRead())
+				note->_DeleteData();
+			u32 num = note->mEntries.GetSize();
+			meta->serialize_uint32(&num);
+			MetaClassDescription* entryDesc = ::GetMetaClassDescription<Entry>();
+			if (!entryDesc) {
+				TelltaleToolLib_RaiseError("Meta not initialized to serialize note entry", ErrorSeverity::ERR);
+				return eMetaOp_Fail;
+			}
+			for (int i = 0; i < num; i++) {
+				if (meta->IsRead()) {
+					Entry* e = new Entry;
+					r=PerformMetaSerializeFull(meta, e, entryDesc);
+					if (r != eMetaOp_Succeed)
+						return r;
+					note->mEntries.AddElement(0, NULL, &e);
+				}
+				else {
+					r = PerformMetaSerializeFull(meta, note->mEntries.mpStorage[i], entryDesc);
+					if (r != eMetaOp_Succeed)
+						return r;
+				}
+			}
+		}
+		return r;
+	}
+
 };
 
 struct NoteCollection : UID::Generator{
 	MetaClassDescription* GetMetaClassDescription() {
 		return ::GetMetaClassDescription <NoteCollection>();
 	}
-	Map<int, Note*, std::less<int>> mNotes;
+	Map<int, Note*, std::less<int>> mNotes;//ignore key vals, i just set them to 0 - size-1 since they are runtime UIDs, not serializee
+
+	INLINE void _Del() {
+		for (int i = 0; i < mNotes.GetSize(); i++)
+			delete mNotes[i].second;
+		mNotes.ClearElements();
+	}
+
 	~NoteCollection() {
 		for (int i = 0; i < mNotes.GetSize(); i++)
 			delete mNotes[i].second;
 		mNotes.ClearElements();
 	}
+
+	static METAOP_FUNC_IMPL__(SerializeAsync) {
+		CAST_METAOP(NoteCollection, col);
+		MetaOpResult r = Meta::MetaOperation_SerializeAsync(pObj, pObjDescription, pContextDescription, pUserData);
+		if (r == eMetaOp_Succeed) {
+			if (meta->IsRead())
+				col->_Del();
+			u32 num = col->mNotes.GetSize();
+			meta->serialize_uint32(&num);
+			for (int i = 0; i < num; i++) {
+				if (meta->IsRead()) {
+					Note* note = new Note;
+					PerformMetaSerializeAsync(meta, note);
+					col->mNotes.AddElement(0, &i, &note);
+				}
+				else {
+					PerformMetaSerializeAsync(meta, col->mNotes[i].second);
+				}
+			}
+		}
+		return r;
+	}
+
 };
 
 struct DlgNodeCriteria {
@@ -841,19 +991,6 @@ struct DlgNodeNotes : DlgNode {
 	}
 
 };
-
-/*
-struct DlgNode : DlgNode {
-
-	virtual MetaClassDescription* GetMetaClassDescription() override {
-		return ::GetMetaClassDescription<DlgNode>();
-	}
-
-	virtual DlgConstants::DlgNodeClassID GetClassID() override {
-		return DlgConstants::DlgNodeClassID::eNode;
-	}
-
-};*/
 
 struct DlgFolderChild : DlgChild {
 	virtual MetaClassDescription* GetMetaClassDescription() {
