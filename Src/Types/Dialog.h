@@ -10,6 +10,9 @@
 #include "LanguageDB.h"
 #include "PropertySet.h"
 #include "Map.h"
+#include "HandleObjectInfo.h"
+#include "Chore.h"
+#include "Rules.h"
 
 //SEE https://www.atlassian.com/software/jira - telltale API for using it
 struct JiraRecord {
@@ -250,7 +253,7 @@ struct DlgFolder : DlgObjIDOwner, DlgObjectPropsOwner, DlgChildSet, UID::Owner {
 
 };
 
-struct DlgNode : DlgObjIDOwner, DlgVisibilityConditionsOwner, DlgObjectPropsOwner{//uid?
+struct DlgNode : DlgObjIDOwner, DlgVisibilityConditionsOwner, DlgObjectPropsOwner, UID::Owner {
 
 	DlgNodeLink mPrev, mNext;
 	Symbol mName;
@@ -262,7 +265,229 @@ struct DlgNode : DlgObjIDOwner, DlgVisibilityConditionsOwner, DlgObjectPropsOwne
 	virtual MetaClassDescription* GetMetaClassDescription() {
 		return ::GetMetaClassDescription<DlgNode>();
 	}
+
+	virtual DlgConstants::DlgNodeClassID GetClassID() {
+		return DlgConstants::DlgNodeClassID::eNodeClassInvalid;
+	}
+
 };
+
+struct DlgNodeStart : DlgNode {
+
+	PropertySet mProdReportProps;
+
+	virtual MetaClassDescription* GetMetaClassDescription() override {
+		return ::GetMetaClassDescription<DlgNodeStart>();
+	}
+
+	virtual DlgConstants::DlgNodeClassID GetClassID() override {
+		return DlgConstants::DlgNodeClassID::eNodeStart;
+	}
+
+};
+
+struct DlgNodeCancelChoices : DlgNode {
+
+	enum CancelGroupT {
+		eAllActiveChoices = 1,
+	};
+
+	CancelGroupT mCancelGroup;
+
+	virtual MetaClassDescription* GetMetaClassDescription() override {
+		return ::GetMetaClassDescription<DlgNodeCancelChoices>();
+	}
+
+	virtual DlgConstants::DlgNodeClassID GetClassID() override {
+		return DlgConstants::DlgNodeClassID::eNodeChancelChoices;
+	}
+
+};
+
+//TYPES TODO 
+
+struct DlgChildSetChoice {
+
+};
+
+struct DlgChildSetChoicesChildPre {
+
+};
+
+struct DlgChildSetChoicesChildPost {
+
+};
+
+struct DlgChildSetConditionalCase {
+
+};
+
+struct NoteCollection {//add to its own header if its a file type with extension (i think its .notes)
+
+};
+
+struct DlgLineCollection {
+
+};
+
+// --
+//note dlgnodejump is below Dlg struct since it uses it handle
+
+//start from notes
+
+
+struct DlgNodeLogic : DlgNode {
+
+	Rule mRule;
+
+	virtual MetaClassDescription* GetMetaClassDescription() override {
+		return ::GetMetaClassDescription<DlgNodeLogic>();
+	}
+
+	virtual DlgConstants::DlgNodeClassID GetClassID() override {
+		return DlgConstants::DlgNodeClassID::eNodeLogic;
+	}
+
+};
+
+struct DlgNodeIdle : DlgNode {
+
+	enum OverrideOption {
+		eUseDefaults = 1,
+		eOverride = 2
+	};
+
+	struct EnumOverrideOption : EnumBase {
+		OverrideOption mVal;
+	};
+
+	Handle<Chore> mhIdle;
+	float mTransitionTimeOverride;
+	int mTransitionStyleOverride;
+	int mIdleSlot;
+	EnumOverrideOption mOverrideOptionTime, mOverrideOptionStyle;
+
+	virtual MetaClassDescription* GetMetaClassDescription() override {
+		return ::GetMetaClassDescription<DlgNodeIdle>();
+	}
+
+	virtual DlgConstants::DlgNodeClassID GetClassID() override {
+		return DlgConstants::DlgNodeClassID::eNodeIdle;
+	}
+
+};
+
+struct DlgNodeExit : DlgNode {
+
+	virtual MetaClassDescription* GetMetaClassDescription() override {
+		return ::GetMetaClassDescription<DlgNodeExit>();
+	}
+
+	virtual DlgConstants::DlgNodeClassID GetClassID() override {
+		return DlgConstants::DlgNodeClassID::eNodeExit;
+	}
+
+};
+
+struct DlgNodeExchange : DlgNode {
+
+	enum EntryType {
+		eLine = 1,
+		eNote = 2
+	};
+
+	struct Entry {
+		int mID;
+		EntryType mType;
+	};
+	
+	Handle<Chore> mhChore;
+	NoteCollection* mpNotes;
+	DlgLineCollection* mpLines;
+	DCArray<Entry> mEntries;
+
+	DlgNodeExchange() {
+		mpNotes = NULL;
+		mpLines = NULL;
+	}
+
+	virtual ~DlgNodeExchange() {
+		if (mpLines)
+			delete mpLines;
+		if (mpNotes)
+			delete mpNotes;
+		mpNotes = NULL;
+		mpLines = NULL;
+	}
+
+	virtual MetaClassDescription* GetMetaClassDescription() override {
+		return ::GetMetaClassDescription<DlgNodeExchange>();
+	}
+
+	virtual DlgConstants::DlgNodeClassID GetClassID() override {
+		return DlgConstants::DlgNodeClassID::eNodeExchange;
+	}
+
+};
+
+struct DlgNodeChore : DlgNode {
+
+	Handle<Chore> mhChore;
+	int mPriority;
+	bool mLooping;
+
+	virtual MetaClassDescription* GetMetaClassDescription() override {
+		return ::GetMetaClassDescription<DlgNodeChore>();
+	}
+
+	virtual DlgConstants::DlgNodeClassID GetClassID() override {
+		return DlgConstants::DlgNodeClassID::eNodeChore;
+	}
+
+};
+
+struct DlgNodeConditional : DlgNode {
+
+	DlgChildSetConditionalCase mCases;
+
+	virtual MetaClassDescription* GetMetaClassDescription() override {
+		return ::GetMetaClassDescription<DlgNodeConditional>();
+	}
+
+	virtual DlgConstants::DlgNodeClassID GetClassID() override {
+		return DlgConstants::DlgNodeClassID::eNodeConditional;
+	}
+
+};
+
+struct DlgNodeChoices : DlgNode {
+
+	DlgChildSetChoice mChoices;
+	DlgChildSetChoicesChildPre mPreChoice;
+	DlgChildSetChoicesChildPost mPostChoice;
+
+	virtual MetaClassDescription* GetMetaClassDescription() override {
+		return ::GetMetaClassDescription<DlgNodeChoices>();
+	}
+
+	virtual DlgConstants::DlgNodeClassID GetClassID() override {
+		return DlgConstants::DlgNodeClassID::eNodeChoices;
+	}
+
+};
+
+/*
+struct DlgNode : DlgNode {
+
+	virtual MetaClassDescription* GetMetaClassDescription() override {
+		return ::GetMetaClassDescription<DlgNode>();
+	}
+
+	virtual DlgConstants::DlgNodeClassID GetClassID() override {
+		return DlgConstants::DlgNodeClassID::eNode;
+	}
+
+};*/
 
 //.DLOG FILES
 struct Dlg : DlgObjIDOwner, UID::Generator {//UID im not 100% sure since its only in older games, looks like a UID 
@@ -363,6 +588,56 @@ struct Dlg : DlgObjIDOwner, UID::Generator {//UID im not 100% sure since its onl
 			}
 		}
 		return r;
+	}
+
+};
+
+
+struct DlgNodeJump : DlgNode {
+
+	enum JumpBehaviour {
+		eJumpAndExecute = 1,
+		eJumpExecuteAndReturn = 2,
+		eReturn = 3
+	};
+
+	enum JumpTargetClass {
+		eToName = 1,
+		eToParent = 2,
+		eToNodeAfterParentWaitNode = 3
+	};
+
+	enum VisibilityBehaviour {
+		eIgnoreVisibility = 1,
+		eObeyVisibility = 2,
+	};
+
+	struct EnumJumpTargetClass :EnumBase {
+		JumpTargetClass mVal;
+	};
+
+	struct EnumJumpBehaviour : EnumBase {
+		JumpBehaviour mVal;
+	};
+
+	struct EnumVisibilityBehaviour : EnumBase {
+		VisibilityBehaviour mVal;
+	};
+
+	DlgNodeLink mJumpToLink;
+	Symbol mJumpToName;
+	EnumJumpTargetClass mJumpTargetClass;
+	EnumJumpBehaviour mJumpBehaviour;
+	EnumVisibilityBehaviour mVisibilityBehaviour;
+	int mChoiceTransparency;
+	Handle<Dlg> mhJumpToDlg;
+
+	virtual MetaClassDescription* GetMetaClassDescription() override {
+		return ::GetMetaClassDescription<DlgNodeJump>();
+	}
+
+	virtual DlgConstants::DlgNodeClassID GetClassID() override {
+		return DlgConstants::DlgNodeClassID::eNodeJump;
 	}
 
 };
