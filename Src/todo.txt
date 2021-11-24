@@ -1,8 +1,8 @@
 TODO LIST:
 
-- T3BULLET (just add binary buffer or something, it contains serialized bullet phys lib data)
-- DIALOG
+- DIALOG (todo also old games have a boolean flag at the end, wtf?? if there are 3 then the first two are from the dlgnodescript)
 - ANM WRITING
+- blend graph shit find the files (mcsms2?)
 - D3DMESH
 - META VERSIONING - GO THROUGH ALL TYPES AND ADD MEMBER DESC VERSIONS
 

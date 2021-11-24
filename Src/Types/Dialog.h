@@ -65,7 +65,184 @@ struct DlgObjID {
 	Symbol mID;
 };
 
-struct DlgFolder {
+struct DlgObjIDOwner {
+
+	DlgObjID mDlgID;
+
+};
+
+
+struct DlgObjectProps {
+
+	enum PropsTypeT {
+		eUserProps = 1,
+		eProductionProps = 2,
+		eToolProps = 4
+	};
+	
+	PropertySet* mpUserProps, *mpProductionProps, *mpToolProps;
+	Flags mFlags;//PropsTypeT, makes sense to be an enum oh well
+
+	DlgObjectProps() {
+		mpUserProps = NULL;
+		mpProductionProps = NULL;
+		mpToolProps = NULL;
+	}
+
+	void _DeleteData() {
+		if (mpUserProps)
+			delete mpUserProps;
+		if (mpProductionProps)
+			delete mpProductionProps;
+		if (mpToolProps)
+			delete mpToolProps;
+		mpUserProps = NULL;
+		mpProductionProps = NULL;
+		mpToolProps = NULL;
+		mFlags.mFlags = 0;
+	}
+
+	~DlgObjectProps() {
+		_DeleteData();
+	}
+
+};
+
+struct DlgObjectPropsOwner {
+	DlgObjectProps mDlgObjectProps;
+};
+
+namespace DlgConstants {
+	enum ChainContextTypeID {
+		eCCUnspecified = 1,
+		eCCAction = 2,
+		eCCData = 3
+	};
+	enum DlgNodeClassID {
+		eNodeClassStart = 0,
+		eNodeChoices = 1,
+		eNodeConditional = 2,
+		eNodeChore = 3,
+		eNodeExchange = 4,
+		eNodeExit = 5,
+		eNodeIdle = 6,
+		eNodeJump = 7,
+		eNodeLogic = 8,
+		eNodeScript = 9,
+		eNodeSequence = 10,
+		eNodeStart = 11,
+		eNodeText = 12,
+		eNodeWait = 13,
+		eNodeNotes = 14,
+		eNodeChancelChoices = 15,
+		eNodeParallel = 0x10,
+		eNodeMarker = 0x11,
+		eNodeStoryboard = 0x12,
+		eNodeStats = 0x13,
+		eNodeClassLast = 0x14,
+		eNodeClassInvalid = 0x15,
+		eNodeClassAll = 0x16,
+		eChildChoices = 0x17,
+		eChildConditional = 0x18
+	};
+	enum DlgChildClassID {
+		eChildClassStart = 0x63,
+		eChildClassChoice = 0x64,
+		eChildClassChoicesChildPre = 0x65,
+		eChildClassChoicesChildPost = 0x66,
+		eChildClassElement = 0x67,
+		eChildClassCase = 0x68,
+		eChildClassFolderChild = 0x69,
+		eChildClassPElement = 0x6A,
+		eChildClassCohort = 0x6B,
+		eChildClassLast = 0x6C
+	};
+	//enum DlgClassAIID {
+		//typedefd! D: cant see values
+	//};
+	enum DlgObjectClassFlag {
+		eObjClassInvalid = 0,
+		eObjClassDialog = 1,
+		eObjClassFolder = 2,
+		eObjClassNodeChoices = 4,
+		eObjClassNodeConditional = 8,
+		eObjClassNodeChore = 16,
+		eObjClassNodeExchange = 32,
+		eObjClassNodeExit = 64,
+		eObjClassNodeIdle = 128,
+		eObjClassNodeJump = 256,
+		eObjClassNodeLogic = 512,
+		eObjClassNodeScript = 1024,
+		eObjClassNodeSequence = 2048,
+		eObjClassNodeStart = 4096,
+		eObjClassNodeText = 8192,
+		eObjClassNodeWait = 16384,
+		eObjClassNodeNotes = 0x8000,
+		eObjClassNodeChancelChoices = 0x10000,
+		eObjClassNodeParallel = 0x20000,
+		eObjClassNodeMarker = 0x40000,
+		eObjClassNodeStoryboard = 0x80000,
+		eObjClassNodeStats = 0x100000,
+		eObjClassChildChoices = 0x200000,
+		eObjClassChildChoicesPre = 0x400000,
+		eObjClassChildChoicesPost = 0x800000,
+		eObjClassChildSequence = 0x1000000,
+		eObjClassChildConditional = 0x2000000,
+		eObjClassChildFolder = 0x4000000,
+		eObjClassChildParallel = 0x8000000,
+		eObjClassChildStats = 0x10000000
+	};
+}
+
+struct DlgNodeLink : DlgObjIDOwner {//no UID
+	DlgConstants::ChainContextTypeID mRequiredCCType;//chain context type
+};
+
+struct DlgChainHead : DlgObjIDOwner {
+	DlgNodeLink mLink;
+};
+
+struct DlgDownstreamVisibilityConditions {
+	Flags mNodeTypeFlags;
+	long mMaxNumNodeEvals;
+};
+
+struct DlgVisibilityConditions {
+	bool mbDiesOff;
+	Flags mFlags;
+	DlgDownstreamVisibilityConditions mDownstreamVisCond;
+	String mScriptVisCond;//script function (LUA)
+};
+
+struct DlgVisibilityConditionsOwner {
+	DlgVisibilityConditions mVisCond;
+};
+
+struct DlgChild : DlgChainHead, DlgVisibilityConditionsOwner, DlgObjectPropsOwner{
+	DlgNodeLink mParent;
+};
+
+struct DlgChildSet {
+	DCArray<DlgChild*> mChildren;
+	DlgNodeLink mParent;
+
+	void _DeleteData() {
+		for (int i = 0; i < mChildren.GetSize(); i++) {
+			delete mChildren[i];
+		}
+		mChildren.ClearElements();
+	}
+
+	~DlgChildSet() {
+		_DeleteData();
+	}	
+
+};
+
+struct DlgFolder : DlgObjIDOwner, DlgObjectPropsOwner, DlgChildSet, UID::Owner {
+
+	Symbol mName;
+	PropertySet mProdReportProps;//production report properties
 
 	MetaClassDescription* GetMetaClassDescription() {
 		return ::GetMetaClassDescription<DlgFolder>();
@@ -73,14 +250,18 @@ struct DlgFolder {
 
 };
 
-struct DlgNode {
+struct DlgNode : DlgObjIDOwner, DlgVisibilityConditionsOwner, DlgObjectPropsOwner{//uid?
+
+	DlgNodeLink mPrev, mNext;
+	Symbol mName;
+	Flags mFlags;
+	DlgConstants::ChainContextTypeID mChainContextTypeID;
+
+	virtual ~DlgNode() {}
+
 	virtual MetaClassDescription* GetMetaClassDescription() {
 		return ::GetMetaClassDescription<DlgNode>();
 	}
-};
-
-struct DlgObjIDOwner {
-	DlgObjID mDlgID;
 };
 
 //.DLOG FILES
