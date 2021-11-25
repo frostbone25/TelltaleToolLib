@@ -6,6 +6,8 @@ This is quite a large library, and requires that you understand the fundamentals
 This is a 64bit WINDOWS C++ library and is only meant to be built for windows. It should ideally be linked as a static library; however, if you are going to built it into your application then the header and source files are all in the same directories. Ideally you would copy the whole source into your project (note, credit must be given), and use it like that; this is also a template library for some types so this would benefit. This library should be shipped with/in your applications alongside the oo2core Oodle compression library DLL.
 This library can also be compiled as an application, the CLI folder should be deleted to not compile the CLI translation unit.
 Also note that Telltale Games for functions and classes and members does not use camelCase by default, most words are Capitalised. However they do use hungarian notation (a very c++ style) for all globals variables and member fields.
+#### Important Compiler options
+Must be compiled with /bigobj on the MSVC compiler, other compilers may have a similar option to this.
 
 ### Setting up
 Once you have the code included or static library added to the linker arguments then you can start by including TelltaleToolLib.h first.
