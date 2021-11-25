@@ -283,7 +283,7 @@ public:
 		eIsUndo = 0x4
 	};
 
-	enum SectionType : int {
+	enum SectionType : u32 {
 		eSection_Header = 0x0,
 		eSection_Default = 0x1,
 		eSection_Debug = 0x2,

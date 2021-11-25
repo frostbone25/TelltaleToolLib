@@ -84,7 +84,7 @@ struct DlgObjectProps {
 		eProductionProps = 2,
 		eToolProps = 4
 	};
-	
+
 	PropertySet* mpUserProps, *mpProductionProps, *mpToolProps;
 	Flags mFlags;//PropsTypeT, makes sense to be an enum oh well
 
@@ -634,15 +634,11 @@ struct DlgLine : UID::Owner, DlgObjIDOwner{
 };
 
 struct DlgLineCollection : UID::Generator {
-	Map<int, DlgLine*, std::less<int>> mLines;
+	Map<int, DlgLine, std::less<int>> mLines;
 	MetaClassDescription* GetMetaClassDescription() {
 		return ::GetMetaClassDescription<DlgLineCollection>();
 	}
-	~DlgLineCollection() {
-		for (int i = 0; i < mLines.GetSize(); i++)
-			delete mLines[i].second;
-		mLines.ClearElements();
-	}
+
 };
 
 // --
@@ -667,8 +663,7 @@ struct DlgNodeStats : DlgNode {
 			return ::GetMetaClassDescription<DlgChildSetCohort>();
 		}
 		virtual MetaClassDescription* GetChildDesc() override {
-			return ::GetMetaClassDescription<Cohort>();//todo make sure child set
-			//derivers implement child desc
+			return ::GetMetaClassDescription<Cohort>();
 		}
 	};
 
@@ -913,12 +908,6 @@ struct DlgNodeChoices : DlgNode {
 
 struct DlgNodeSequence : DlgNode {
 
-	struct DlgChildSetElement : DlgChildSet {
-		virtual MetaClassDescription* GetMetaClassDescription() override {
-			return ::GetMetaClassDescription<DlgChildSetElement>();
-		}
-	};
-
 	enum PlaybackModeT {
 		eSequential = 1,
 		eShuffle = 2
@@ -945,6 +934,26 @@ struct DlgNodeSequence : DlgNode {
 		eLooping = 1,
 		eSingleSequence = 2,
 		eSingleSequenceRepeatFinal = 3
+	};
+
+	struct Element : DlgChild {
+		RepeatT mRepeat;
+		PlayPositionT mPlayPosition;
+		virtual MetaClassDescription* GetMetaClassDescription() {
+			return ::GetMetaClassDescription<Element>();
+		}
+		virtual DlgConstants::DlgChildClassID GetTypeID() {
+			return DlgConstants::DlgChildClassID::eChildClassElement;
+		}
+	};
+
+	struct DlgChildSetElement : DlgChildSet {
+		virtual MetaClassDescription* GetMetaClassDescription() override {
+			return ::GetMetaClassDescription<DlgChildSetElement>();
+		}
+		virtual MetaClassDescription* GetChildDesc() override {
+			return ::GetMetaClassDescription<Element>();
+		}
 	};
 
 	PlaybackModeT mPlaybackMode;

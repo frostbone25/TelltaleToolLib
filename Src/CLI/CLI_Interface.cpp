@@ -492,11 +492,10 @@ void _anm_chk() {
 	}
 }
 
-#include "../Types/Animation.h"
-#include "../Types/KeyframedValue.h"
+#include "../Types/Dialog.h"
 
 void _testing_func() {
-	TelltaleToolLib_Initialize("FABLES");
+	TelltaleToolLib_Initialize("MC2");
 
 	TelltaleToolLib_SetGlobalHashDatabaseFromStream(
 		_OpenDataStreamFromDisc("c:/users/lucas/desktop/My Stuff/Projects/HashDB Creator/LibTelltale DB/LibTelltale.HashDB",
@@ -504,23 +503,13 @@ void _testing_func() {
 
 	DataStream* stream = OpenDataStreamFromDisc(
 		"C:/Users/lucas/Desktop/TTArch"
-		"/obj_cloudAnimation.anm", READ);
+		"/env_underneathFredTown.dlog", READ);
 	{
 		MetaStream meta{};
 		meta.Open(stream, MetaStreamMode::eMetaStream_Read, { 0 });
-		Animation anm{};
-		PerformMetaSerializeAsync(&meta, &anm);
-
-		for (int i = 0; i < anm.mValues.GetSize(); i++) {
-			AnimationValueInterfaceBase* base = anm.mValues[i];
-			printf("Animation value flags %x, type %s\n", 
-				base->mFlags,base->GetMetaClassDescription()->mpTypeInfoName);
-		}
-
-		meta.SwitchToMode(MetaStreamMode::eMetaStream_Write,
-			_OpenDataStreamFromDisc("c:/users/lucas/desktop/o.anm",
-				DataStreamMode::eMode_Write));
-		PerformMetaSerializeAsync(&meta, &anm);
+		Dlg dlg{};
+		MetaOpResult r = PerformMetaSerializeAsync(&meta, &dlg);
+		printf("info %s %d\n", dlg.mName.c_str(), r);
 		printf("-done\n");
 	}
 }
@@ -530,7 +519,7 @@ int main(int argn, char* argv[]) {
 	_LeakSlave _s;
 
 	{
-		_anm_chk();
+		_testing_func();
 	}
 
 	return 0;

@@ -1409,7 +1409,8 @@ MetaOpResult Meta::MetaOperation_SerializeAsync(void* pObj, MetaClassDescription
 			stream->BeginBlock();
 		MetaOperation serasync = member->mpMemberDesc->GetOperationSpecialization(74);
 		MetaOpResult r;
-
+		//printf("%s::%s %x\n", pObjDescription->mpTypeInfoName,
+		//	member->mpName, stream->GetPos());
 		if (serasync) {
 			r = serasync(((char*)pObj) + member->mOffset, member->mpMemberDesc, member, pUserData);
 		}

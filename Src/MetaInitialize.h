@@ -161,6 +161,14 @@ meta_Deque_##type##_baseclass.mFlags |= (int)MetaFlag::MetaFlag_BaseClass;\
 meta_Deque_##type##.InstallSpecializedMetaOperation(&meta_Deque_##type##_eMetaOpSerializeAsync);\
 meta_Deque_##type##.Insert();
 
+#define FIRSTMEM1(parent, namestr, memberNameInStruct, memberAlias, pathToMember, typeDesc, flags) \
+DEFINEM(parent, memberNameInStruct);\
+meta_##parent##_##memberNameInStruct##.mpName = namestr;\
+meta_##parent##_##memberNameInStruct##.mOffset = offsetof(pathToMember,memberAlias);\
+meta_##parent##_##memberNameInStruct##.mpMemberDesc = &meta_##typeDesc##;\
+meta_##parent##_##memberNameInStruct##.mFlags |= flags;\
+meta_##parent##.mpFirstMember = &meta_##parent##_##memberNameInStruct##;
+
 #define NEXTMEM1(parent, namestr, memberNameInStruct, memberAlias, pathToMember, typeDesc, flags, previousMember) \
 DEFINEM(parent, memberNameInStruct);\
 meta_##parent##_##memberNameInStruct##.mpName = namestr;\
@@ -1107,9 +1115,9 @@ namespace MetaInit {
 			EXT(scene, scene);
 			ADD(scene);
 
-			DEFINET2(dlgprops, DlgObjectPropsMap);
-			SERIALIZER(dlgprops, DlgObjectPropsMap);
-			ADD(dlgprops);
+			DEFINET2(dlgprops1, DlgObjectPropsMap);
+			SERIALIZER(dlgprops1, DlgObjectPropsMap);
+			ADD(dlgprops1);
 
 			DEFINET2(dlgdef, DlgObjectPropsMap::GroupDefinition);
 			SERIALIZER(dlgdef, DlgObjectPropsMap::GroupDefinition);
@@ -1127,8 +1135,8 @@ namespace MetaInit {
 
 			DEFINET2(dss, DlgSystemSettings);
 			EXT(dss, dss);
-			FIRSTMEM2(dss, mPropsMapUser, DlgSystemSettings, dlgprops, 0);
-			NEXTMEM2(dss, mPropsMapProduction, DlgSystemSettings, dlgprops, 0, mPropsMapUser);
+			FIRSTMEM2(dss, mPropsMapUser, DlgSystemSettings, dlgprops1, 0);
+			NEXTMEM2(dss, mPropsMapProduction, DlgSystemSettings, dlgprops1, 0, mPropsMapUser);
 			ADD(dss);
 
 			DEFINET2(bb, BinaryBuffer);
@@ -2075,10 +2083,10 @@ namespace MetaInit {
 			NEXTMEM2(font, mIsDistanceField, Font, bool, 0, mTexturePages);
 			//NEWER GAMES
 			NEXTMEM4(font, mIsRuntime, Font, bool, 0, mIsDistanceField, TelltaleToolLib_GetGameKeyIndex("WD4"),-1);
-			NEXTMEM2(font, mIsFiltered, Font, bool, 0, mIsRuntime, TelltaleToolLib_GetGameKeyIndex("WD4"), -1);
-			NEXTMEM2(font, mTtfData, Font, bb, 0, mIsFiltered, TelltaleToolLib_GetGameKeyIndex("WD4"), -1);
-			NEXTMEM2(font, mBasePointSize, Font, float, 0, mTtfData, TelltaleToolLib_GetGameKeyIndex("WD4"), -1);
-			NEXTMEM2(font, mPreferredPointSizes, Font, DCArray_uint, 0, mBasePointSize, TelltaleToolLib_GetGameKeyIndex("WD4"), -1);
+			NEXTMEM4(font, mIsFiltered, Font, bool, 0, mIsRuntime, TelltaleToolLib_GetGameKeyIndex("WD4"), -1);
+			NEXTMEM4(font, mTtfData, Font, bb, 0, mIsFiltered, TelltaleToolLib_GetGameKeyIndex("WD4"), -1);
+			NEXTMEM4(font, mBasePointSize, Font, float, 0, mTtfData, TelltaleToolLib_GetGameKeyIndex("WD4"), -1);
+			NEXTMEM4(font, mPreferredPointSizes, Font, DCArray_uint, 0, mBasePointSize, TelltaleToolLib_GetGameKeyIndex("WD4"), -1);
 			//------
 			ADD(font);
 
@@ -2530,10 +2538,6 @@ namespace MetaInit {
 			NEXTMEM2(pose, mSamples, SkeletonPoseValue, DCArray_sample, 0, mBones);
 			ADD(pose);
 
-			DEFINET2(dlgid, DlgObjID);
-			FIRSTMEM2(dlgid, mID, DlgObjID, symbol, 0);
-			ADD(dlgid);
-
 			DEFINET2(dlgidowner, DlgObjIDOwner);
 			FIRSTMEM2(dlgidowner, mDlgObjID, DlgObjIDOwner, dlgid, 0x20);
 			ADD(dlgidowner);
@@ -2580,12 +2584,10 @@ namespace MetaInit {
 			DEFINET2(dlgchild, DlgChild);
 			ADDFLAGS(dlgchild, 8);
 			FIRSTMEM(dlgchild, "Baseclass_DlgChainHead", mLink, DlgChainHead, dlghead, 0x10);
-			meta_dlgchild_mLink.mOffset = (i64)dynamic_cast<DlgObjIDOwner*>((DlgChild*)NULL);
 			NEXTMEM2(dlgchild, mName, DlgChild, symbol, 0, mLink);
 			NEXTMEM(dlgchild, "Baseclass_DlgVisibilityConditionsOwner", mVisCond, DlgChild, dlgvowner, 0x10, mName);
-			meta_dlgchild_mVisCond.mOffset = (i64)dynamic_cast<DlgVisibilityConditionsOwner*>((DlgChild*)NULL);
-			NEXTMEM(dlgchild, "Baseclass_DlgObjectPropsOwner", mDlgObjectProps, DlgChild, dlgpropo, 0x10, mVisCond);
-			meta_dlgchild_mDlgObjectProps.mOffset = (i64)dynamic_cast<DlgObjectPropsOwner*>((DlgChild*)NULL);
+			NEXTMEM(dlgchild, "Baseclass_DlgObjectPropsOwner", 
+				mDlgObjectProps, DlgChild, dlgpropo, 0x10, mVisCond);
 			NEXTMEM2(dlgchild, mParent, DlgChild, dlglink, 0x20, mDlgObjectProps);
 			ADD(dlgchild);
 
@@ -2600,14 +2602,14 @@ namespace MetaInit {
 			DEFINET2(dfolder, DlgFolder);
 			ADDFLAGS(dfolder, 8);
 			FIRSTMEM(dfolder, "Baseclass_DlgObjIDOwner", mDlgObjID, DlgFolder, dlgidowner, 0x30);
-			meta_dfolder_mDlgObjID.mOffset = (i64)dynamic_cast<DlgObjIDOwner*>((DlgFolder*)NULL);
+			//meta_dfolder_mDlgObjID.mOffset = (i64)dynamic_cast<DlgObjIDOwner*>((DlgFolder*)NULL);
 			NEXTMEM(dfolder, "Baseclass_DlgObjectPropsOwner", mDlgObjectProps, DlgFolder, dlgpropo, 0x10, mDlgObjID);
-			meta_dfolder_mDlgObjectProps.mOffset = (i64)dynamic_cast<DlgObjectPropsOwner*>((DlgFolder*)NULL);
+			//meta_dfolder_mDlgObjectProps.mOffset = (i64)dynamic_cast<DlgObjectPropsOwner*>((DlgFolder*)NULL);
 			NEXTMEM(dfolder, "Baseclass_DlgChildSet", mChildren, DlgFolder, dlgchildset, 0x10, mDlgObjectProps);
-			meta_dfolder_mChildren.mOffset = (i64)dynamic_cast<DlgChildSet*>((DlgFolder*)NULL);
+			//meta_dfolder_mChildren.mOffset = (i64)dynamic_cast<DlgChildSet*>((DlgFolder*)NULL);
 			NEXTMEM(dfolder, "Baseclass_UID::Owner", miUniqueID, DlgFolder, uidowner, 0x10, mChildren);
-			meta_dfolder_miUniqueID.mOffset = (i64)dynamic_cast<UID::Owner*>((DlgFolder*)NULL);
-			meta_dfolder_miUniqueID.mGameIndexVersionRange.min = TelltaleToolLib_GetGameKeyIndex("WD4");
+			//meta_dfolder_miUniqueID.mOffset = (i64)dynamic_cast<UID::Owner*>((DlgFolder*)NULL);
+			meta_dfolder_miUniqueID.mGameIndexVersionRange.max = TelltaleToolLib_GetGameKeyIndex("BATMAN2");
 			NEXTMEM2(dfolder, mName, DlgFolder, symbol, 0, miUniqueID);
 			NEXTMEM2(dfolder, mProdReportProps, DlgFolder, prop, 0, mName);
 			ADD(dfolder);
@@ -2615,14 +2617,14 @@ namespace MetaInit {
 			DEFINET2(dnode, DlgNode);
 			ADDFLAGS(dnode, 8);
 			FIRSTMEM(dnode, "Baseclass_DlgObjIDOwner", mDlgObjID, DlgNode, dlgidowner, 0x30);
-			meta_dnode_mDlgObjID.mOffset = (i64)dynamic_cast<DlgObjIDOwner*>((DlgNode*)NULL);
+			//meta_dnode_mDlgObjID.mOffset = (i64)dynamic_cast<DlgObjIDOwner*>((DlgNode*)NULL);
 			NEXTMEM(dnode, "Baseclass_DlgVisibilityConditionsOwner", mVisCond, DlgNode, dlgvowner, 0x10, mDlgObjID);
-			meta_dnode_mVisCond.mOffset = (i64)dynamic_cast<DlgVisibilityConditionsOwner*>((DlgNode*)NULL);
+			//meta_dnode_mVisCond.mOffset = (i64)dynamic_cast<DlgVisibilityConditionsOwner*>((DlgNode*)NULL);
 			NEXTMEM(dnode, "Baseclass_DlgObjectPropsOwner", mDlgObjectProps, DlgNode, dlgpropo, 0x10, mVisCond);
-			meta_dnode_mDlgObjectProps.mOffset = (i64)dynamic_cast<DlgObjectPropsOwner*>((DlgNode*)NULL);
+			//meta_dnode_mDlgObjectProps.mOffset = (i64)dynamic_cast<DlgObjectPropsOwner*>((DlgNode*)NULL);
 			NEXTMEM(dnode, "Baseclass_UID::Owner", miUniqueID, DlgNode, uidowner, 0x10, mDlgObjID);
-			meta_dnode_miUniqueID.mOffset = (i64)dynamic_cast<UID::Owner*>((DlgNode*)NULL);
-			meta_dnode_miUniqueID.mGameIndexVersionRange.min = TelltaleToolLib_GetGameKeyIndex("WD4");
+			//meta_dnode_miUniqueID.mOffset = (i64)dynamic_cast<UID::Owner*>((DlgNode*)NULL);
+			meta_dnode_miUniqueID.mGameIndexVersionRange.max = TelltaleToolLib_GetGameKeyIndex("BATMAN2");
 			NEXTMEM2(dnode, mPrev, DlgNode, dlglink, 0x20, miUniqueID);
 			NEXTMEM2(dnode, mNext, DlgNode, dlglink, 0x20, mPrev);
 			NEXTMEM2(dnode, mName, DlgNode, string, 0x20, mNext);
@@ -2671,7 +2673,111 @@ namespace MetaInit {
 			SERIALIZER(notec, NoteCollection);
 			ADD(notec);
 
-			//todo start from node criteria testT enum bases ew
+			DEFINET2(testt, DlgNodeCriteria::EnumTestT);
+			FIRSTMEM1(testt, "Baseclass_EnumBase", ALAIS, mVal,
+				DlgNodeCriteria::EnumTestT, enumbase, 0x10);
+			NEXTMEM2(testt, mVal, DlgNodeCriteria::EnumTestT, long, 0, ALAIS);
+			FIRSTENUM2(testt, mVal, "eRequired", r, 1, 0);
+			NEXTENUM2(testt, mVal, "eForbidden", f, 2, 0, r);
+			ADDFLAGS(testt, 0x8008);
+			ADD(testt);
+
+			DEFINET2(thresht, DlgNodeCriteria::EnumThresholdT);
+			FIRSTMEM1(thresht, "Baseclass_EnumBase", ALAIS, mVal,
+				DlgNodeCriteria::EnumThresholdT, enumbase, 0x10);
+			NEXTMEM2(thresht, mVal, DlgNodeCriteria::EnumThresholdT, long, 0, ALAIS);
+			FIRSTENUM2(thresht, mVal, "eAny", r, 1, 0);
+			NEXTENUM2(thresht, mVal, "eAll", f, 2, 0, r);
+			ADDFLAGS(thresht, 0x8008);
+			ADD(thresht);
+
+			DEFINET2(deft, DlgNodeCriteria::EnumDefaultResultT);
+			FIRSTMEM1(deft, "Baseclass_EnumBase", ALAIS, mVal,
+				DlgNodeCriteria::EnumDefaultResultT, enumbase, 0x10);
+			NEXTMEM2(deft, mVal, DlgNodeCriteria::EnumDefaultResultT, long, 0, ALAIS);
+			FIRSTENUM2(deft, mVal, "eDefaultToPass", r, 1, 0);
+			NEXTENUM2(deft, mVal, "eDefaultToNotPass", f, 2, 0, r);
+			NEXTENUM2(deft, mVal, "eDefaultToNotPassUnlessTransparent", g, 3, 0, f);
+			ADDFLAGS(deft, 0x8008);
+			ADD(deft);
+
+			DEFINET2(crit, DlgNodeCriteria);
+			FIRSTMEM2(crit, mTestType, DlgNodeCriteria, testt, 0);
+			NEXTMEM2(crit, mFlagsThreshold, DlgNodeCriteria, thresht, 0, mTestType);
+			NEXTMEM2(crit, mCriteriaThreshold, DlgNodeCriteria, thresht, 0, mFlagsThreshold);
+			NEXTMEM2(crit, mDefaultResult, DlgNodeCriteria, deft, 0, mCriteriaThreshold);
+			NEXTMEM2(crit, mClassFlags, DlgNodeCriteria, flags, 0, mDefaultResult);
+			NEXTMEM2(crit, mClassIDs, DlgNodeCriteria, Set_i32, 0, mClassFlags);
+			ADD(crit);
+
+			DEFINET2(res, LanguageResProxy);
+			FIRSTMEM2(res, mID, LanguageResProxy, long, 0);
+			ADD(res);
+
+			DEFINET2(jrecord, JiraRecord);
+			ADD(jrecord);
+
+			DEFINEMAP2(String, JiraRecord*, String, jrecord, std::less<String>);
+
+			DEFINET2(jira, JiraRecordManager);
+			SERIALIZER(jira, JiraRecordManager);
+			FIRSTMEM2(jira, mRecords, JiraRecordManager, Map_String_jrecord, 0);
+			ADD(jira);
+
+			DEFINET2(line, DlgLine);
+			FIRSTMEM1(line, "Baseclass_UID::Owner", ALAISOWNER, miUniqueID,
+				DlgLine, uidowner, 0x10);
+			meta_line_ALAISOWNER.mOffset = (i64)
+				dynamic_cast<UID::Owner*>((DlgLine*)NULL);
+			NEXTMEM1(line, "Baseclass_DlgObjIDOwner", ALAISDLG, mDlgObjID,
+				DlgLine, dlgidowner, 0x30, ALAISOWNER);
+			meta_line_ALAISDLG.mOffset = (i64)
+				dynamic_cast<DlgObjIDOwner*>((DlgLine*)NULL);
+			NEXTMEM2(line, mLangResProxy, DlgLine, res, 0, ALAISDLG);
+			ADD(line);
+
+			DEFINEMAP(int, DlgLine, std::less<int>);
+
+			DEFINET2(lcol, DlgLineCollection);
+			FIRSTMEM1(lcol, "Baseclass_UID::Generator", ALAISGEN, miNextUniqueID,
+				DlgLineCollection, uidgen, 0x10);
+			meta_lcol_ALAISGEN.mOffset = (i64)
+				dynamic_cast<UID::Generator*>((DlgLineCollection*)NULL);
+			NEXTMEM2(lcol, mLines, DlgLineCollection, Map_int_DlgLine, 0,
+				ALAISGEN);
+			ADD(lcol);
+
+			DEFINET2(folderc, DlgFolderChild);
+			FIRSTMEM1(folderc, "Baseclass_DlgChild", CHILDALAIS,mName, 
+				DlgChild, dlgchild, 0x10);
+			//meta_folderc_CHILDALAIS.mOffset = (i64)
+			//	dynamic_cast<DlgChild*>((DlgFolderChild*)NULL);
+			ADD(folderc);
+
+			DEFINET2(dlg, Dlg);
+			SERIALIZER(dlg,Dlg);
+			FIRSTMEM1(dlg, "Baseclass_DlgObjIDOwner", BASE, mDlgObjID,
+				Dlg, dlgidowner, 0x10);
+			NEXTMEM1(dlg, "Baseclass_UID::Generator", BASE1,
+				miNextUniqueID, Dlg, uidgen, 0x10, BASE);
+			meta_dlg_BASE1.mGameIndexVersionRange.max = 
+				TelltaleToolLib_GetGameKeyIndex("BATMAN2");
+			NEXTMEM2(dlg, mName, Dlg, string, 0x20, BASE1);
+			NEXTMEM2(dlg, mVersion, Dlg, long, 0x20, mName);
+			NEXTMEM2(dlg, mDefFolderID, Dlg, dlgid, 0x20, mVersion);
+			NEXTMEM2(dlg, mLangDB, Dlg, landb, 0x20, mDefFolderID);
+			NEXTMEM2(dlg, mProjectID, Dlg, long, 0x20, mLangDB);
+			NEXTMEM2(dlg, mResourceLocationID, Dlg, symbol, 0x20, mProjectID);
+			NEXTMEM2(dlg, mChronology, Dlg, long, 0, mResourceLocationID);
+			NEXTMEM2(dlg, mFlags, Dlg, flags, 0x20, mChronology);
+			NEXTMEM2(dlg, mDependencies, Dlg, dloader, 0x20, mFlags);
+			NEXTMEM2(dlg, mProdReportProps, Dlg, prop, 0, mDependencies);
+			NEXTMEM2(dlg, mJiraRecordManager, Dlg, jira, 0x20, mProdReportProps);
+			NEXTMEM2(dlg, mbHasToolOnlyData, Dlg, bool, 0x20, mJiraRecordManager);
+			EXT(dlg, dlog);
+			ADD(dlg);
+
+
 
 		}
 		Initialize2();
