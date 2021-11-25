@@ -106,17 +106,23 @@ struct DlgObjectProps {
 			if (obj->mFlags.mFlags & eUserProps) {
 				if (!obj->mpUserProps)
 					obj->mpUserProps = new PropertySet();
-				PerformMetaSerializeAsync<PropertySet>(meta, obj->mpUserProps);
+				r=PerformMetaSerializeAsync<PropertySet>(meta, obj->mpUserProps);
+				if (r != eMetaOp_Succeed)
+					return r;
 			}
 			if (obj->mFlags.mFlags & eProductionProps) {
 				if (!obj->mpProductionProps)
 					obj->mpProductionProps = new PropertySet();
-				PerformMetaSerializeAsync<PropertySet>(meta, obj->mpProductionProps);
+				r=PerformMetaSerializeAsync<PropertySet>(meta, obj->mpProductionProps);
+				if (r != eMetaOp_Succeed)
+					return r;
 			}
 			if (obj->mFlags.mFlags & eToolProps) {
 				if (!obj->mpToolProps)
 					obj->mpToolProps = new PropertySet();
-				PerformMetaSerializeAsync<PropertySet>(meta, obj->mpToolProps);
+				r=PerformMetaSerializeAsync<PropertySet>(meta, obj->mpToolProps);
+				if (r != eMetaOp_Succeed)
+					return r;
 			}
 		}
 		return r;
@@ -831,14 +837,36 @@ struct DlgNodeExchange : DlgNode {
 		EntryType mType;
 	};
 	
+	float mPriority;
 	Handle<Chore> mhChore;
 	NoteCollection* mpNotes;
 	DlgLineCollection* mpLines;
 	DCArray<Entry> mEntries;
 
+	static METAOP_FUNC_IMPL__(SerializeAsync) {
+		CAST_METAOP(DlgNodeExchange, node);
+		MetaOpResult r = Meta::MetaOperation_SerializeAsync(pObj, pObjDescription, pContextDescription, pUserData);
+		if (r == eMetaOp_Succeed) {
+			if (node->mFlags.mFlags & 1) {
+				if (!node->mpNotes)
+					node->mpNotes = new NoteCollection;
+				r=PerformMetaSerializeAsync(meta, node->mpNotes);
+				if (r != eMetaOp_Succeed)
+					return r;
+			}
+			if (node->mFlags.mFlags & 2) {
+				if (!node->mpLines)
+					node->mpLines = new DlgLineCollection;
+				r = PerformMetaSerializeAsync(meta, node->mpLines);
+			}
+		}
+		return r;
+	}
+
 	DlgNodeExchange() {
 		mpNotes = NULL;
 		mpLines = NULL;
+		mFlags.mFlags = 0;
 	}
 
 	virtual ~DlgNodeExchange() {
@@ -1079,8 +1107,10 @@ struct Dlg : DlgObjIDOwner, UID::Generator {//UID im not 100% sure since its onl
 					meta->serialize_uint64(&hash);
 					clazz = TelltaleToolLib_FindMetaClassDescription_ByHash(hash);
 					if (!clazz) {
+						static char temp[150];
+						sprintf(temp, "Dialog contains unknown subclass of dialog node %llX", hash);
 						TelltaleToolLib_RaiseError(
-							"Dialog contains unknown subclass of dialog node",
+							temp,
 							ErrorSeverity::ERR);
 						return eMetaOp_Fail;
 					}

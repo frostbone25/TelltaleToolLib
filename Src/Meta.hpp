@@ -1018,6 +1018,32 @@ template<typename T> MetaOpResult PerformMetaSerializeAsync(MetaStream* pStream,
 	return PerformMetaSerializeFull(pStream, pObj, desc);
 }
 
+struct ScriptEnum {
+
+	inline static const char* ENUM_LIGHT_COMPOSER_NODE_LOCATION = "ScriptEnum:LightComposerNodeLocation";
+	inline static const char* ENUM_TEXT_COLOUR_STYLE = "ScriptEnum:TextColorStyle";
+	inline static const char* ENUM_GAMEPAD_BUTTON = "ScriptEnum:GamepadButton";
+	inline static const char* ENUM_LIGHT_COMPOSER_LIGHT_SOURCE_QUADRANT = "ScriptEnum:LightComposerLightSourceQuadrant";
+	inline static const char* ENUM_LIGHT_COMPOSER_CAMERA_ZONE = "ScriptEnum:LightComposerCameraZone";
+	inline static const char* ENUM_AI_DUMMY_POSITION = "ScriptEnum:AIDummyPos";
+	inline static const char* ENUM_BLEND_TYPE = "ScriptEnum:BlendTypes";
+	inline static const char* ENUM_RETICLE_ACTIONS = "ScriptEnum:ReticleActions";
+	inline static const char* ENUM_STRUGGLE_TYPE = "ScriptEnum:StruggleType";
+	inline static const char* ENUM_AI_PATROL_TYPE = "ScriptEnum:AIPatrolType";
+	inline static const char* ENUM_MENU_ALIGN = "ScriptEnum:MenuAlignment";
+	inline static const char* ENUM_MENU_VERTICAL_ALIGN = "ScriptEnum:MenuVerticalAlignment";
+	inline static const char* ENUM_UI_COLOUR = "ScriptEnum:UIColor";
+	inline static const char* ENUM_CHASE_FORWARD_VECTOR = "ScriptEnum:ChaseForwardVector";
+	inline static const char* ENUM_RETICLE_DISPLAY_MODE = "ScriptEnum:Reticle Display Mode";
+	inline static const char* ENUM_CONTROLLER_BUTTONS = "ScriptEnum:ControllerButtons";
+	inline static const char* ENUM_DIALOG_MODE = "ScriptEnum:DialogMode";
+	inline static const char* ENUM_USEABLE_TYPE = "ScriptEnum:UseableType";
+	inline static const char* ENUM_AI_AGENT_STATE = "ScriptEnum:AIAgentState";
+	inline static const char* ENUM_QUICK_TIME_EVENT_TYPE = "ScriptEnum:QTE_Type";
+
+	String mCurValue;
+};
+
 struct BinaryBuffer {
 
 	char* mpData;

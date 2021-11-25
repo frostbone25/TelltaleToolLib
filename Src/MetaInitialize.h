@@ -43,6 +43,8 @@ if(!(meta_##name_.mFlags.mFlags & MetaFlag::Internal_MetaFlag_Initialized)){ \
 meta_##name_.mClassSize = sizeof(Ty);\
 meta_##name_.mpTypeInfoExternalName = typeid(Ty).name();
 
+#define PARENT_OFFSET(parent, child) (char*)(parent*)(child*)0x100 - (char*)(child*)0x100
+
 #define DEFINESARRAY(type,count) DEFINET(sarray_##type##_##count##, SArray<type SEP count>);\
 meta_sarray_##type##_##count##.Initialize(typeid(SArray<type SEP count>));\
 METAOP_CUSTOM(sarray_##type##_##count, eMetaOpSerializeAsync, SArray<type SEP count>::MetaOperation_SerializeAsync);\
@@ -84,6 +86,13 @@ meta_DCArray_##type##_baseclass.mOffset = 0;\
 meta_DCArray_##type##_baseclass.mpMemberDesc = &meta_cinterface;\
 meta_DCArray_##type##_baseclass.mFlags |= (int)MetaFlag::MetaFlag_BaseClass;\
 meta_DCArray_##type##.Insert();
+
+#define DEFINESCRIPTENUM(ENUM_) \
+DEFINET(##ENUM_, ScriptEnum);\
+meta_##ENUM_.Initialize(ScriptEnum::##ENUM_);\
+ADDFLAGS(##ENUM_, MetaFlag::MetaFlag_ScriptEnum);\
+FIRSTMEM2(##ENUM_, mCurValue, ScriptEnum, string, 0);\
+ADD(##ENUM_);
 
 #define DEFINESET(type) DEFINET(Set_##type##, Set<type>);\
 meta_Set_##type##.Initialize(typeid(Set<type>));\
@@ -188,13 +197,13 @@ meta_##parent##_##previousMember##.mpNextMember =& meta_##parent##_##memberNameI
 meta_##parent##_##memberNameInStruct##.mGameIndexVersionRange.min = minVersion;\
 meta_##parent##_##memberNameInStruct##.mGameIndexVersionRange.max = maxVersion;
 
-#define NEXTMEM(parent, namestr, memberNameInStruct, pathToMember, typeDesc, flags, previousMember) \
+#define NEXTMEM(parent, namestr, memberNameInStruct, pathToMember, typeDesc, flags, previousMember, parentclass) \
 DEFINEM(parent, memberNameInStruct);\
 meta_##parent##_##memberNameInStruct##.mpName = namestr;\
 meta_##parent##_##memberNameInStruct##.mOffset = offsetof(pathToMember,memberNameInStruct);\
 meta_##parent##_##memberNameInStruct##.mpMemberDesc = &meta_##typeDesc##;\
 meta_##parent##_##memberNameInStruct##.mFlags |= flags;\
-meta_##parent##_##previousMember##.mpNextMember =& meta_##parent##_##memberNameInStruct##;
+meta_##parent##_##previousMember##.mpNextMember =& meta_##parent##_##memberNameInStruct##;\
 
 
 #define FIRSTMEM(parent, namestr, memberNameInStruct, pathToMember, typeDesc, flags) \
@@ -1126,7 +1135,7 @@ namespace MetaInit {
 			meta_dlgdef_uidowner.mpName = "Baseclass_UID::Owner";
 			meta_dlgdef_uidowner.mpMemberDesc = &meta_uidowner;
 			meta_dlgdef.mpFirstMember = &meta_dlgdef_uidowner;
-			meta_dlgdef_uidowner.mOffset = 0;
+			meta_dlgdef_uidowner.mOffset = PARENT_OFFSET(UID::Owner, DlgObjectPropsMap::GroupDefinition);
 			NEXTMEM2(dlgdef, mGroupCat, DlgObjectPropsMap::GroupDefinition, long, MetaFlag::MetaFlag_EditorHide, uidowner);
 			NEXTMEM2(dlgdef, mVer, DlgObjectPropsMap::GroupDefinition, long, MetaFlag::MetaFlag_EditorHide, mGroupCat);
 			NEXTMEM2(dlgdef, mhProps, DlgObjectPropsMap::GroupDefinition, Handlepropset, MetaFlag::MetaFlag_EditorHide, mVer);
@@ -1531,7 +1540,7 @@ namespace MetaInit {
 			NEXTENUM2(soundmat, mVal, "Wood", Wood, 18, 0, Tile_Hard);
 			DEFINEM(soundmat, base);
 			meta_soundmat_base.mpName = "Baseclass_EnumBase";
-			meta_soundmat_base.mOffset = 0;
+			meta_soundmat_base.mOffset = PARENT_OFFSET(EnumBase, SoundFootsteps::EnumMaterial);
 			meta_soundmat_base.mpMemberDesc = &meta_enumbase;
 			meta_soundmat_mVal.mpNextMember = &meta_soundmat_base;
 			ADD(soundmat);
@@ -2554,13 +2563,13 @@ namespace MetaInit {
 
 			DEFINET2(dlglink, DlgNodeLink);
 			FIRSTMEM(dlglink, "Baseclass_DlgObjIDOwner", mDlgObjID, DlgNodeLink, dlgidowner, 0x10);
-			meta_dlglink_mDlgObjID.mOffset = (i64)dynamic_cast<DlgObjIDOwner*>((DlgNodeLink*)NULL);
+			meta_dlglink_mDlgObjID.mOffset = PARENT_OFFSET(DlgObjIDOwner, DlgNodeLink);
 			NEXTMEM2(dlglink, mRequiredCCType, DlgNodeLink, long, 0, mDlgObjID);
 			ADD(dlglink);
 
 			DEFINET2(dlghead, DlgChainHead);
 			FIRSTMEM(dlghead, "Baseclass_DlgObjIDOwner", mDlgObjID, DlgChainHead, dlgidowner, 0x10);
-			meta_dlghead_mDlgObjID.mOffset = (i64)dynamic_cast<DlgObjIDOwner*>((DlgChainHead*)NULL);
+			meta_dlghead_mDlgObjID.mOffset = PARENT_OFFSET(DlgObjIDOwner, DlgChainHead);
 			NEXTMEM2(dlghead, mLink, DlgChainHead, dlglink, 0, mDlgObjID);
 			ADD(dlghead);
 
@@ -2585,9 +2594,12 @@ namespace MetaInit {
 			ADDFLAGS(dlgchild, 8);
 			FIRSTMEM(dlgchild, "Baseclass_DlgChainHead", mLink, DlgChainHead, dlghead, 0x10);
 			NEXTMEM2(dlgchild, mName, DlgChild, symbol, 0, mLink);
+			meta_dlgchild_mLink.mOffset = PARENT_OFFSET(DlgChainHead, DlgChild);
 			NEXTMEM(dlgchild, "Baseclass_DlgVisibilityConditionsOwner", mVisCond, DlgChild, dlgvowner, 0x10, mName);
 			NEXTMEM(dlgchild, "Baseclass_DlgObjectPropsOwner", 
 				mDlgObjectProps, DlgChild, dlgpropo, 0x10, mVisCond);
+			meta_dlgchild_mVisCond.mOffset = PARENT_OFFSET(DlgVisibilityConditionsOwner, DlgChild);
+			meta_dlgchild_mDlgObjectProps.mOffset = PARENT_OFFSET(DlgObjectPropsOwner, DlgChild);
 			NEXTMEM2(dlgchild, mParent, DlgChild, dlglink, 0x20, mDlgObjectProps);
 			ADD(dlgchild);
 
@@ -2602,13 +2614,13 @@ namespace MetaInit {
 			DEFINET2(dfolder, DlgFolder);
 			ADDFLAGS(dfolder, 8);
 			FIRSTMEM(dfolder, "Baseclass_DlgObjIDOwner", mDlgObjID, DlgFolder, dlgidowner, 0x30);
-			//meta_dfolder_mDlgObjID.mOffset = (i64)dynamic_cast<DlgObjIDOwner*>((DlgFolder*)NULL);
+			meta_dfolder_mDlgObjID.mOffset = PARENT_OFFSET(DlgObjIDOwner, DlgFolder);
 			NEXTMEM(dfolder, "Baseclass_DlgObjectPropsOwner", mDlgObjectProps, DlgFolder, dlgpropo, 0x10, mDlgObjID);
-			//meta_dfolder_mDlgObjectProps.mOffset = (i64)dynamic_cast<DlgObjectPropsOwner*>((DlgFolder*)NULL);
+			meta_dfolder_mDlgObjectProps.mOffset = PARENT_OFFSET(DlgObjectPropsOwner, DlgFolder);
 			NEXTMEM(dfolder, "Baseclass_DlgChildSet", mChildren, DlgFolder, dlgchildset, 0x10, mDlgObjectProps);
-			//meta_dfolder_mChildren.mOffset = (i64)dynamic_cast<DlgChildSet*>((DlgFolder*)NULL);
+			meta_dfolder_mChildren.mOffset = PARENT_OFFSET(DlgChildSet, DlgFolder);
 			NEXTMEM(dfolder, "Baseclass_UID::Owner", miUniqueID, DlgFolder, uidowner, 0x10, mChildren);
-			//meta_dfolder_miUniqueID.mOffset = (i64)dynamic_cast<UID::Owner*>((DlgFolder*)NULL);
+			meta_dfolder_miUniqueID.mOffset = PARENT_OFFSET(UID::Owner, DlgFolder);
 			meta_dfolder_miUniqueID.mGameIndexVersionRange.max = TelltaleToolLib_GetGameKeyIndex("BATMAN2");
 			NEXTMEM2(dfolder, mName, DlgFolder, symbol, 0, miUniqueID);
 			NEXTMEM2(dfolder, mProdReportProps, DlgFolder, prop, 0, mName);
@@ -2617,17 +2629,17 @@ namespace MetaInit {
 			DEFINET2(dnode, DlgNode);
 			ADDFLAGS(dnode, 8);
 			FIRSTMEM(dnode, "Baseclass_DlgObjIDOwner", mDlgObjID, DlgNode, dlgidowner, 0x30);
-			//meta_dnode_mDlgObjID.mOffset = (i64)dynamic_cast<DlgObjIDOwner*>((DlgNode*)NULL);
+			meta_dnode_mDlgObjID.mOffset = PARENT_OFFSET(DlgObjIDOwner, DlgNode);
 			NEXTMEM(dnode, "Baseclass_DlgVisibilityConditionsOwner", mVisCond, DlgNode, dlgvowner, 0x10, mDlgObjID);
-			//meta_dnode_mVisCond.mOffset = (i64)dynamic_cast<DlgVisibilityConditionsOwner*>((DlgNode*)NULL);
+			meta_dnode_mVisCond.mOffset = PARENT_OFFSET(DlgVisibilityConditionsOwner, DlgNode);
 			NEXTMEM(dnode, "Baseclass_DlgObjectPropsOwner", mDlgObjectProps, DlgNode, dlgpropo, 0x10, mVisCond);
-			//meta_dnode_mDlgObjectProps.mOffset = (i64)dynamic_cast<DlgObjectPropsOwner*>((DlgNode*)NULL);
-			NEXTMEM(dnode, "Baseclass_UID::Owner", miUniqueID, DlgNode, uidowner, 0x10, mDlgObjID);
-			//meta_dnode_miUniqueID.mOffset = (i64)dynamic_cast<UID::Owner*>((DlgNode*)NULL);
+			meta_dnode_mDlgObjectProps.mOffset = PARENT_OFFSET(DlgObjectPropsOwner, DlgNode);
+			NEXTMEM(dnode, "Baseclass_UID::Owner", miUniqueID, DlgNode, uidowner, 0x10, mDlgObjectProps);
+			meta_dnode_miUniqueID.mOffset = PARENT_OFFSET(UID::Owner, DlgNode);
 			meta_dnode_miUniqueID.mGameIndexVersionRange.max = TelltaleToolLib_GetGameKeyIndex("BATMAN2");
 			NEXTMEM2(dnode, mPrev, DlgNode, dlglink, 0x20, miUniqueID);
 			NEXTMEM2(dnode, mNext, DlgNode, dlglink, 0x20, mPrev);
-			NEXTMEM2(dnode, mName, DlgNode, string, 0x20, mNext);
+			NEXTMEM2(dnode, mName, DlgNode, symbol, 0x20, mNext);
 			NEXTMEM2(dnode, mFlags, DlgNode, flags, 0x20, mName);
 			NEXTMEM2(dnode, mChainContextTypeID, DlgNode, long, 0x20, mFlags);
 			ADD(dnode);
@@ -2646,9 +2658,9 @@ namespace MetaInit {
 
 			DEFINET2(notee, Note::Entry);
 			FIRSTMEM(notee, "Baseclass_UID::Owner", miUniqueID, Note::Entry, uidowner, 0x10);
-			meta_notee_miUniqueID.mOffset = (i64)dynamic_cast<UID::Owner*>((Note::Entry*)NULL);
+			meta_notee_miUniqueID.mOffset = PARENT_OFFSET(UID::Owner, Note::Entry);
 			NEXTMEM(notee, "Baseclass_DlgObjIDOwner", mDlgObjID, Note::Entry, dlgidowner, 0x10, miUniqueID);
-			meta_notee_mDlgObjID.mOffset = (i64)dynamic_cast<DlgObjIDOwner*>((Note::Entry*)NULL);
+			meta_notee_mDlgObjID.mOffset = PARENT_OFFSET(DlgObjIDOwner, Note::Entry);
 			NEXTMEM2(notee, mAuthor, Note::Entry, string, 0, mDlgObjID);
 			NEXTMEM2(notee, mStamp, Note::Entry, date, 0, mAuthor);
 			NEXTMEM2(notee, mCategory, Note::Entry, string, 0, mStamp);
@@ -2668,7 +2680,7 @@ namespace MetaInit {
 
 			DEFINET2(notec, NoteCollection);
 			FIRSTMEM(notec, "Baseclass_UID::Generator", miNextUniqueID, NoteCollection, uidgen, 0x10);
-			meta_notec_miNextUniqueID.mOffset = (i64)dynamic_cast<UID::Generator*>((NoteCollection*)NULL);
+			meta_notec_miNextUniqueID.mOffset = PARENT_OFFSET(UID::Generator, NoteCollection);
 			NEXTMEM2(notec, mNotes, NoteCollection, Map_int_notep, 1, miNextUniqueID);
 			SERIALIZER(notec, NoteCollection);
 			ADD(notec);
@@ -2727,12 +2739,10 @@ namespace MetaInit {
 			DEFINET2(line, DlgLine);
 			FIRSTMEM1(line, "Baseclass_UID::Owner", ALAISOWNER, miUniqueID,
 				DlgLine, uidowner, 0x10);
-			meta_line_ALAISOWNER.mOffset = (i64)
-				dynamic_cast<UID::Owner*>((DlgLine*)NULL);
+			meta_line_ALAISOWNER.mOffset = PARENT_OFFSET(UID::Owner, DlgLine);
 			NEXTMEM1(line, "Baseclass_DlgObjIDOwner", ALAISDLG, mDlgObjID,
 				DlgLine, dlgidowner, 0x30, ALAISOWNER);
-			meta_line_ALAISDLG.mOffset = (i64)
-				dynamic_cast<DlgObjIDOwner*>((DlgLine*)NULL);
+			meta_line_ALAISDLG.mOffset = PARENT_OFFSET(DlgObjIDOwner, DlgLine);
 			NEXTMEM2(line, mLangResProxy, DlgLine, res, 0, ALAISDLG);
 			ADD(line);
 
@@ -2741,8 +2751,7 @@ namespace MetaInit {
 			DEFINET2(lcol, DlgLineCollection);
 			FIRSTMEM1(lcol, "Baseclass_UID::Generator", ALAISGEN, miNextUniqueID,
 				DlgLineCollection, uidgen, 0x10);
-			meta_lcol_ALAISGEN.mOffset = (i64)
-				dynamic_cast<UID::Generator*>((DlgLineCollection*)NULL);
+			meta_lcol_ALAISGEN.mOffset = PARENT_OFFSET(UID::Generator, DlgLineCollection);
 			NEXTMEM2(lcol, mLines, DlgLineCollection, Map_int_DlgLine, 0,
 				ALAISGEN);
 			ADD(lcol);
@@ -2750,16 +2759,17 @@ namespace MetaInit {
 			DEFINET2(folderc, DlgFolderChild);
 			FIRSTMEM1(folderc, "Baseclass_DlgChild", CHILDALAIS,mName, 
 				DlgChild, dlgchild, 0x10);
-			//meta_folderc_CHILDALAIS.mOffset = (i64)
-			//	dynamic_cast<DlgChild*>((DlgFolderChild*)NULL);
+			meta_folderc_CHILDALAIS.mOffset = PARENT_OFFSET(DlgChild, DlgFolderChild);
 			ADD(folderc);
 
 			DEFINET2(dlg, Dlg);
 			SERIALIZER(dlg,Dlg);
 			FIRSTMEM1(dlg, "Baseclass_DlgObjIDOwner", BASE, mDlgObjID,
 				Dlg, dlgidowner, 0x10);
+			meta_dlg_BASE.mOffset = PARENT_OFFSET(DlgObjIDOwner,Dlg);
 			NEXTMEM1(dlg, "Baseclass_UID::Generator", BASE1,
 				miNextUniqueID, Dlg, uidgen, 0x10, BASE);
+			meta_dlg_BASE1.mOffset = PARENT_OFFSET(UID::Generator, Dlg);
 			meta_dlg_BASE1.mGameIndexVersionRange.max = 
 				TelltaleToolLib_GetGameKeyIndex("BATMAN2");
 			NEXTMEM2(dlg, mName, Dlg, string, 0x20, BASE1);
@@ -2777,7 +2787,52 @@ namespace MetaInit {
 			EXT(dlg, dlog);
 			ADD(dlg);
 
+			DEFINET2(nstart, DlgNodeStart);
+			FIRSTMEM1(nstart, "Baseclass_DlgNode", BASE, mName, DlgNodeStart, dnode, 0x10);
+			meta_nstart_BASE.mOffset = PARENT_OFFSET(DlgNode, DlgNodeStart);
+			ADDFLAGS(nstart, 8);
+			NEXTMEM2(nstart, mProdReportProps, DlgNodeStart, prop, 0, BASE);
+			ADD(nstart);
 
+			DEFINET2(eentry, DlgNodeExchange::Entry);
+			FIRSTMEM2(eentry, mID, DlgNodeExchange::Entry, long, 0);
+			NEXTMEM2(eentry, mType, DlgNodeExchange::Entry, long, MetaFlag::MetaFlag_EnumIntType, mID);
+			ADD(eentry);
+
+			DEFINEDCARRAY2(DlgNodeExchange::Entry, eentry);
+
+			DEFINESCRIPTENUM(ENUM_TEXT_COLOUR_STYLE);
+			DEFINESCRIPTENUM(ENUM_LIGHT_COMPOSER_NODE_LOCATION);
+			DEFINESCRIPTENUM(ENUM_GAMEPAD_BUTTON);
+			DEFINESCRIPTENUM(ENUM_LIGHT_COMPOSER_LIGHT_SOURCE_QUADRANT);
+			DEFINESCRIPTENUM(ENUM_LIGHT_COMPOSER_CAMERA_ZONE);
+			DEFINESCRIPTENUM(ENUM_AI_DUMMY_POSITION);
+			DEFINESCRIPTENUM(ENUM_BLEND_TYPE);
+			DEFINESCRIPTENUM(ENUM_RETICLE_ACTIONS);
+			DEFINESCRIPTENUM(ENUM_STRUGGLE_TYPE);
+			DEFINESCRIPTENUM(ENUM_AI_PATROL_TYPE);
+			DEFINESCRIPTENUM(ENUM_MENU_ALIGN);
+			DEFINESCRIPTENUM(ENUM_MENU_VERTICAL_ALIGN);
+			DEFINESCRIPTENUM(ENUM_UI_COLOUR);
+			DEFINESCRIPTENUM(ENUM_CHASE_FORWARD_VECTOR);
+			DEFINESCRIPTENUM(ENUM_RETICLE_DISPLAY_MODE);
+			DEFINESCRIPTENUM(ENUM_CONTROLLER_BUTTONS);
+			DEFINESCRIPTENUM(ENUM_DIALOG_MODE);
+			DEFINESCRIPTENUM(ENUM_USEABLE_TYPE);
+			DEFINESCRIPTENUM(ENUM_AI_AGENT_STATE);
+			DEFINESCRIPTENUM(ENUM_QUICK_TIME_EVENT_TYPE);
+
+			DEFINET2(dex, DlgNodeExchange);
+			SERIALIZER(dex, DlgNodeExchange);
+			ADDFLAGS(dex, 8);
+			FIRSTMEM2(dex, mPriority, DlgNodeExchange, float, 0);
+			NEXTMEM2(dex, mhChore, DlgNodeExchange, Handlehchore, 0, mPriority);
+			NEXTMEM1(dex, "Baseclass_DlgNode", BASE, mName, DlgNodeExchange, dnode, 0x10, mhChore);
+			meta_dex_BASE.mOffset = PARENT_OFFSET(DlgNode, DlgNodeExchange);
+			NEXTMEM2(dex, mEntries, DlgNodeExchange, DCArray_eentry, 0x20, BASE);
+			ADD(dex);
+
+			//TODO conditional
 
 		}
 		Initialize2();

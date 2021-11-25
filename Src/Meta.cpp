@@ -986,10 +986,12 @@ void* MetaClassDescription::CastToBase(const void* pObj, MetaClassDescription* p
 				if (result = mem->mpMemberDesc->CastToBase(&((char*)pObj)[mem->mOffset], pBaseClassDesc))
 					return result;
 			}
+			mem = mem->mpNextMember;
+			if (!mem)
+				break;
 		}
-		mem = mem->mpNextMember;
-		if (!mem)return NULL;
 	}
+	return NULL;
 }
 
 MetaOperation MetaClassDescription::GetOperationSpecialization(int ID) {
@@ -1048,8 +1050,10 @@ void MetaClassDescription::Insert() {
 }
 
 void MetaClassDescription::Initialize(const char* typeInfoName) {
-	this->mpTypeInfoName = typeInfoName;
-	this->mHash = CRC64_CaseInsensitive(0, typeInfoName);
+	mpTypeInfoName = typeInfoName;
+	if(!mpTypeInfoExternalName)
+		mpTypeInfoExternalName = typeInfoName;
+	mHash = CRC64_CaseInsensitive(0, typeInfoName);
 }
 
 MetaMemberDescription* MetaClassDescription::GetMemberDescription(const char* memberName) {
@@ -1417,6 +1421,8 @@ MetaOpResult Meta::MetaOperation_SerializeAsync(void* pObj, MetaClassDescription
 		else {
 			r = MetaOperation_SerializeAsync(((char*)pObj) + member->mOffset, member->mpMemberDesc, member, pUserData);
 		}
+		if (r != eMetaOp_Succeed)
+			return r;
 		if (desc.mbBlocked) {
 			stream->EndBlock();
 		}

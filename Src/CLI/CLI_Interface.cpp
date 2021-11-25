@@ -502,14 +502,14 @@ void _testing_func() {
 			DataStreamMode::eMode_Read));
 
 	DataStream* stream = OpenDataStreamFromDisc(
-		"C:/Users/lucas/Desktop/TTArch"
+		"D:/games/telltale archives/minecraft story mode - season 1 & 2"
 		"/env_underneathFredTown.dlog", READ);
 	{
 		MetaStream meta{};
 		meta.Open(stream, MetaStreamMode::eMetaStream_Read, { 0 });
 		Dlg dlg{};
 		MetaOpResult r = PerformMetaSerializeAsync(&meta, &dlg);
-		printf("info %s %d\n", dlg.mName.c_str(), r);
+		printf("info %s %d\n", dlg.mName.c_str(), (i32)r);
 		printf("-done\n");
 	}
 }
