@@ -8,6 +8,20 @@
 #include "../TelltaleToolLibrary.h"
 #include "../Blowfish.h"
 
+FILE* openfile_s(const char* fp, const char* m) {
+	FILE* f = fopen(fp, m);
+	if (!f) {
+		static const char* fmt = "Could not open file %s";
+		static const int flen = strlen(fmt);
+		int fpl = strlen(fp);
+		char* errorbuffer = new char[flen + fpl];
+		sprintf(errorbuffer, fmt, fp);
+		TelltaleToolLib_RaiseError(errorbuffer, ErrorSeverity::ERR);
+		delete[] errorbuffer;
+	}
+	return f;
+}
+
 bool DataStream::Copy(DataStream* pDst, unsigned __int64 pDstOffset, unsigned __int64 pSrcOffset, unsigned __int64 size) {
 	static char _CopyBuf[0x10000];
 	if (pDst == this)return true;
@@ -738,13 +752,13 @@ bool DataStreamFile_Win::Serialize(char* buf, unsigned __int64 bufsize) {
 DataStreamFile_Win::DataStreamFile_Win(FileHandle handle, DataStreamMode m) : mHandle{ handle }, DataStream(m) {
 	if (!handle) {
 		mMode = DataStreamMode::eMode_Unset;
-		TelltaleToolLib_RaiseError("File handle passed in was not valid", ErrorSeverity::ERR);
+		mHandle = NULL;
 		return;
 	}
 	struct stat st;
 	fstat(_fileno(handle), &st);
 	if ((st.st_mode & S_IFMT) != S_IFREG){
-		TelltaleToolLib_RaiseError("File handle passed in was not valid", ErrorSeverity::ERR);
+		mHandle = NULL;
 		return;
 	}
 	mStreamOffset = ftell(handle);

@@ -2832,7 +2832,96 @@ namespace MetaInit {
 			NEXTMEM2(dex, mEntries, DlgNodeExchange, DCArray_eentry, 0x20, BASE);
 			ADD(dex);
 
-			//TODO conditional
+			DEFINET2(dccase, DlgChildSetConditionalCase);
+			FIRSTMEM1(dccase, "Baseclass_DlgChildSet", BASE, mChildren, 
+				DlgChildSetConditionalCase,
+				dlgchildset, 0x10);
+			meta_dccase_BASE.mOffset = PARENT_OFFSET(DlgChildSet,
+				DlgChildSetConditionalCase);
+			ADD(dccase);
+
+			DEFINET2(dcond, DlgNodeConditional);
+			ADDFLAGS(dcond, 8);
+			FIRSTMEM1(dcond, "Baseclass_DlgNode", BASE, mName, DlgNodeConditional,
+				dnode, 0x10);
+			meta_dcond_BASE.mOffset = PARENT_OFFSET(DlgNode, DlgNodeConditional);
+			NEXTMEM2(dcond, mCases, DlgNodeConditional, dccase, 0x20, BASE);
+			ADD(dcond);
+
+			DEFINET2(dcase, DlgConditionalCase);
+			ADDFLAGS(dcase, 8);
+			FIRSTMEM1(dcase, "Baseclass_DlgChild", BASE, mName, DlgChild,
+				dlgchild, 0x10);
+			meta_dcase_BASE.mOffset = PARENT_OFFSET(DlgChild,DlgConditionalCase);
+			ADD(dcase);
+
+			DEFINET2(dccase3, DlgChildSetChoicesChildPost);
+			FIRSTMEM1(dccase3, "Baseclass_DlgChildSet", BASE, mChildren,
+				DlgChildSetChoicesChildPost,
+				dlgchildset, 0x10);
+			meta_dccase3_BASE.mOffset = PARENT_OFFSET(DlgChildSet,
+				DlgChildSetChoicesChildPost);
+			ADD(dccase3);
+
+			DEFINET2(dccase2, DlgChildSetChoicesChildPre);
+			FIRSTMEM1(dccase2, "Baseclass_DlgChildSet", BASE, mChildren,
+				DlgChildSetChoicesChildPre,
+				dlgchildset, 0x10);
+			meta_dccase2_BASE.mOffset = PARENT_OFFSET(DlgChildSet,
+				DlgChildSetChoicesChildPre);
+			ADD(dccase2);
+
+			DEFINET2(dccase1, DlgChildSetChoice);
+			FIRSTMEM1(dccase1, "Baseclass_DlgChildSet", BASE, mChildren,
+				DlgChildSetChoice,
+				dlgchildset, 0x10);
+			meta_dccase1_BASE.mOffset = PARENT_OFFSET(DlgChildSet,
+				DlgChildSetChoice);
+			ADD(dccase1);
+
+			DEFINET2(dchoices, DlgNodeChoices);
+			ADDFLAGS(dchoices, 8);
+			FIRSTMEM1(dchoices, "Baseclass_DlgNode", BASE, mName, DlgNodeChoices,
+				dnode, 0x10);
+			meta_dchoices_BASE.mOffset = PARENT_OFFSET(DlgNode, DlgNodeChoices);
+			NEXTMEM2(dchoices, mChoices, DlgNodeChoices, dccase1, 0x20, BASE);
+			NEXTMEM2(dchoices, mPreChoice, DlgNodeChoices, dccase2, 0x20, mChoices);
+			NEXTMEM2(dchoices, mPostChoice, DlgNodeChoices, dccase3, 0x20, mPreChoice);
+			ADD(dchoices);
+
+			DEFINET2(dcondset, DlgConditionSet);
+			SERIALIZER(dcondset, DlgConditionSet);
+			ADD(dcondset);
+
+			DEFINET2(dlgcond, DlgCondition);
+			ADDFLAGS(dlgcond,8);
+			FIRSTMEM1(dlgcond, "Baseclass_DlgObjIDOwner", BASE, mDlgObjID, DlgCondition,
+				dlgidowner, 0x10);
+			meta_dlgcond_BASE.mOffset = PARENT_OFFSET(DlgObjIDOwner, DlgCondition);
+			ADD(dlgcond);
+
+			DEFINET2(dcase1, DlgChoice);
+			ADDFLAGS(dcase1, 8);
+			FIRSTMEM1(dcase1, "Baseclass_DlgChild", BASE, mName, DlgChoice,
+				dlgchild, 0x10);
+			meta_dcase1_BASE.mOffset = PARENT_OFFSET(DlgChild, DlgChoice);
+			NEXTMEM1(dcase1, "Baseclass_DlgConditionSet", BASE1, mName,DlgChoice,
+				dcondset, 0x10, BASE);
+			ADD(dcase1);
+
+			DEFINET2(dcase3, DlgChoicesChildPost);
+			ADDFLAGS(dcase3, 8);
+			FIRSTMEM1(dcase3, "Baseclass_DlgChild", BASE, mName, DlgChoicesChildPost,
+				dlgchild, 0x10);
+			meta_dcase3_BASE.mOffset = PARENT_OFFSET(DlgChild, DlgChoicesChildPost);
+			ADD(dcase3);
+
+			DEFINET2(dcase2, DlgChoicesChildPre);
+			ADDFLAGS(dcase2, 8);
+			FIRSTMEM1(dcase2, "Baseclass_DlgChild", BASE, mName, DlgChoicesChildPre,
+				dlgchild, 0x10);
+			meta_dcase2_BASE.mOffset = PARENT_OFFSET(DlgChild, DlgChoicesChildPre);
+			ADD(dcase2);
 
 		}
 		Initialize2();

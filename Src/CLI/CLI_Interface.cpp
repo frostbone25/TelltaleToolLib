@@ -502,7 +502,8 @@ void _testing_func() {
 			DataStreamMode::eMode_Read));
 
 	DataStream* stream = OpenDataStreamFromDisc(
-		"D:/games/telltale archives/minecraft story mode - season 1 & 2"
+		//"D:/games/telltale archives/minecraft story mode - season 1 & 2"
+		"c:/users/lucas/desktop/ttarch"
 		"/env_underneathFredTown.dlog", READ);
 	{
 		MetaStream meta{};

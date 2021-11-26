@@ -28,15 +28,20 @@ PlatformSpecOpenFile(file_path,\
 
 //Returns a new instance as a pointer which needs to be deleted. Most classes
 //will delete it when done with it (consumers)
-#define _OpenDataStreamFromDisc(file_path, mode) new _OpenDataStreamFromDisc_(file_path, mode)
+#define _OpenDataStreamFromDisc(file_path, mode) \
+new _OpenDataStreamFromDisc_(file_path, mode)
 
 //With line terminator
-#define OpenDataStreamFromDisc(file_path, mode) _OpenDataStreamFromDisc(file_path, mode);
+#define OpenDataStreamFromDisc(file_path, mode) \
+_OpenDataStreamFromDisc(file_path, mode);
+
+FILE* openfile_s(const char* fp, const char* m);
 
 //this is for windows, if on POSIX then include unistd and set the platform specific truncate function to truncate
 #include <io.h>
 #define PlatformSpecTrunc(handle, newsize) _chsize_s(_fileno(handle), newsize)
-#define PlatformSpecOpenFile(file_path,mode) fopen(file_path,mode == DataStreamMode::eMode_Write ? "wb" : "rb")
+#define PlatformSpecOpenFile(file_path,mode)\
+ openfile_s(file_path,mode == DataStreamMode::eMode_Write ? "wb" : "rb")
 #define PlatforSpecCloseFile(handle) fclose(handle)
 
 enum class DataStreamMode : unsigned char {

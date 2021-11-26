@@ -324,6 +324,9 @@ struct DlgChildSet {
 				meta->serialize_uint64(&crc);
 				d = TelltaleToolLib_FindMetaClassDescription_ByHash(crc);
 				if (!d) {
+#ifdef DEBUGMODE
+					printf("Not found [dialog child]: %llX\n", crc);
+#endif
 					TelltaleToolLib_RaiseError("Dialog child set contains unknown child type", ErrorSeverity::ERR);
 					return eMetaOp_Fail;
 				}
@@ -412,7 +415,11 @@ struct DlgNodeCancelChoices : DlgNode {
 	}
 
 };
-struct DlgCondition : DlgObjIDOwner{};
+struct DlgCondition : DlgObjIDOwner{
+	virtual MetaClassDescription* GetMetaClassDescription() {
+		return ::GetMetaClassDescription<DlgCondition>();
+	}
+};
 
 struct DlgConditionSet {
 	DCArray<DlgCondition*> mConditions;
@@ -420,6 +427,51 @@ struct DlgConditionSet {
 		for (int i = 0; i < mConditions.GetSize(); i++)
 			delete mConditions[i];
 		mConditions.ClearElements();
+	}
+	static METAOP_FUNC_IMPL__(SerializeAsync) {
+		CAST_METAOP(DlgConditionSet, set);
+		u32 num = set->mConditions.GetSize();
+		meta->serialize_uint32(&num);
+		u64 crc;
+		MetaClassDescription* mcd;
+		MetaOpResult r;
+		MetaClassDescription* condDesc = ::GetMetaClassDescription<DlgCondition>();
+		if (!condDesc) {
+			TelltaleToolLib_RaiseError("Cannot serialize dialog condition, "
+				"meta not initialized: could not "
+				"find condition metaclass", ErrorSeverity::ERR);
+			return eMetaOp_Fail;
+		}
+		for (int i = 0; i < num; i++) {
+			if (meta->IsWrite()) {
+				mcd = set->mConditions[i]->GetMetaClassDescription();
+				crc = mcd->mHash;
+				meta->serialize_uint64(&crc);
+				r = PerformMetaSerializeFull(meta, set->mConditions[i], mcd);
+				if (r != eMetaOp_Succeed)
+					return r;
+			}else{
+				meta->serialize_uint64(&crc);
+				mcd = TelltaleToolLib_FindMetaClassDescription_ByHash(crc);
+				if (!mcd) {
+#ifdef DEBUGMODE
+					printf("Could not find dialog condition subclass %llX\n", crc);
+#endif
+					TelltaleToolLib_RaiseError(
+						"Dialog condition subclass not found", ErrorSeverity::ERR);
+					return eMetaOp_Fail;
+				}
+				void* inst = mcd->New();
+				if (!inst)
+					return eMetaOp_OutOfMemory;
+				DlgCondition* cond = (DlgCondition*)mcd->CastToBase(inst, condDesc);
+				r = PerformMetaSerializeFull(meta, inst, mcd);
+				if (r != eMetaOp_Succeed)
+					return r;
+				set->mConditions.AddElement(0, NULL, &cond);
+			}
+		}
+		return eMetaOp_Succeed;
 	}
 };
 
