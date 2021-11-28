@@ -1,6 +1,5 @@
 TODO LIST:
 
-- blend graph shit find the files (mcsms2?)
 - D3DMESH
 - META VERSIONING - GO THROUGH ALL TYPES AND ADD MEMBER DESC VERSIONS
 
