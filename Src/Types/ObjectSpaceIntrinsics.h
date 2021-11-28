@@ -3,10 +3,10 @@
 // the engine and require that if you use this code or library, you give credit to me and
 // the amazing Telltale Games.
 
-#include "../Meta.hpp"
-
 #ifndef _OBJ_INTRINS
 #define _OBJ_INTRINS
+
+#include "../Meta.hpp"
 
 template<typename T> struct Curve {//not serialized
 	T cf0, cf1, cf2, cf3;
@@ -51,6 +51,10 @@ struct Vector3 {
 		return eMetaOp_Succeed;
 	}
 
+};
+
+struct BoundingBox {
+	Vector3 mMin, mMax;
 };
 
 struct Sphere {

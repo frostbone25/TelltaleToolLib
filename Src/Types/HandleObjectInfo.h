@@ -41,6 +41,167 @@ struct HandleBase {
 	//HandleObjectInfo* mpHandleObjectInfo; //normally a pointer in the engine
 	//maybe to do with a buffer of them? but anyway
 	HandleObjectInfo mHandleObjectInfo;
+
+	INLINE Symbol GetObjectName() const {
+		return mHandleObjectInfo.mObjectName;
+	}
+
+	INLINE void SetObjectName(Symbol pName) {
+		mHandleObjectInfo.mObjectName = pName;
+	}
+
+	INLINE void SetObjectName(const char* pNameString) {
+		SetObjectName(CRC64_CaseInsensitive(0,pNameString));
+	}
+
+};
+
+//by lib
+struct HandleUncached : HandleBase {
+private:
+	MetaClassDescription* mpDataDescription;
+	void* mpObj;
+public:
+
+	HandleUncached() {
+		mpObj = NULL;
+		mpDataDescription = NULL;
+	}
+
+	HandleUncached& operator=(HandleUncached&& rhs) noexcept {
+		Delete();
+		mpDataDescription = rhs.mpDataDescription;
+		mpObj = rhs.mpObj;
+		rhs.mpDataDescription = NULL;
+		rhs.mpObj = NULL;
+		return *this;
+	}
+
+	HandleUncached& operator=(const HandleUncached& rhs) noexcept {
+		Delete();
+		mpDataDescription = rhs.mpDataDescription;
+		if (rhs.mpObj) {
+			mpObj = mpDataDescription->New();
+			mpDataDescription->CopyConstruct(mpObj, rhs.mpObj);
+		}
+		return *this;
+	}
+
+	HandleUncached(const HandleUncached& rhs) noexcept {
+		*this = rhs;
+	}
+
+	HandleUncached(HandleUncached&& rhs) noexcept {
+		*this = std::move(rhs);
+	}
+
+	INLINE MetaClassDescription* GetTypeDesc() const {
+		return mpDataDescription;
+	}
+
+	INLINE void* GetHandleObjectPointer() const {
+		return mpObj;
+	}
+
+	template<typename T>
+	T* GetValue() const {
+		MetaClassDescription* type = ::GetMetaClassDescription<T>();
+		if (type != mpDataDescription)
+			return NULL;
+		return (T*)GetHandleObjectPointer()
+	}
+
+	INLINE void Delete() {
+		if (mpObj)
+			mpDataDescription->Delete(mpObj);
+		mpObj = NULL;
+	}
+
+
+	//takes ownership completely of param
+	INLINE void SetObjectUnsafe(void* val) {
+		if (mpObj)
+			mpDataDescription->Delete(mpObj);
+		mpObj = val;
+	}
+
+private:
+
+	INLINE bool SetObject(MetaClassDescription* pDesc, void* pVal) {
+		Delete();
+		if (pDesc != mpDataDescription)
+			mpDataDescription = pDesc;
+		mpObj = pVal;
+		return true;
+	}
+
+	static INLINE MetaClassDescription* GetStringDesc() {
+		static MetaClassDescription* strDesc = NULL;
+		if (!strDesc)
+			strDesc = ::TelltaleToolLib_FindMetaClassDescription("String", true);
+		if (!strDesc) {
+			TelltaleToolLib_RaiseError("Meta not initialized: cannot find string description", ErrorSeverity::ERR);
+			return NULL;
+		}
+		return strDesc;
+	}
+
+public:
+
+	template<>
+	String* GetValue<String>() const {
+		MetaClassDescription* desc = GetStringDesc();
+		if (!desc)
+			return NULL;
+		if (mpDataDescription != desc)
+			return NULL;
+		return (String*)GetHandleObjectPointer();
+	}
+
+	//TAKES OWNERSHIP
+	template<typename T>
+	bool SetValue(T* v) {
+		MetaClassDescription* type = ::GetMetaClassDescription<T>();
+		if (!type)
+			return false;
+		return SetObject(type, v);
+	}
+
+	//TAKES OWNERSHIP
+	template<>
+	bool SetValue<String>(String* v) {
+		MetaClassDescription* strDesc = GetStringDesc();
+		if (!strDesc)
+			return false;
+		return SetObject(strDesc, v);
+	}
+
+	~HandleUncached() {
+		Delete();
+	}
+
+	explicit HandleUncached(MetaClassDescription* pDesc, bool bCreate) : HandleUncached() {
+		mpDataDescription = pDesc;
+		if (bCreate)
+			mpObj = pDesc->New();
+	}
+
+	explicit HandleUncached(MetaClassDescription* pDesc) : HandleUncached(pDesc, false) {}
+
+
+	explicit HandleUncached(MetaClassDescription* pDesc, void* pObj) {
+		mpDataDescription = pDesc;
+		mpObj = NULL;
+		if (mpDataDescription)
+			mpObj = pObj;
+	}
+
+	void CreateDefaultObject() {
+		Delete();
+		if (mpDataDescription)
+			mpObj = mpDataDescription->New();
+	}
+
 };
 
 template<typename T> struct Handle : public HandleBase {

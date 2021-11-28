@@ -100,6 +100,7 @@
     <ClInclude Include="Src\Types\Procedural.h" />
     <ClInclude Include="Src\Types\Note.h" />
     <ClInclude Include="Src\Types\BlendGraph.h" />
+    <ClInclude Include="Src\Types\D3DMesh.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include=".gitattributes" />

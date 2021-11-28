@@ -20,6 +20,7 @@
 #include "Set.h"
 #include "List.h"
 #include "Deque.h"
+#include "D3DMesh.h"
 #include "LightProbeData.h"
 #include "SoundEventBankMap.h"
 #include "EventStorage.h"

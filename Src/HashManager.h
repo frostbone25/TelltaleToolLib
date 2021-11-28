@@ -216,14 +216,14 @@ unsigned __int32 INLINE CRC32(unsigned __int32 crc, const char* const buffer, un
 	return result;
 }
 
-unsigned __int64 INLINE CRC64(unsigned __int64 crc, const char* buf, unsigned int len) {
+constexpr unsigned __int64 INLINE CRC64(unsigned __int64 crc, const char* const buf, unsigned int len) {
 	for(int i = 0; i < len; i++){
 		crc = crc_tab[((int)(crc >> 56) ^ buf[i]) & 0xFF] ^ (crc << 8);
 	}
 	return crc;
 }
 
-unsigned __int64 INLINE CRC64(unsigned __int64 crc, const char* buf) {
+constexpr unsigned __int64 INLINE CRC64(unsigned __int64 crc, const char* const buf) {
 	const char* buf1 = buf;
 	while (buf1[0]) {
 		crc = crc_tab[((int)(crc >> 56) ^ buf1[0]) & 0xFF] ^ (crc << 8);
@@ -233,7 +233,7 @@ unsigned __int64 INLINE CRC64(unsigned __int64 crc, const char* buf) {
 }
 
 
-unsigned __int64 INLINE CRC64_CaseInsensitive(unsigned __int64 crc, const char* buf) {
+constexpr unsigned __int64 INLINE CRC64_CaseInsensitive(unsigned __int64 crc, const char* const buf) {
 	const char* cur = buf;
 	while (*cur) {
 		unsigned char ch = cur[0];

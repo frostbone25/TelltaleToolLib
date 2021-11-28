@@ -3396,6 +3396,8 @@ namespace MetaInit {
 			meta_bgm_mbUseAlgorithmicHeadTurn.mSkipVersion = TelltaleToolLib_GetGameKeyIndex("WD3");
 			ADD(bgm);
 
+			//TODO
+			//boundingbox, check sphere, t3 occlusion mesh data, t3 mesh data, d3dmesh
 
 		}
 		Initialize2();

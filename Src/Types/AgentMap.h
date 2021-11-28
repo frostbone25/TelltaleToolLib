@@ -9,9 +9,14 @@
 #include "Map.h"
 #include "Set.h"
 #include "../HashManager.h"
+#include "../Meta.hpp"
 
 //.AMAP FILES
 struct AgentMap {
+
+	inline static Symbol const mszFolder = Symbol("ActorMaps");
+	inline static Symbol const mszPropertyDefaultValue = Symbol("_agents.amap");
+	inline static Symbol const kszPropertyKey = Symbol("Agent Map");
 
 	struct AgentMapEntry {
 		String mzName;

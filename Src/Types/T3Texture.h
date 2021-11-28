@@ -114,7 +114,7 @@ enum PlatformType {
 
 };
 
-struct EnumPlatformType {
+struct EnumPlatformType : EnumBase {
 	PlatformType mVal;
 };
 

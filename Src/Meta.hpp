@@ -454,7 +454,7 @@ public:
 	};
 
 	Symbol(void) : mCrc64(0) {}
-	Symbol(char const* pString) {
+	Symbol(const char const* pString) {
 		mCrc64 = pString ? CRC64_CaseInsensitive(0, pString) : 0;
 	}
 	Symbol(const String& pString) {
@@ -462,6 +462,9 @@ public:
 	}
 
 	constexpr Symbol(u64 crc) : mCrc64(crc) {}
+	constexpr Symbol(const char* const pString) {
+		mCrc64 = CRC64_CaseInsensitive(0, pString);
+	}
 
 	Symbol& operator=(const Symbol& rhs) {
 		this->mCrc64 = rhs.mCrc64;
@@ -500,6 +503,10 @@ public:
 		MetaMemberDescription* pContextDescription, void* pUserData) {
 		static_cast<MetaStream*>(pUserData)->serialize_Symbol(static_cast<Symbol*>(pObj));
 		return eMetaOp_Succeed;
+	}
+
+	INLINE bool operator==(const Symbol& o) {
+		return o.mCrc64 == mCrc64;
 	}
 
 	static const Symbol kEmptySymbol;
@@ -1019,6 +1026,286 @@ template<typename T> MetaOpResult PerformMetaSerializeAsync(MetaStream* pStream,
 	MetaClassDescription* desc = GetMetaClassDescription(typeid(T).name());
 	if (!desc || !pStream)return eMetaOp_Fail;
 	return PerformMetaSerializeFull(pStream, pObj, desc);
+}
+
+namespace RenderPostMaterial {
+	inline Symbol const kPropKeyMaterialTime("Post - Material Time");
+	inline Symbol const kPropKeyMaterial("Post - Material");
+	inline Symbol const kPropKeyRenderLayer("Post - Render Layer");
+}
+
+namespace T3MaterialUtil {
+	inline Symbol const kPropKeyAlphaMeshCullsLines("Material - Force Linear Culls Lines");
+	inline Symbol const kPropKeyBlendMode("Material - Blend Mode");
+	inline Symbol const kPropKeyShadowCastEnable("Material - Shadow Cast Enable");
+	inline Symbol const kPropKeyCellBands("Material - Cell Bands");
+	inline Symbol const kPropKeyClothOffsetScale("Material - Cloth Offset Fix");
+	inline Symbol const kPropKeyConformNormal("Material - Conform Normal");
+	inline Symbol const kPropKeyDecalNormalOpacity("Material - Decal Normal Opacity");
+	inline Symbol const kPropKeyDoubleSided("Material - Double Sided");
+	inline Symbol const kPropKeyDoubleSidedNormals("Material - Double Sided Normals");
+	inline Symbol const kPropKeyDrawHiddenLines("Material - Draw Hidden Lines");
+	inline Symbol const kPropKeyEnlightenAlbedoColor("Material - Enlighten Albedo Color");
+	inline Symbol const kPropKeyEnlightenAlbedoIntensity("Material - Enlighten Albedo Intensity");
+	inline Symbol const kPropKeyEnlightenEmissiveColor("Material - Enlighten Emissive Color");
+	inline Symbol const kPropKeyEnlightenEmissiveIntensity("Material - Enlighten Emissive Intensity");
+	inline Symbol const kPropKeyEnlightenPrecompute("Material - Enlighten Precompute");
+	inline Symbol const kPropKeyEnlightenTransparency("Material - Enlighten Transparency");
+	inline Symbol const kPropKeyGlossExponent("Material - Gloss Exponent");
+	inline Symbol const kPropKeyGlowIntensity("Material - Glow Intensity");
+	inline Symbol const kPropKeyHairTerms("Material - Hair Terms");
+	inline Symbol const kPropKeyHorizonFade("Material - Horizon Fade");
+	inline Symbol const kPropKeyLODFullyRough("Material - LOD Fully Rough");
+	inline Symbol const kPropKeyLightGroupKey("Material - Light Group Key");
+	inline Symbol const kPropKeyLightModel("Material - Light Model");
+	inline Symbol const kPropKeyLightWrap("Material - Light Wrap");
+	inline Symbol const kPropKeyLineCreaseAngle("Material - Crease Angle");
+	inline Symbol const kPropKeyLineGenerateBoundaries("Material - Generate Boundaries");
+	inline Symbol const kPropKeyLineGenerateCreases("Material - Generate Creases");
+	inline Symbol const kPropKeyLineGenerateJagged("Material - Generate Jagged"); 
+	inline Symbol const kPropKeyLineGenerateSilhouette("Material - Generate Silhouette");
+	inline Symbol const kPropKeyLineGenerateSmooth("Material - Generate Smooth");
+	inline Symbol const kPropKeyLineLightingId("Material - Line Width Light Id");
+	inline Symbol const kPropKeyLineLightingType("Material - Line Width Lighting Type");
+	inline Symbol const kPropKeyLineMaxWidth("Material - Maximum Line Width");
+	inline Symbol const kPropKeyLineMinWidth("Material - Minimum Line Width");
+	inline Symbol const kPropKeyLinePatternRepeat("Material - Line Patttern Repeat");
+	inline Symbol const kPropKeyLineSmoothJaggedCreaseAngle("Material - Smooth/Jagged Crease Angle");
+	inline Symbol const kPropKeyLineWidthFromLighting("Material - Line Width From Lighting");
+	inline Symbol const kPropKeyLitLineBias("Material - Lit Line Bias");
+	inline Symbol const kPropKeyLitLineScale("Material - Lit Line Scale");
+	inline Symbol const kPropKeyNPRLineAlphaFalloff("Material - Line Alpha Falloff Overrides");
+	inline Symbol const kPropKeyNPRLineFalloff("Material - Line Falloff Overrides");
+	inline Symbol const kPropKeyNormalSpace("Material - Normal Space");
+	inline Symbol const kPropKeyOutlineColor("Material - Outline Color");
+	inline Symbol const kPropKeyOutlineInvertColor("Material - Outline Invert Color");
+	inline Symbol const kPropKeyOutlineZRange("Material - Outline Z Range");
+	inline Symbol const kPropKeyParticleAgent3DRotation("Material - Particle Agent 3D Rotation");
+	inline Symbol const kPropKeyParticleFaceDirection("Material - Particle Face Direction"); 
+	inline Symbol const kPropKeyParticleGeometryOrientByRotation("Material - Particle Geometry Oreint By Rotation");
+	inline Symbol const kPropKeyParticleGeometryType("Material - Particle GeometryType");
+	inline Symbol const kPropKeyParticleQuantizeLightmap("Material - Lightmap Quantize");
+	inline Symbol const kPropKeyRimLightEnable("Material - Light Rim Enable");
+	inline Symbol const kPropKeyShadowEnable("Material - Shadow Receive Enable");
+	inline Symbol const kPropKeySpecularCellBand("Material - Specular Cell Band");
+	inline Symbol const kPropKeySpecularPower("Material - Specular Power");
+	inline Symbol const kPropKeyToonShades("Material - Toon Shades");
+	inline Symbol const kPropKeyToonTexture("Material - Toon Texture");
+	inline Symbol const kPropKeyUseArtistNormal("Material - Smooth Lines From Artist Normal");
+	inline Symbol const kPropKeyVisible("Material - Visible");
+	inline Symbol const kPropKeyDiffuseTexture("Material - Diffuse Texture");
+}
+
+inline Symbol const kAlignBottom("Bottom");
+inline Symbol const kAlignCenter("Center");
+inline Symbol const kAlignLeft("Left");
+inline Symbol const kAlignMiddle("Middle");
+inline Symbol const kNone("None");
+inline Symbol const kAlignRight("Right");
+inline Symbol const kAlignTop("Top");
+inline Symbol const kRuntimDlgLogicName("runtime_dialog_logic.prop");
+inline Symbol const kUITestCursorTexName("cursor_point.d3dtx");
+inline Symbol const kDlgStateLogicKey("all_dlg_state.prop");
+
+namespace DlgUtils {
+	inline Symbol const kDlgSystemInfoPropName("dialog_system_info.prop");
+}
+
+inline Symbol const kPropKeyLightInternalData("LightEnv - Internal Data");
+inline const char* const kHashUnknown = "unknown";
+inline const char* const kTelltaleBackendServerCohortKey = "Telltale Server Cohort";
+inline const char* const kTelltaleBackendServerURLDefault = "https:://services.telltalegames.com";
+inline const char* const kHDScreenShotResolution = "Screenshot resolution";
+
+inline Symbol const kIncomingContribution("Incoming Contribution");
+inline Symbol const kOutgoingContribution("Outgoing Contribution");
+inline Symbol const kOwningAgentKey("Owning Agent");
+inline Symbol const kStyleGuideKey("Style Guide Type");
+inline Symbol const kStyleIdleTransitionsPropKey("module_style_idle_transitions.prop");
+inline const char* const kTransitionEndTag(":End Transition");
+inline const char* const kTransitionKey("Transition");
+inline const char* const kTransitionStartTag(":Start Transition");
+inline Symbol const kPropKeyForceVisibleInEnlighten("Render Enlighten Force Visible");
+inline Symbol const kPropKeyForceVisibleInShadow("Render Shadow Force Visible");
+inline const char* const kSceneChoreCameraLayer = "Chore";
+inline const char* const k3dSoundParametersPropName = "module_sound_3d_params.prop";
+inline Symbol const kNeutralPhoneme(6675906533782001351i64);
+inline Symbol const kPropKeyBoundingVolumeScalingFactor("Bounding Volume Scaling Factor");
+inline Symbol const kPropKeyBoundingVolumeType("Bounding Volume Type");
+inline Symbol const kPropKeyCollisionType("Collision Type");
+inline Symbol const kPropKeyCollisionsEnabled("Collisions Enabled");
+inline Symbol const kComputeStage("Compute Stage");
+inline Symbol const kConstraints("Constraints");
+inline Symbol const kHostNodeKey("Host Agent Node");
+inline Symbol const kMaxAngleIncrement("Maximum Per Second Angle Increment");
+inline Symbol const kProceduralLookAtPropName("module_procedual_look_at.prop");
+inline Symbol const kRotateHostNode("Rotate Host Node");
+inline Symbol const kTargetKey("Target Agent");
+inline Symbol const kTargetNodeKey("Target Agent Node");
+inline Symbol const kTargetNodeOffKey("Target Node Agent Offset");
+inline Symbol const kUsePrivateNode("Use Private Node");
+inline Symbol const kXAxisChore("X Axis  Chore");
+inline Symbol const kYAxisChore("Y Axis Chore");
+
+namespace Environment {
+	inline Symbol const kPropKeyEnabledOnHigh("Env - Enabled On High");
+	inline Symbol const kPropKeyEnabledOnLow("Env - Enabled On Low");
+	inline Symbol const kPropKeyEnabledOnMedium("Env - Enabled On Medium");
+	inline Symbol const kPropKeyEnabled("Env - Enabled");
+	inline Symbol const kPropKeyFogHeightFalloff("Env - Fog Height Fallofff");
+	inline Symbol const kPropKeyFogDensity("Env - Fog Density");
+	inline Symbol const kPropKeyFogColor("Env - Fog Color");
+	inline Symbol const kPropKeyFogHeight("Env - Fog Height");
+	inline Symbol const kPropKeyFogMaxOpacity("Env - Fog Max Opacity");
+	inline Symbol const kPropKeyFogStartDistance("Env - Fog Start Distance");
+	inline Symbol const kPropKeyLightGroupSet("Env - Groups");
+	inline Symbol const kPropKeyPriority("Env - Priority");
+}
+
+namespace EnvironmentTile {
+	inline Symbol const kPropKeyLightProbeData("EnvTile - Light Probe Data");
+	inline Symbol const kPropKeyReflectionLocalEnable("EnvTile - Reflection Local Enable");
+	inline Symbol const kPropKeyReflectionTexture("EnvTile - Reflection Texture");
+}
+
+namespace EnvironmentLight {
+	inline Symbol const kPropKeyAllowBaseOnStatic("EnvLight - Bake Allowed on Static");
+	inline Symbol const kPropKeyColor("EnvLight - Color");
+	inline Symbol const kPropKeyDiffuseIntensity("EnvLight - Intensity Diffuse");
+	inline Symbol const kPropKeyDimmer("EnvLight - Intensity Dimmer");
+	inline Symbol const kPropKeyDistanceFalloff("EnvLight - Distance Falloff");
+	inline Symbol const kPropKeyEnabled("EnvLight - Enabled");
+	inline Symbol const kPropKeyEnlightenBakeBehaviour("EnvLight - Enlighten Bake Behaviour");
+	inline Symbol const kPropKeyEnlightenLightIntensity("EnvLight - Enlighten Intensity");
+	inline Symbol const kPropKeyGroupEnabled("EnvLight - Enabled Group");
+	inline Symbol const kPropKeyHBAOParticipationType("EnvLight - HBAO Participation Type");
+	inline Symbol const kPropKeyInnerConeAngle("EnvLight - Spot Angle Inner");
+	inline Symbol const kPropKeyIntensity("EnvLight - Intensity");
+	inline Symbol const kPropKeyInternalData("__T3LightEnvInternalData__");
+	inline Symbol const kPropKeyLODBehaviour("EnvLight - LOD Behaviour");
+	inline Symbol const kPropKeyLOD("EnvLight - LOD Active");
+	inline Symbol const kPropKeyLightGroupSet("EnvLight - Groups");
+	inline Symbol const kPropKeyLocalPosition("EnvLight - Local Position");
+	inline Symbol const kPropKeyLocalRotation("EnvLight - Local Rotation");
+	inline Symbol const kPropKeyMobility("EnvLight - Mobility");
+	inline Symbol const kPropKeyNPRBandThresholds("EnvLight - NPR Band Thresholds");
+	inline Symbol const kPropKeyNPRBanding("EnvLight - NPR Banding");
+	inline Symbol const kPropKeyOpacity("EnvLight - Opacity");
+	inline Symbol const kPropKeyOuterConeAngle("EnvLight - Spot Angle Outer");
+	inline Symbol const kPropKeyPriority("EnvLight - Priority");
+	inline Symbol const kPropKeyRadius("EnvLight - Radius");
+	inline Symbol const kPropKeyShadowDepthBias("EnvLight - Shadow Depth Bias");
+	inline Symbol const kPropKeyShadowGoboName("EnvLight - Shadow Gobo");
+	inline Symbol const kPropKeyShadowGoboScaleU("EnvLight - Shadow Gobo Scale U");
+	inline Symbol const kPropKeyShadowGoboScaleV("EnvLight - Shadow Gobo Scale V");
+	inline Symbol const kPropKeyShadowGoboTranslateU("EnvLight - Shadow Gobo Translate U");
+	inline Symbol const kPropKeyShadowGoboTranslateV("EnvLight - Shadow Gobo Translate V");
+	inline Symbol const kPropKeyShadowMapQualityDistanceScale("EnvLight - Shadow Map Quality Distance Scale");
+	inline Symbol const kPropKeyShadowModulatedIntensity("EnvLight - Shadow Modulated Intensity");
+	inline Symbol const kPropKeyShadowNearClip("EnvLight - Shadow Near Clip");
+	inline Symbol const kPropKeyShadowQuality("EnvLight - Shadow Quality");
+	inline Symbol const kPropKeyShdowSoftness("EnvLight - Shadow Softness");
+	inline Symbol const kPropKeyShadowType("EnvLight - Shadow Type");
+	inline Symbol const kPropKeyVisibleThresholdScale("EnvLight - Visible Threshold Scale");
+	inline Symbol const kPropKeyWrap("EnvLight - Wrap");
+}
+
+namespace EnvironmentLightGroup {
+	inline Symbol const kPropKeyEnabled("EnvLightGroup - Enabled");
+	inline Symbol const kPropKeyEnlightenLightIntensity("EnvLightGroup - Enlighten Intensity");
+	inline Symbol const kPropKeyLightGroupSet("EnvLightGroup - Groups");
+	inline Symbol const kPropKeyPriority("EnvLightGroup - Priority");
+}
+
+namespace CinematicLight {
+	inline Symbol const kPropKeyColor("CinLight - Color");
+	inline Symbol const kPropKeyDiffuseIntensity("CinLight - Intensity Diffuse");
+	inline Symbol const kPropKeyDimmer("CinLight - Dimmer");
+	inline Symbol const kPropKeyEnabled("CinLight - Enabled");
+	inline Symbol const kPropKeyHBAOParticipationType("CinLight - HBAO Participation Type");
+	inline Symbol const kPropKeyIntensity("CinLight - Intensity");
+	inline Symbol const kPropKeyNPRBandThresholds("CinLight - NPR Band Thresholds");
+	inline Symbol const kPropKeyNPRBanding("CinLight - NPR Banding");
+	inline Symbol const kPropKeyOpacity("CinLight - Opacity");
+	inline Symbol const kPropKeyShadowIntensity("CinLight - Shadow Intensity");
+	inline Symbol const kPropKeyShadowTraceLength("CinLight - Shadow Trace Length");
+	inline Symbol const kPropKeySpecularIntensity("CinLight - Intensity Specular");
+	inline Symbol const kPropKeyWrap("CinLight - Wrap");
+}
+
+namespace CinematicLightRig {
+	inline Symbol const kPropKeyBackFOV("CinRig - Back FOV");
+	inline Symbol const kPropKeyEnlightenIntensity("CinRig - Enlighten Intensity");
+	inline Symbol const kPropKeyEnlightenSaturation("CinRig - Enlighten Saturation");
+	inline Symbol const kPropKeyLOD("CinRig - LOD");
+	inline Symbol const kPropKeyLightCinIntensity("CinRig - Light Cin Intensity");
+	inline Symbol const kPropKeyLightEnvIntensity("CinRig - Intensity EnvLight");
+	inline Symbol const kPropKeyLightNameFill("CinRig - Light Agent Fill");
+	inline Symbol const kPropKeyLightNameKey("CinRig - Light Agent Key");
+	inline Symbol const kPropKeyNameRim("CinRig - Light Agent Rim");
+	inline Symbol const kPropKeySelfShadowing("CinRig - Shadow Enable");
+}
+
+namespace ChorecordingParameters {
+	inline Symbol const kChorecordingCutName("Chorecording");
+}
+
+namespace SoundSystemInternal {
+	inline Symbol const kAudioAgentPrefix("agent_");
+	inline Symbol const kAudioLogicPrefix("logic_");
+	inline Symbol const kBusAmbient("ambient");
+	inline Symbol const kBusMaster("master");
+	inline Symbol const kBusMusic("music");
+	inline Symbol const kBusSfx("sfx");
+	inline Symbol const kVox("voice");
+	inline Symbol const kMasterBusFileName("master.audiobus");
+	inline Symbol const kSoundDataPropName("module_sound_data.prop");
+}
+
+namespace Agent {
+	inline Symbol const kGroupVisibilityKey("Group - Visible");
+	inline Symbol const kRuntimeVisibilityKey("Runtime: Visible");
+}
+
+namespace TTSQL {
+	inline Symbol const kDatabaseNameKey("SQL Database Name");
+	inline Symbol const kDatabasePasswordKey("SQL Password");
+	inline Symbol const kDatabaseUserNameKey("SQL User Name");
+	inline Symbol const kLocalHost("localhost");
+	inline Symbol const kPortKey("SQL Port");
+	inline Symbol const kServerNameKey("SQL Server Name");
+	inline Symbol const kTunnelHost("SSH Tunnel Host");
+	inline Symbol const kTunnelPassword("SSH Tunnel Password");
+	inline Symbol const kTunneledUsername("SSH Tunnel Username");
+	inline Symbol const kTunneledServerName("SSH Tunneled Server Name");
+	inline Symbol const kTunnelingEnabled("SSH Tunneling Enabled");
+	inline Symbol const kUseLocalDataKey("SQL Use Only Local Database");
+}
+
+inline Symbol const kPropKeyCurElemIndex("cur elem index");
+inline Symbol const kPropKeyElemData("elem data");
+inline Symbol const kPropKeyElemUses("elem uses in cycle");
+inline Symbol const kPropKeyFinalShuffe("final shuffle");
+inline Symbol const kPropKeyFinished("finished");
+inline Symbol const kPropKeyNumCompleteCycles("complete cycles");
+inline Symbol const kPropKeyVisDiesOff("vis dies off");
+
+namespace T3MaterialInternal {
+	inline Symbol const kPropKeyExpressionTree("__T3MaterialExpressionTree__");
+	inline Symbol const kPropKeyLegacyParams("__T3LegacyMaterialParams__");
+	inline Symbol const kPropKeyMaterialData("__T3MaterialData__");
+}
+
+namespace RenderDecal {
+	inline Symbol const kPropKeyDoubleSided("Decal - Double Sided");
+	inline Symbol const kPropKeyMaterialTime("Decal - Material Time");
+	inline Symbol const kPropKeyMaterial("Decal - Material");
+	inline Symbol const kPropKeyNormalThreshold("Decal - Normal Threshold");
+	inline Symbol const kPropKeyRenderLayer("Decal - Render Layer");
+	inline Symbol const kPropKeyScale("Decal - Scale");
+	inline Symbol const kPropKeySize("Decal - Size");
+	inline Symbol const kPropKeyStatic("Decal - Static");
+	inline Symbol const kPropKeyVisibileThresholdScale("Decal - Visible Threshold Scale");
 }
 
 struct ScriptEnum {

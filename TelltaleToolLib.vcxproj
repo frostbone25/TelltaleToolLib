@@ -168,6 +168,7 @@
     <ClInclude Include="Src\Types\BlendGraph.h" />
     <ClInclude Include="Src\Types\Chore.h" />
     <ClInclude Include="Src\Types\Container.h" />
+    <ClInclude Include="Src\Types\D3DMesh.h" />
     <ClInclude Include="Src\Types\DCArray.h" />
     <ClInclude Include="Src\Types\Deque.h" />
     <ClInclude Include="Src\Types\Dialog.h" />

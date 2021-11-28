@@ -243,6 +243,8 @@ struct AutoActStatus {
 
 struct ChoreResource {
 
+	static inline Symbol const kDeprecatedClipFilterAll = Symbol("Chore Clip Filter All");
+
 	struct Block {
 		float mStartTime;
 		float mEndTime;
@@ -383,6 +385,11 @@ struct ChoreAgent {
 
 //.CHORE FILES
 struct Chore {
+
+	static inline Symbol const kEnableNewLanguageSynchronization = Symbol("Language Sync-- Enable New System for Project");
+	static inline Symbol const kStyleIdleBaseTransitionTime = Symbol("Style Idle Base Transition Time");
+	static inline Symbol const kUseNewStyleIdle = Symbol("Use New Style Idles");
+
 
 	String mName;
 	Flags mFlags;
