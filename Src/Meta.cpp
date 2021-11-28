@@ -604,8 +604,14 @@ Symbol MetaClassDescription::GetDescriptionSymbol() {
 }
 
 void MetaStream::serialize_Symbol(Symbol* symbol) {
-	MetaClassDescription* desc = GetMetaClassDescription(typeid(Symbol).name());
-	if (!desc)throw "Not initialized";
+	static MetaClassDescription* desc = NULL;
+	if (!desc) {
+		desc = GetMetaClassDescription(typeid(Symbol).name());
+		if (!desc) {
+			TelltaleToolLib_RaiseError("Meta not initialized to serialize 'Symbol'",ErrorSeverity::ERR);
+			return;
+		}
+	}
 	if (mMode == MetaStreamMode::eMetaStream_Write) {
 		SerializedVersionInfo* versionInfo = desc->mpCompiledVersionSerializedVersionInfo;
 		if (!versionInfo)
@@ -615,13 +621,13 @@ void MetaStream::serialize_Symbol(Symbol* symbol) {
 	u64 crc = symbol->GetCRC();
 	serialize_uint64(&crc);
 	symbol->SetCRC(crc);
-	if (mStreamVersion < 4 || BeginDebugSection()) {
+	/*if (mStreamVersion < 4 || BeginDebugSection()) {
 		u32 i = 0;
 		serialize_uint32(&i);//string
 		Advance(i);
 		if (mStreamVersion >= 4)
 			EndDebugSection();
-	}
+	}*/
 }
 
 MetaStream::MetaStream() {
@@ -1364,10 +1370,26 @@ MetaOpResult Meta::MetaOperation_SerializeAsync(void* pObj, MetaClassDescription
 				if (!accel[i].mpFunctionAsync)break;
 				MetaSerializeAccel a = accel[i];
 				bool allow = true;
-				if (a.mpMemberDesc->mGameIndexVersionRange.min != -1)
-					allow = sSetKeyIndex >= a.mpMemberDesc->mGameIndexVersionRange.min;
-				if (a.mpMemberDesc->mGameIndexVersionRange.max != -1) 
-					allow = a.mpMemberDesc->mGameIndexVersionRange.max >= sSetKeyIndex;
+				if (a.mpMemberDesc->mGameIndexVersionRange.max != -1 && a.mpMemberDesc->mGameIndexVersionRange.min != -1) {
+					if (a.mpMemberDesc->mGameIndexVersionRange.max >= a.mpMemberDesc->mGameIndexVersionRange.min) {
+						allow = sSetKeyIndex >= a.mpMemberDesc->mGameIndexVersionRange.min &&
+							a.mpMemberDesc->mGameIndexVersionRange.max >= sSetKeyIndex ||
+							sSetKeyIndex == a.mpMemberDesc->mGameIndexVersionRange.min
+							|| sSetKeyIndex == a.mpMemberDesc->mGameIndexVersionRange.max;
+					}
+					else {
+						allow = sSetKeyIndex >= a.mpMemberDesc->mGameIndexVersionRange.min ||
+							a.mpMemberDesc->mGameIndexVersionRange.max >= sSetKeyIndex;
+					}
+				}
+				else {
+					if (a.mpMemberDesc->mGameIndexVersionRange.min != -1)
+						allow = sSetKeyIndex >= a.mpMemberDesc->mGameIndexVersionRange.min;
+					if (a.mpMemberDesc->mGameIndexVersionRange.max != -1)
+						allow = a.mpMemberDesc->mGameIndexVersionRange.max >= sSetKeyIndex;
+				}
+				if (allow && a.mpMemberDesc->mSkipVersion != -1)
+					allow = sSetKeyIndex != a.mpMemberDesc->mSkipVersion;
 				if (allow && (!(a.mpMemberDesc->mMinMetaVersion != -1 && a.mpMemberDesc->mMinMetaVersion > stream->mStreamVersion))) {
 					if (a.mpMemberDesc->mFlags & (int)MetaFlag::MetaFlag_MetaSerializeBlockingDisabled
 						|| a.mpMemberDesc->mpMemberDesc->mFlags.mFlags & (int)MetaFlag::MetaFlag_MetaSerializeBlockingDisabled) {
@@ -1399,22 +1421,35 @@ MetaOpResult Meta::MetaOperation_SerializeAsync(void* pObj, MetaClassDescription
 	if (!ver)return eMetaOp_Fail;
 	for (int i = 0; i < ver->mMembers.size(); i++) {
 		SerializedVersionInfo::MemberDesc desc = ver->mMembers[i];
-		MetaMemberDescription* member = pObjDescription->GetMemberDescription(&(ver->mMembers[i].mName));
+		MetaMemberDescription* member = desc.mpMemberDesc;
 		bool disable = member->mFlags & 1 || member->mpMemberDesc && member->mpMemberDesc->mFlags.mFlags & 1;
-		if (member->mMinMetaVersion != -1 && member->mMinMetaVersion > stream->mStreamVersion)
+		if (!disable && member->mMinMetaVersion != -1 && member->mMinMetaVersion > stream->mStreamVersion)
 			disable = true;
-		if (member->mGameIndexVersionRange.min != -1)
-			disable = !(sSetKeyIndex >= member->mGameIndexVersionRange.min);
-		if (member->mGameIndexVersionRange.max != -1)
-			disable = !(member->mGameIndexVersionRange.max >= sSetKeyIndex);
+		if (member->mGameIndexVersionRange.min != -1 && member->mGameIndexVersionRange.max != -1) {
+			if (member->mGameIndexVersionRange.max >= member->mGameIndexVersionRange.min) {
+				disable = !(sSetKeyIndex >= member->mGameIndexVersionRange.min &&
+					member->mGameIndexVersionRange.max >= sSetKeyIndex || sSetKeyIndex == member->mGameIndexVersionRange.min
+					|| sSetKeyIndex == member->mGameIndexVersionRange.max);
+			}
+			else {
+				disable = !(sSetKeyIndex >= member->mGameIndexVersionRange.min || member->mGameIndexVersionRange.max >= sSetKeyIndex);
+			}
+		}
+		else {
+			if (!disable && member->mGameIndexVersionRange.min != -1)
+				disable = !(sSetKeyIndex >= member->mGameIndexVersionRange.min);
+			if (!disable && member->mGameIndexVersionRange.max != -1)
+				disable = !(member->mGameIndexVersionRange.max >= sSetKeyIndex);
+		}
+		if (!disable && member->mSkipVersion != -1)
+			disable = sSetKeyIndex == member->mSkipVersion;
 		if (disable)continue;
 		if (!member)break;
 		if (desc.mbBlocked)
 			stream->BeginBlock();
+		//printf("%s\n", member->mpName);
 		MetaOperation serasync = member->mpMemberDesc->GetOperationSpecialization(74);
 		MetaOpResult r;
-		//printf("%s::%s %x\n", pObjDescription->mpTypeInfoName,
-		//	member->mpName, stream->GetPos());
 		if (serasync) {
 			r = serasync(((char*)pObj) + member->mOffset, member->mpMemberDesc, member, pUserData);
 		}
@@ -1440,6 +1475,10 @@ MetaOpResult PerformMetaSerializeFull(MetaStream* pStream, void* pObj, MetaClass
 	async = pDesc->GetOperationSpecialization(74);
 	//main = pDesc->GetOperationSpecialization(75);
 	if (!async)async = Meta::MetaOperation_SerializeAsync;
+	if (!pStream->mSection[MetaStream::eSection_Default].mpStream) {
+		TelltaleToolLib_RaiseError("Cannot perform meta serialize: meta stream was invalid (corrupt?)", ErrorSeverity::ERR);
+		return eMetaOp_Fail;
+	}
 	//if (!main)main = Meta::MetaOperation_SerializeMain;
 	MetaOpResult result = async(pObj, pDesc, NULL, pStream);
 	//if (result == eMetaOp_Succeed)result = main(pObj, pDesc, NULL, pStream);
@@ -1466,6 +1505,7 @@ METAOP_FUNC_IMPL(SerializedVersionInfo) {
 		for (MetaMemberDescription* i = pObjDescription->mpFirstMember; i; i = i->mpNextMember) {
 			if (i->mFlags & 1)continue;//flag 1 = metaflags:: dont seralized etc
 			SerializedVersionInfo::MemberDesc member;
+			member.mpMemberDesc = i;
 			member.mSize = i->mpMemberDesc->mClassSize;
 			member.mbBlocked = true;
 			member.mTypeNameSymbolCrc = i->mpMemberDesc->mHash;

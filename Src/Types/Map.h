@@ -10,7 +10,7 @@
 #include <map>
 
 //we dont need to add an stdless template , since these arent added to version headers (meta::metaoperation_serializeasync never called)
-template<typename K, typename V, typename C = std::less<K>> class Map : public ContainerInterface, public std::map<K, V, C> {
+template<typename K, typename V, typename C = std::less<K>> class Map : public ContainerInterface, public std::multimap<K, V, C> {
 public:
 	virtual int GetSize() {
 		return this->size();

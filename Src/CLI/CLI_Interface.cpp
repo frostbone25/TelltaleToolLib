@@ -492,7 +492,7 @@ void _anm_chk() {
 	}
 }
 
-#include "../Types/Dialog.h"
+#include "../Types/BlendGraph.h"
 
 void _testing_func() {
 	TelltaleToolLib_Initialize("MC2");
@@ -501,16 +501,17 @@ void _testing_func() {
 		_OpenDataStreamFromDisc("c:/users/lucas/desktop/My Stuff/Projects/HashDB Creator/LibTelltale DB/LibTelltale.HashDB",
 			DataStreamMode::eMode_Read));
 
-	DataStream* stream = OpenDataStreamFromDisc(
-		//"D:/games/telltale archives/minecraft story mode - season 1 & 2"
-		"c:/users/lucas/desktop/ttarch"
-		"/env_underneathFredTown.dlog", READ);
+	DataStream* stream1 = _OpenDataStreamFromDisc("c:/users/lucas/desktop/out.bin", WRITE);
+
+	DataStream* stream = OpenDataStreamFromDisc("c:/users/lucas/desktop/MC2.bgh", READ);
 	{
 		MetaStream meta{};
 		meta.Open(stream, MetaStreamMode::eMetaStream_Read, { 0 });
-		Dlg dlg{};
-		MetaOpResult r = PerformMetaSerializeAsync(&meta, &dlg);
-		printf("info %s %d\n", dlg.mName.c_str(), (i32)r);
+		BlendGraph g;
+		MetaOpResult r = PerformMetaSerializeAsync(&meta, &g);
+		meta.SwitchToMode(MetaStreamMode::eMetaStream_Write,stream1);
+		r = PerformMetaSerializeAsync(&meta, &g);
+		printf("%d\n", r);
 		printf("-done\n");
 	}
 }

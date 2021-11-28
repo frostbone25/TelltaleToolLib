@@ -16,6 +16,9 @@
 #include "Chore.h"
 #include "Rules.h"
 
+//.DLOG FILES
+struct Dlg;
+
 //SEE https://www.atlassian.com/software/jira - telltale API for using it
 struct JiraRecord {
 	//contains runtime data, not needed
@@ -88,6 +91,18 @@ struct DlgObjectProps {
 	PropertySet* mpUserProps, *mpProductionProps, *mpToolProps;
 	Flags mFlags;//PropsTypeT, makes sense to be an enum oh well
 
+	PropertySet* PropsByType(PropsTypeT pType) {
+		if (pType == eUserProps) {
+			return mpUserProps ? mpUserProps : mpUserProps = new PropertySet;
+		}
+		else if (pType == eProductionProps) {
+			return mpProductionProps ? mpProductionProps : mpProductionProps = new PropertySet;
+		}
+		else {
+			return mpToolProps ? mpToolProps : mpToolProps = new PropertySet;
+		}
+	}
+
 	static METAOP_FUNC_IMPL__(SerializeAsync) {
 		CAST_METAOP(DlgObjectProps, obj);
 		if (obj->mpUserProps)
@@ -106,23 +121,21 @@ struct DlgObjectProps {
 			if (obj->mFlags.mFlags & eUserProps) {
 				if (!obj->mpUserProps)
 					obj->mpUserProps = new PropertySet();
-				r=PerformMetaSerializeAsync<PropertySet>(meta, obj->mpUserProps);
+				r = PerformMetaSerializeAsync<PropertySet>(meta, obj->mpUserProps);
 				if (r != eMetaOp_Succeed)
 					return r;
 			}
 			if (obj->mFlags.mFlags & eProductionProps) {
 				if (!obj->mpProductionProps)
 					obj->mpProductionProps = new PropertySet();
-				r=PerformMetaSerializeAsync<PropertySet>(meta, obj->mpProductionProps);
+				r = PerformMetaSerializeAsync<PropertySet>(meta, obj->mpProductionProps);
 				if (r != eMetaOp_Succeed)
 					return r;
 			}
 			if (obj->mFlags.mFlags & eToolProps) {
 				if (!obj->mpToolProps)
 					obj->mpToolProps = new PropertySet();
-				r=PerformMetaSerializeAsync<PropertySet>(meta, obj->mpToolProps);
-				if (r != eMetaOp_Succeed)
-					return r;
+				r = PerformMetaSerializeAsync<PropertySet>(meta, obj->mpToolProps);
 			}
 		}
 		return r;
@@ -255,10 +268,55 @@ struct DlgDownstreamVisibilityConditions {
 };
 
 struct DlgVisibilityConditions {
+	Rule* mpRule;
 	bool mbDiesOff;
-	Flags mFlags;
+	Flags mFlags;//1 means has a rule
 	DlgDownstreamVisibilityConditions mDownstreamVisCond;
 	String mScriptVisCond;//script function (LUA)
+
+	DlgVisibilityConditions() {
+		mpRule = NULL;
+	}
+
+	INLINE void CreateRule() {
+		if (!mpRule)
+			mpRule = new Rule;
+		mFlags |= 1;
+	}
+
+	INLINE void RemoveRule() {
+		if (mpRule)
+			delete mpRule;
+		mFlags &= ~1;
+	}
+
+	INLINE Rule* GetVisRule() {
+		CreateRule();
+		return mpRule;
+	}
+
+	~DlgVisibilityConditions() {
+		RemoveRule();
+	}
+
+	static METAOP_FUNC_IMPL__(SerializeAsync) {
+		CAST_METAOP(DlgVisibilityConditions, cond);
+		if (meta->IsWrite()) {
+			if (cond->mFlags.mFlags & 1 && !cond->mpRule) {
+				cond->mpRule = new Rule;
+			}
+			else if(cond->mpRule && !(cond->mFlags.mFlags & 1)){
+				cond->mFlags.mFlags |= 1;
+			}
+		}
+		MetaOpResult r = Meta::MetaOperation_SerializeAsync(pObj, pObjDescription, pContextDescription, pUserData);
+		if (r != eMetaOp_Succeed)
+			return r;
+		if (cond->mFlags.mFlags & 1)
+			r = PerformMetaSerializeAsync<Rule>(meta, cond->GetVisRule());
+		return r;
+	}
+
 };
 
 struct DlgVisibilityConditionsOwner {
@@ -406,6 +464,10 @@ struct DlgNodeCancelChoices : DlgNode {
 
 	CancelGroupT mCancelGroup;
 
+	DlgNodeCancelChoices() {
+		mCancelGroup = CancelGroupT::eAllActiveChoices;
+	}
+
 	virtual MetaClassDescription* GetMetaClassDescription() override {
 		return ::GetMetaClassDescription<DlgNodeCancelChoices>();
 	}
@@ -472,6 +534,40 @@ struct DlgConditionSet {
 			}
 		}
 		return eMetaOp_Succeed;
+	}
+};
+
+struct DlgConditionTime : DlgCondition {
+
+	enum DurationClass : u32 {
+		eTimed = 1,
+		eIndefinitely = 2
+	};
+
+	struct EnumDurationClass {
+		DurationClass mVal;
+	};
+
+	float mSeconds;
+	EnumDurationClass mDurationClass;
+
+	virtual MetaClassDescription* GetMetaClassDescription() override {
+		return ::GetMetaClassDescription<DlgConditionTime>();
+	}
+};
+
+struct DlgConditionRule : DlgCondition {
+
+	Rule mRule;
+
+	virtual MetaClassDescription* GetMetaClassDescription() override {
+		return ::GetMetaClassDescription<DlgConditionRule>();
+	}
+};
+
+struct DlgConditionInput : DlgCondition {
+	virtual MetaClassDescription* GetMetaClassDescription() override {
+		return ::GetMetaClassDescription<DlgConditionInput>();
 	}
 };
 
@@ -706,6 +802,11 @@ struct DlgNodeStats : DlgNode {
 
 	struct Cohort : DlgChild {
 
+		Handle<T3Texture> mhImage;
+		LanguageResProxy mDisplayText1, mDisplayText2;
+		String mLayout;
+		LanguageResProxy mSummaryDisplayText;
+
 		virtual MetaClassDescription* GetMetaClassDescription() {
 			return ::GetMetaClassDescription<Cohort>();
 		}
@@ -895,6 +996,22 @@ struct DlgNodeExchange : DlgNode {
 	DlgLineCollection* mpLines;
 	DCArray<Entry> mEntries;
 
+	DlgLineCollection* GetLines() {
+		if (!mpLines) {
+			mpLines = new DlgLineCollection;
+			mFlags |= 2;
+		}
+		return mpLines;
+	}
+
+	NoteCollection* GetNotes() {
+		if (!mpNotes) {
+			mpNotes = new NoteCollection;
+			mFlags |= 1;
+		}
+		return mpNotes;
+	}
+
 	static METAOP_FUNC_IMPL__(SerializeAsync) {
 		CAST_METAOP(DlgNodeExchange, node);
 		MetaOpResult r = Meta::MetaOperation_SerializeAsync(pObj, pObjDescription, pContextDescription, pUserData);
@@ -940,9 +1057,19 @@ struct DlgNodeExchange : DlgNode {
 
 };
 
+struct DlgNodeWait : DlgNode, DlgConditionSet {
+	virtual MetaClassDescription* GetMetaClassDescription() override {
+		return ::GetMetaClassDescription<DlgNodeWait>();
+	}
+
+	virtual DlgConstants::DlgNodeClassID GetClassID() override {
+		return DlgConstants::DlgNodeClassID::eNodeExchange;
+	}
+};
+
 struct DlgNodeChore : DlgNode {
 
-	Handle<Chore> mhChore;
+	Handle<Chore> mChore;
 	int mPriority;
 	bool mLooping;
 
@@ -1122,17 +1249,24 @@ struct Dlg : DlgObjIDOwner, UID::Generator {//UID im not 100% sure since its onl
 	JiraRecordManager mJiraRecordManager;
 	bool mbHasToolOnlyData;
 
+	//no idea but games newer than (and including) the walking dead season 2 have this flag at the end of the file
+	bool mbToolFlag;
+
 	static METAOP_FUNC_IMPL__(SerializeAsync) {
 		CAST_METAOP(Dlg, dlog);
 		MetaOpResult r = Meta::MetaOperation_SerializeAsync(pObj, pObjDescription,
 			pContextDescription, pUserData);
 		MetaClassDescription* nodeDesc = ::GetMetaClassDescription<DlgNode>();
+		static int twd2 = -1;
 		if (!nodeDesc) {
 			TelltaleToolLib_RaiseError(
 				"Cannot serialize dialog, meta not initialized (node meta not found)",
 				ErrorSeverity::ERR
 			);
 			return eMetaOp_Fail;
+		}
+		else if(twd2==-1){
+			twd2 = TelltaleToolLib_GetGameKeyIndex("WD2");
 		}
 		if (r == eMetaOp_Succeed) {
 			if (meta->IsRead())
@@ -1185,9 +1319,14 @@ struct Dlg : DlgObjIDOwner, UID::Generator {//UID im not 100% sure since its onl
 			else {
 				for (int i = 0; i < nodes; i++) {
 					DlgNode* node = dlog->mNodes[i];
+					hash = node->GetMetaClassDescription()->mHash;
+					meta->serialize_uint64(&hash);
 					PerformMetaSerializeFull(meta,
 						node, node->GetMetaClassDescription());
 				}
+			}
+			if (sSetKeyIndex >= twd2) {
+				meta->serialize_bool(&dlog->mbToolFlag);
 			}
 		}
 		return r;

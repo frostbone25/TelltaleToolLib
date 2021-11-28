@@ -99,6 +99,7 @@
     <ClInclude Include="Src\Types\PhonemeTable.h" />
     <ClInclude Include="Src\Types\Procedural.h" />
     <ClInclude Include="Src\Types\Note.h" />
+    <ClInclude Include="Src\Types\BlendGraph.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include=".gitattributes" />

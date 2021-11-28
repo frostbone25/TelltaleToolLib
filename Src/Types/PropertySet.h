@@ -157,6 +157,7 @@ public:
 		mPropVersion = 0;
 		mPropertyFlags.mFlags = 0;
 		mHOI.mFlags.mFlags = 0;
+		mEmbeddedToolProps = NULL;
 		mHOI.mObjectName.SetCRC(0);
 	}
 
@@ -165,6 +166,13 @@ public:
 		mPropertyFlags = rhs.mPropertyFlags;
 		mKeyMap = rhs.mKeyMap;
 		mParentList = rhs.mParentList;
+		if (rhs.mEmbeddedToolProps) {
+			mEmbeddedToolProps = new PropertySet;
+			*mEmbeddedToolProps = *rhs.mEmbeddedToolProps;
+		}
+		else {
+			mEmbeddedToolProps = NULL;
+		}
 		mHOI = rhs.mHOI;
 	}
 
@@ -174,6 +182,12 @@ public:
 		mKeyMap = rhs.mKeyMap;
 		mParentList = rhs.mParentList;
 		mHOI = rhs.mHOI;
+		if (rhs.mEmbeddedToolProps) {
+			if (mEmbeddedToolProps)
+				delete mEmbeddedToolProps;
+			mEmbeddedToolProps = new PropertySet;
+			*mEmbeddedToolProps = *rhs.mEmbeddedToolProps;
+		}
 		return *this;
 	}
 
@@ -188,19 +202,29 @@ public:
 	List<ParentInfo> mParentList;//list of parent property set handle file references. in the engine these could be files (eTTArch) or just
 	//memory references (eMemory). not implemented in this lib but useful to know for loaded .props 
 	HandleObjectInfo mHOI;
+	//in the prop reading code this was read into a temp prop and then forgotten. tool props?
+	PropertySet* mEmbeddedToolProps;
+
+	~PropertySet() {
+		if (mEmbeddedToolProps)
+			delete mEmbeddedToolProps;
+	}
 
 	static MetaOpResult MetaOperation_SerializeAsync(void* pObj, MetaClassDescription* pDesc, MetaMemberDescription* pCtx, void* pUserData) {
 		if (!pUserData || !pDesc || !pObj)return eMetaOp_Fail;
 		MetaStream* stream = static_cast<MetaStream*>(pUserData);
 		PropertySet* prop = static_cast<PropertySet*>(pObj);
 		if (stream->mMode == MetaStreamMode::eMetaStream_Write) {
-			prop->mPropVersion = 2;//LATEST VERSION!
+			if(!(prop->mPropVersion == 1 || prop->mPropVersion == 2))
+				prop->mPropVersion = 2;//LATEST VERSION!
 			prop->mPropertyFlags.mFlags &= 0xFFBFFFFF;
 		}
 		MetaOpResult result = eMetaOp_Succeed;
 		bool flag1 = (prop->mPropertyFlags.mFlags >> 12) & 1;
 		bool flag2 = (prop->mPropertyFlags.mFlags >> 13) & 1;
 		bool flag3 = ((prop->mPropertyFlags.mFlags & 0xFFFFCFFF) >> 15) & 1;
+		if (prop->mEmbeddedToolProps)
+			prop->mPropertyFlags.mFlags |= 0x400;
 		if ((result = ::Meta::MetaOperation_SerializeAsync(pObj, pDesc, pCtx, pUserData)) != eMetaOp_Succeed)return result;
 		if (prop->mPropVersion > 2)
 			prop->mPropVersion = 1;
@@ -280,6 +304,8 @@ public:
 						keyInfo.mValue.mpDataDescription); 
 				}
 			}
+			if (prop->mEmbeddedToolProps)
+				result=PerformMetaSerializeFull(stream, prop->mEmbeddedToolProps, pDesc);
 		}
 		else if (stream->mMode == MetaStreamMode::eMetaStream_Read) {
 			for (int i = 0; i < parents; i++) {
@@ -313,7 +339,8 @@ public:
 						(typeSymbol.GetCRC());
 				if (!typeDesc) {
 #ifdef DEBUGMODE
-					printf("Property class type not found for type with symbol %llx!\n", typeSymbol.GetCRC());
+					printf("Property class type not found for type with symbol"
+						" %llX at (default section) : 0x%X!\n", typeSymbol.GetCRC(),stream->GetPos());
 #endif
 					TelltaleToolLib_RaiseError("Property type in property set not supported (run in debug for to print the CRC)", ErrorSeverity::ERR);
 					return eMetaOp_Fail;
@@ -333,6 +360,11 @@ public:
 						!= eMetaOp_Succeed) return opres;
 					prop->mKeyMap.AddElement(0, NULL, &property);
 				}
+			}
+			if (prop->mPropertyFlags.mFlags & 0x400) {
+				if (!prop->mEmbeddedToolProps)
+					prop->mEmbeddedToolProps = new PropertySet;
+				result=PerformMetaSerializeFull(stream, prop->mEmbeddedToolProps, pDesc);
 			}
 		}
 		stream->EndBlock();

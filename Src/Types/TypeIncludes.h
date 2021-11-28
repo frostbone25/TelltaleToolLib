@@ -16,6 +16,7 @@
 #include "DCArray.h"
 #include "ObjectSpaceIntrinsics.h"
 #include "SoundData.h"
+#include "BlendGraph.h"
 #include "Set.h"
 #include "List.h"
 #include "Deque.h"

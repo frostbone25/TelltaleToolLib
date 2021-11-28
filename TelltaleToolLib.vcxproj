@@ -165,6 +165,7 @@
     <ClInclude Include="Src\Types\Animation.h" />
     <ClInclude Include="Src\Types\AnimOrChore.h" />
     <ClInclude Include="Src\Types\AssetCollection.h" />
+    <ClInclude Include="Src\Types\BlendGraph.h" />
     <ClInclude Include="Src\Types\Chore.h" />
     <ClInclude Include="Src\Types\Container.h" />
     <ClInclude Include="Src\Types\DCArray.h" />

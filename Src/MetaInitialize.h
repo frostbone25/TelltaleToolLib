@@ -197,7 +197,7 @@ meta_##parent##_##previousMember##.mpNextMember =& meta_##parent##_##memberNameI
 meta_##parent##_##memberNameInStruct##.mGameIndexVersionRange.min = minVersion;\
 meta_##parent##_##memberNameInStruct##.mGameIndexVersionRange.max = maxVersion;
 
-#define NEXTMEM(parent, namestr, memberNameInStruct, pathToMember, typeDesc, flags, previousMember, parentclass) \
+#define NEXTMEM(parent, namestr, memberNameInStruct, pathToMember, typeDesc, flags, previousMember) \
 DEFINEM(parent, memberNameInStruct);\
 meta_##parent##_##memberNameInStruct##.mpName = namestr;\
 meta_##parent##_##memberNameInStruct##.mOffset = offsetof(pathToMember,memberNameInStruct);\
@@ -244,6 +244,16 @@ meta_##parent##_##child##_##enumName##.mEnumIntValue = enumIndex;\
 meta_##parent##_##child##_##enumName##.mFlags |= flags;\
 meta_##parent##_##child##_##previous.mpNext = &meta_##parent##_##child##_##enumName##;
 
+#define NEXTFLAG(parent,child,FlagNameStr, FlagName, FlagIndex, previous) static MetaFlagDescription meta_##parent##_##child##_##FlagName##;\
+meta_##parent##_##child##_##FlagName##.mpFlagName = FlagNameStr;\
+meta_##parent##_##child##_##FlagName##.mFlagValue = FlagIndex;\
+meta_##parent##_##child##_##previous.mpNext = &meta_##parent##_##child##_##FlagName##;
+
+#define FIRSTFLAG(parent,child,FlagNameStr, FlagName, FlagIndex) static MetaFlagDescription meta_##parent##_##child##_##FlagName##;\
+meta_##parent##_##child##_##FlagName##.mpFlagName = FlagNameStr;\
+meta_##parent##_##child##_##FlagName##.mFlagValue = FlagIndex;\
+meta_##parent##_##child##.mpFlagDescriptions = &meta_##parent##_##child##_##FlagName##;
+
 #define FIRSTENUM2(parent,child,enumNameStr, enumName, enumIndex, flags) static MetaEnumDescription meta_##parent##_##child##_##enumName##;\
 meta_##parent##_##child##_##enumName##.mpEnumName = enumNameStr;\
 meta_##parent##_##child##_##enumName##.mEnumIntValue = enumIndex;\
@@ -280,6 +290,7 @@ meta_Handle##name_##.mpFirstMember = &meta_Handle##name_##_handlebase;\
 METAOP_CUSTOM(Handle##name_,eMetaOpSerializeAsync, Handle<Ty>::MetaOperation_SerializeAsync);\
 meta_Handle##name_##.InstallSpecializedMetaOperation(&meta_Handle##name_##_eMetaOpSerializeAsync);\
 meta_Handle##name_##.Insert();\
+DEFINEHANDLELOCK(name_,Ty);
 
 #define SERIALIZER(name,_Ty) \
 METAOP_CUSTOM(name, eMetaOpSerializeAsync, _Ty##::MetaOperation_SerializeAsync);\
@@ -296,7 +307,7 @@ meta_HandleLock##name_##_handlebase.mFlags |= 0x10;\
 meta_HandleLock##name_##.mpFirstMember = &meta_HandleLock##name_##_handlebase;\
 METAOP_CUSTOM(HandleLock##name_,eMetaOpSerializeAsync, HandleLock<Ty>::MetaOperation_SerializeAsync);\
 meta_HandleLock##name_##.InstallSpecializedMetaOperation(&meta_HandleLock##name_##_eMetaOpSerializeAsync);\
-meta_HandleLock##name_##.Insert();\
+meta_HandleLock##name_##.Insert();
 
 #define DEFINEOP(name, opName,fid,fun)static MetaOperationDescription meta_##name##_##opName; meta_##name##_##opName.id = fid;\
 meta_##name##_##opName.mpOpFn = fun;
@@ -587,7 +598,7 @@ namespace MetaInit {
 			meta_rangef_min.mpNextMember = &meta_rangef_max;
 			meta_rangef.mpFirstMember = &meta_rangef_min;
 			meta_rangef.Insert();
-
+			
 			//Vector3
 			DEFINET(vec3, Vector3);
 			meta_vec3.Initialize(typeid(Vector3));
@@ -1102,7 +1113,7 @@ namespace MetaInit {
 			NEXTMEM2(pmapm, mInputCode, PlatformInputMapper::EventMapping, long, 0, mPlatformInputCode);
 			ADD(pmapm);
 
-			DEFINEHANDLELOCK(scenelock, Scene);
+			DEFINEHANDLE(scene, Scene);
 			DEFINEDCARRAY2(HandleLock<Scene>, hlscene);
 
 			DEFINET2(sceneagent, Scene::AgentInfo);
@@ -2184,11 +2195,13 @@ namespace MetaInit {
 
 			DEFINET2(litem, LogicGroup::LogicItem);
 			FIRSTMEM(litem, "Baseclass_PropertySet", mPropVersion,LogicGroup::LogicItem, prop, 0);
+			meta_litem_mPropVersion.mOffset = PARENT_OFFSET(PropertySet, LogicGroup::LogicItem);
 			NEXTMEM2(litem, mName, LogicGroup::LogicItem, string, 0, mPropVersion);
 			NEXTMEM2(litem, mKeyNegateList, LogicGroup::LogicItem, Map_Symbol_bool, 0, mName);
 			NEXTMEM2(litem, mKeyComparisonList, LogicGroup::LogicItem, Map_Symbol_int, 0, mKeyNegateList);
 			NEXTMEM2(litem, mKeyActionList , LogicGroup::LogicItem, Map_Symbol_int, 0, mKeyComparisonList);
 			NEXTMEM2(litem, mReferenceKeyList, LogicGroup::LogicItem, DCArray_String, 0, mKeyActionList);
+			meta_litem_mReferenceKeyList.mGameIndexVersionRange.min = TelltaleToolLib_GetGameKeyIndex("WD4");
 			ADD(litem);
 
 			DEFINEDCARRAY(LogicGroup);
@@ -2240,6 +2253,7 @@ namespace MetaInit {
 
 			DEFINEDCARRAY2(EventStorage::PageEntry, estoreentry);
 			DEFINEHANDLE(estorepage, EventStoragePage);
+			
 
 			DEFINET2(estoree, EventStorage::PageEntry);
 			ADDFLAGS(estoree, MetaFlag::MetaFlag_Handle | MetaFlag::MetaFlag_PlaceInAddPropMenu);
@@ -2583,6 +2597,7 @@ namespace MetaInit {
 			NEXTMEM2(dlgvcond, mFlags, DlgVisibilityConditions, flags, 0, mbDiesOff);
 			NEXTMEM2(dlgvcond, mDownstreamVisCond, DlgVisibilityConditions,dlgdown, 0, mFlags);
 			NEXTMEM2(dlgvcond, mScriptVisCond, DlgVisibilityConditions, string, 0, mDownstreamVisCond);
+			SERIALIZER(dlgvcond, DlgVisibilityConditions);
 			ADD(dlgvcond);
 
 			DEFINET2(dlgvowner, DlgVisibilityConditionsOwner);
@@ -2624,6 +2639,7 @@ namespace MetaInit {
 			meta_dfolder_miUniqueID.mGameIndexVersionRange.max = TelltaleToolLib_GetGameKeyIndex("BATMAN2");
 			NEXTMEM2(dfolder, mName, DlgFolder, symbol, 0, miUniqueID);
 			NEXTMEM2(dfolder, mProdReportProps, DlgFolder, prop, 0, mName);
+			meta_dfolder_mProdReportProps.mGameIndexVersionRange.min = TelltaleToolLib_GetGameKeyIndex("BORDERLANDS");
 			ADD(dfolder);
 
 			DEFINET2(dnode, DlgNode);
@@ -2742,6 +2758,7 @@ namespace MetaInit {
 			meta_line_ALAISOWNER.mOffset = PARENT_OFFSET(UID::Owner, DlgLine);
 			NEXTMEM1(line, "Baseclass_DlgObjIDOwner", ALAISDLG, mDlgObjID,
 				DlgLine, dlgidowner, 0x30, ALAISOWNER);
+			meta_line_ALAISDLG.mGameIndexVersionRange.min = TelltaleToolLib_GetGameKeyIndex("BORDERLANDS");
 			meta_line_ALAISDLG.mOffset = PARENT_OFFSET(DlgObjIDOwner, DlgLine);
 			NEXTMEM2(line, mLangResProxy, DlgLine, res, 0, ALAISDLG);
 			ADD(line);
@@ -2782,8 +2799,11 @@ namespace MetaInit {
 			NEXTMEM2(dlg, mFlags, Dlg, flags, 0x20, mChronology);
 			NEXTMEM2(dlg, mDependencies, Dlg, dloader, 0x20, mFlags);
 			NEXTMEM2(dlg, mProdReportProps, Dlg, prop, 0, mDependencies);
+			meta_dlg_mProdReportProps.mGameIndexVersionRange.min = TelltaleToolLib_GetGameKeyIndex("BORDERLANDS");
 			NEXTMEM2(dlg, mJiraRecordManager, Dlg, jira, 0x20, mProdReportProps);
+			meta_dlg_mJiraRecordManager.mGameIndexVersionRange.min = TelltaleToolLib_GetGameKeyIndex("BORDERLANDS");
 			NEXTMEM2(dlg, mbHasToolOnlyData, Dlg, bool, 0x20, mJiraRecordManager);
+			meta_dlg_mbHasToolOnlyData.mGameIndexVersionRange.min = TelltaleToolLib_GetGameKeyIndex("BORDERLANDS");
 			EXT(dlg, dlog);
 			ADD(dlg);
 
@@ -2792,6 +2812,7 @@ namespace MetaInit {
 			meta_nstart_BASE.mOffset = PARENT_OFFSET(DlgNode, DlgNodeStart);
 			ADDFLAGS(nstart, 8);
 			NEXTMEM2(nstart, mProdReportProps, DlgNodeStart, prop, 0, BASE);
+			meta_nstart_mProdReportProps.mGameIndexVersionRange.min = TelltaleToolLib_GetGameKeyIndex("BORDERLANDS");
 			ADD(nstart);
 
 			DEFINET2(eentry, DlgNodeExchange::Entry);
@@ -2832,6 +2853,14 @@ namespace MetaInit {
 			NEXTMEM2(dex, mEntries, DlgNodeExchange, DCArray_eentry, 0x20, BASE);
 			ADD(dex);
 
+			DEFINET2(cohort, DlgNodeStats::DlgChildSetCohort);
+			FIRSTMEM1(cohort, "Baseclass_DlgChildSet", BASE, mChildren,
+				DlgNodeStats::DlgChildSetCohort,
+				dlgchildset, 0x10);
+			meta_cohort_BASE.mOffset = PARENT_OFFSET(DlgChildSet,
+				DlgNodeStats::DlgChildSetCohort);
+			ADD(cohort);
+
 			DEFINET2(dccase, DlgChildSetConditionalCase);
 			FIRSTMEM1(dccase, "Baseclass_DlgChildSet", BASE, mChildren, 
 				DlgChildSetConditionalCase,
@@ -2850,10 +2879,22 @@ namespace MetaInit {
 
 			DEFINET2(dcase, DlgConditionalCase);
 			ADDFLAGS(dcase, 8);
-			FIRSTMEM1(dcase, "Baseclass_DlgChild", BASE, mName, DlgChild,
+			FIRSTMEM1(dcase, "Baseclass_DlgChild", BASE, mName, DlgConditionalCase,
 				dlgchild, 0x10);
 			meta_dcase_BASE.mOffset = PARENT_OFFSET(DlgChild,DlgConditionalCase);
 			ADD(dcase);
+
+			DEFINET2(ddcohorti, DlgNodeStats::Cohort);
+			ADDFLAGS(ddcohorti, 8);
+			FIRSTMEM1(ddcohorti, "Baseclass_DlgChild", BASE, mName, DlgNodeStats::Cohort,
+				dlgchild, 0x10);
+			meta_ddcohorti_BASE.mOffset = PARENT_OFFSET(DlgChild, DlgNodeStats::Cohort);
+			NEXTMEM2(ddcohorti, mhImage, DlgNodeStats::Cohort, Handletex, 0, BASE);
+			NEXTMEM2(ddcohorti, mDisplayText1, DlgNodeStats::Cohort, res, 0, mhImage);
+			NEXTMEM2(ddcohorti, mDisplayText2, DlgNodeStats::Cohort, res, 0, mDisplayText1);
+			NEXTMEM2(ddcohorti, mLayout, DlgNodeStats::Cohort, string, 0, mDisplayText2);
+			NEXTMEM2(ddcohorti, mSummaryDisplayText, DlgNodeStats::Cohort, res, 0, mLayout);
+			ADD(ddcohorti);
 
 			DEFINET2(dccase3, DlgChildSetChoicesChildPost);
 			FIRSTMEM1(dccase3, "Baseclass_DlgChildSet", BASE, mChildren,
@@ -2879,6 +2920,22 @@ namespace MetaInit {
 				DlgChildSetChoice);
 			ADD(dccase1);
 
+			DEFINET2(dccase7, DlgNodeParallel::DlgChildSetElement);
+			FIRSTMEM1(dccase7, "Baseclass_DlgChildSet", BASE, mChildren,
+				DlgNodeParallel::DlgChildSetElement,
+				dlgchildset, 0x10);
+			meta_dccase7_BASE.mOffset = PARENT_OFFSET(DlgChildSet,
+				DlgNodeParallel::DlgChildSetElement);
+			ADD(dccase7);
+
+			DEFINET2(dccase5, DlgNodeSequence::DlgChildSetElement);
+			FIRSTMEM1(dccase5, "Baseclass_DlgChildSet", BASE, mChildren,
+				DlgNodeSequence::DlgChildSetElement,
+				dlgchildset, 0x10);
+			meta_dccase5_BASE.mOffset = PARENT_OFFSET(DlgChildSet,
+				DlgNodeSequence::DlgChildSetElement);
+			ADD(dccase5);
+
 			DEFINET2(dchoices, DlgNodeChoices);
 			ADDFLAGS(dchoices, 8);
 			FIRSTMEM1(dchoices, "Baseclass_DlgNode", BASE, mName, DlgNodeChoices,
@@ -2892,6 +2949,196 @@ namespace MetaInit {
 			DEFINET2(dcondset, DlgConditionSet);
 			SERIALIZER(dcondset, DlgConditionSet);
 			ADD(dcondset);
+
+			DEFINET2(dscript, DlgNodeScript);
+			ADDFLAGS(dscript, 8);
+			FIRSTMEM1(dscript, "Baseclass_DlgNode", BASE, mName, DlgNodeScript,
+				dnode, 0x10);
+			meta_dscript_BASE.mOffset = PARENT_OFFSET(DlgNode, DlgNodeScript);
+			NEXTMEM2(dscript, mScriptText, DlgNodeScript, string, 0x20, BASE);
+			NEXTMEM2(dscript, mbBlocking, DlgNodeScript, bool, 0, mScriptText);
+			NEXTMEM2(dscript, mbExecuteOnInstanceRetire,DlgNodeScript, bool, 0, mbBlocking);
+			ADD(dscript);
+
+			DEFINET2(dlogic, DlgNodeLogic);
+			ADDFLAGS(dlogic, 8);
+			FIRSTMEM1(dlogic, "Baseclass_DlgNode", BASE, mName, DlgNodeLogic,
+				dnode, 0x10);
+			meta_dlogic_BASE.mOffset = PARENT_OFFSET(DlgNode, DlgNodeLogic);
+			NEXTMEM2(dlogic, mRule, DlgNodeLogic, rule, 0, BASE);
+			ADD(dlogic);
+
+			DEFINET2(djump, DlgNodeJump);
+			ADDFLAGS(djump, 8);
+			FIRSTMEM1(djump, "Baseclass_DlgNode", BASE, mName, DlgNodeJump,
+				dnode, 0x10);
+			meta_djump_BASE.mOffset = PARENT_OFFSET(DlgNode, DlgNodeJump);
+			NEXTMEM2(djump, mJumpToLink, DlgNodeJump, dlglink, 0x20, BASE);
+			NEXTMEM2(djump, mJumpToName, DlgNodeJump, symbol, 0, mJumpToLink);
+			NEXTMEM2(djump, mJumpTargetClass, DlgNodeJump, long, 0x40, mJumpToName);
+			FIRSTENUM2(djump, mJumpTargetClass, "eToNodeAfterParentWaitNode", a, 3,0);
+			NEXTENUM2(djump, mJumpTargetClass, "eToParent", b, 2, 0, a);
+			NEXTENUM2(djump, mJumpTargetClass, "eToName", c, 1, 0, b);
+			NEXTMEM2(djump, mJumpBehaviour, DlgNodeJump, long, 0x40, mJumpTargetClass);
+			FIRSTENUM2(djump, mJumpBehaviour, "eJumpAndExecute", a, 1, 0);
+			NEXTENUM2(djump, mJumpBehaviour, "eJumpExecuteAndReturn", b, 2, 0, a);
+			NEXTENUM2(djump, mJumpBehaviour, "eReturn", c, 3, 0, b);
+			NEXTMEM2(djump, mChoiceTransparency, DlgNodeJump, long, 0x0, mJumpBehaviour);
+			NEXTMEM2(djump, mVisibilityBehaviour, DlgNodeJump, long, 0x40, mChoiceTransparency);
+			FIRSTENUM2(djump, mVisibilityBehaviour, "eIgnoreVisibility", a, 1, 0);
+			NEXTENUM2(djump, mVisibilityBehaviour, "eObeyVisibility", b, 2, 0, a);
+			NEXTENUM2(djump, mVisibilityBehaviour, "eReturn", c, 3, 0, b);//shouldnt be here, tellale u made a mistake :P
+			NEXTMEM2(djump, mhJumpToDlg, DlgNodeJump, Handledlg, 0, mVisibilityBehaviour);
+			ADD(djump);
+
+			DEFINET2(didle, DlgNodeIdle);
+			ADDFLAGS(didle, 8);
+			FIRSTMEM1(didle, "Baseclass_DlgNode", BASE, mName, DlgNodeIdle,
+				dnode, 0x10);
+			meta_didle_BASE.mOffset = PARENT_OFFSET(DlgNode, DlgNodeIdle);
+			NEXTMEM2(didle, mhIdle, DlgNodeIdle, Handlehchore, 0, BASE);
+			NEXTMEM2(didle, mOverrideOptionTime, DlgNodeIdle, long, 0, mhIdle);
+			FIRSTENUM2(didle, mOverrideOptionTime, "eUseDefaults", def, 1, 0);
+			NEXTENUM2(didle, mOverrideOptionTime, "eOverride", ov, 2, 0, def);
+			NEXTMEM2(didle, mOverrideOptionStyle, DlgNodeIdle, long, 0x40, mOverrideOptionTime);
+			FIRSTENUM2(didle, mOverrideOptionStyle, "eUseDefaults", def, 1, 0);
+			NEXTENUM2(didle, mOverrideOptionStyle, "eOverride", ov, 2, 0, def);
+			NEXTMEM2(didle, mTransitionTimeOverride, DlgNodeIdle, float, 0, mOverrideOptionStyle);
+			NEXTMEM2(didle, mTransitionStyleOverride, DlgNodeIdle, long, 0x20, mTransitionTimeOverride);
+			NEXTMEM2(didle, mIdleSlot, DlgNodeIdle, long, 0x20, mTransitionStyleOverride);
+			ADD(didle);
+
+			DEFINET2(dcase8, DlgNodeParallel::PElement);
+			ADDFLAGS(dcase8, 8);
+			FIRSTMEM1(dcase8, "Baseclass_DlgChild", BASE, mName, DlgNodeParallel::PElement,
+				dlgchild, 0x10);
+			meta_dcase8_BASE.mOffset = PARENT_OFFSET(DlgChild, DlgNodeParallel::PElement);
+			ADD(dcase8);
+
+			DEFINET2(dcase6, DlgNodeSequence::Element);
+			ADDFLAGS(dcase6, 8);
+			FIRSTMEM1(dcase6, "Baseclass_DlgChild", BASE, mName, DlgNodeSequence::Element,
+				dlgchild, 0x10);
+			meta_dcase6_BASE.mOffset = PARENT_OFFSET(DlgChild, DlgNodeSequence::Element);
+			NEXTMEM2(dcase6, mRepeat, DlgNodeSequence::Element, long, 0x40, BASE);
+			FIRSTENUM2(dcase6, mRepeat, "eMaxPlusOne", a, 8, 0);
+			NEXTENUM2(dcase6, mRepeat, "eIndefinitely", b, 1, 0, a);
+			NEXTENUM2(dcase6, mRepeat, "eSix", c, 7, 0, b);
+			NEXTENUM2(dcase6, mRepeat, "eFive", d, 6, 0, c);
+			NEXTENUM2(dcase6, mRepeat, "eFour", e, 5, 0, d);
+			NEXTENUM2(dcase6, mRepeat, "eThree", f, 4, 0, e);
+			NEXTENUM2(dcase6, mRepeat, "eTwo", g, 3, 0, f);
+			NEXTENUM2(dcase6, mRepeat, "eOne", h, 2, 0, g);
+			NEXTMEM2(dcase6, mPlayPosition, DlgNodeSequence::Element, long, 0x40, mRepeat);
+			FIRSTENUM2(dcase6, mPlayPosition, "eLast", a, 3, 0);
+			NEXTENUM2(dcase6, mPlayPosition, "eFirst", b, 2, 0, a);
+			NEXTENUM2(dcase6, mPlayPosition, "eUnspecified", c, 1, 0, b);
+			ADD(dcase6);
+
+			DEFINET2(dsequence, DlgNodeSequence);
+			ADDFLAGS(dsequence, 8);
+			FIRSTMEM1(dsequence, "Baseclass_DlgNode", BASE, mName, DlgNodeSequence,
+				dnode, 0x10);
+			meta_dsequence_BASE.mOffset = PARENT_OFFSET(DlgNode, DlgNodeSequence);
+			NEXTMEM2(dsequence, mElements, DlgNodeSequence, dccase5, 0x20, BASE);
+			NEXTMEM2(dsequence, mPlaybackMode, DlgNodeSequence, long, 0x40, mElements);
+			FIRSTENUM2(dsequence, mPlaybackMode, "eShuffle", a, 2, 0);
+			NEXTENUM2(dsequence, mPlaybackMode, "eSequential", b, 1, 0, a);
+			NEXTMEM2(dsequence, mLifetimeMode, DlgNodeSequence, long, 0x40, mPlaybackMode);
+			FIRSTENUM2(dsequence, mLifetimeMode, "eSingleSequenceRepeatFinal", a, 3, 0);
+			NEXTENUM2(dsequence, mLifetimeMode, "eSingleSequence", b, 2, 0, a);
+			NEXTENUM2(dsequence, mLifetimeMode, "eLooping", c, 1, 0, b);
+			NEXTMEM2(dsequence, mElemUseCriteria, DlgNodeSequence, crit, 0x20, mLifetimeMode);
+			ADD(dsequence);
+
+			DEFINET2(dparallel, DlgNodeParallel);
+			ADDFLAGS(dparallel, 8);
+			FIRSTMEM1(dparallel, "Baseclass_DlgNode", BASE, mName, DlgNodeParallel,
+				dnode, 0x10);
+			meta_dparallel_BASE.mOffset = PARENT_OFFSET(DlgNode, DlgNodeParallel);
+			NEXTMEM2(dparallel, mPElements, DlgNodeParallel, dccase7, 0x20, BASE);
+			NEXTMEM2(dparallel, mElemUseCriteria, DlgNodeParallel, crit, 0x20, mPElements);
+			ADD(dparallel);
+
+			DEFINET2(dNote, DlgNodeNotes);
+			ADDFLAGS(dNote, 8);
+			FIRSTMEM1(dNote, "Baseclass_DlgNode", BASE, mName, DlgNodeNotes,
+				dnode, 0x10);
+			meta_dNote_BASE.mOffset = PARENT_OFFSET(DlgNode, DlgNodeNotes);
+			NEXTMEM2(dNote, mNoteText, DlgNodeNotes, string, 0x20, BASE);
+			ADD(dNote);
+
+			DEFINET2(dtext, DlgNodeText);
+			ADDFLAGS(dtext, 8);
+			FIRSTMEM1(dtext, "Baseclass_DlgNode", BASE, mName, DlgNodeText,
+				dnode, 0x10);
+			meta_dtext_BASE.mOffset = PARENT_OFFSET(DlgNode, DlgNodeText);
+			NEXTMEM2(dtext, mLangResProxy, DlgNodeText, res, 0x20, BASE);
+			ADD(dtext);
+
+			DEFINET2(dchore, DlgNodeChore);
+			ADDFLAGS(dchore, 8);
+			FIRSTMEM2(dchore, mChore, DlgNodeChore, Handlehchore, 0);
+			NEXTMEM2(dchore, mPriority, DlgNodeChore, long, 0, mChore);
+			NEXTMEM2(dchore, mLooping, DlgNodeChore, bool, 0, mPriority);
+			NEXTMEM1(dchore, "Baseclass_DlgNode", BASE, mName, DlgNodeChore,
+				dnode, 0x10,mLooping);
+			meta_dchore_BASE.mOffset = PARENT_OFFSET(DlgNode, DlgNodeChore);
+			ADD(dchore);
+
+			DEFINET2(dchoices4, DlgNodeMarker);
+			ADDFLAGS(dchoices4, 8);
+			FIRSTMEM1(dchoices4, "Baseclass_DlgNode", BASE, mName, DlgNodeMarker,
+				dnode, 0x10);
+			meta_dchoices4_BASE.mOffset = PARENT_OFFSET(DlgNode, DlgNodeMarker);
+			ADD(dchoices4);
+
+			DEFINET2(dchoices3, DlgNodeWait);
+			ADDFLAGS(dchoices3, 8);
+			FIRSTMEM1(dchoices3, "Baseclass_DlgNode", BASE, mName, DlgNodeWait,
+				dnode, 0x10);
+			meta_dchoices3_BASE.mOffset = PARENT_OFFSET(DlgNode, DlgNodeWait);
+			NEXTMEM1(dchoices3, "Baseclass_DlgConditionSet", BASE1, mName, DlgNodeWait, dcondset, 0x10, BASE);
+			meta_dchoices3_BASE1.mOffset = PARENT_OFFSET(DlgConditionSet, DlgNodeWait);
+			ADD(dchoices3);
+
+			DEFINET2(dcancel, DlgNodeCancelChoices);
+			ADDFLAGS(dcancel, 8);
+			FIRSTMEM1(dcancel, "Baseclass_DlgNode", BASE, mName, DlgNodeCancelChoices,
+				dnode, 0x10);
+			meta_dcancel_BASE.mOffset = PARENT_OFFSET(DlgNode, DlgNodeCancelChoices);
+			NEXTMEM2(dcancel, mCancelGroup, DlgNodeCancelChoices, long, 0x20, BASE);
+			ADD(dcancel);
+
+			DEFINET2(dboard, DlgNodeStoryBoard);
+			ADDFLAGS(dboard, 8);
+			FIRSTMEM1(dboard, "Baseclass_DlgNode", BASE, mName, DlgNodeStoryBoard,
+				dnode, 0x10);
+			meta_dboard_BASE.mOffset = PARENT_OFFSET(DlgNode, DlgNodeStoryBoard);
+			NEXTMEM2(dboard, mStoryBoardImage, DlgNodeStoryBoard, symbol, 0, BASE);
+			ADD(dboard);
+
+			DEFINET2(dstats, DlgNodeStats);
+			ADDFLAGS(dstats, 8);
+			FIRSTMEM1(dstats, "Baseclass_DlgNode", BASE, mName, DlgNodeStats,
+				dnode, 0x10);
+			meta_dstats_BASE.mOffset = PARENT_OFFSET(DlgNode, DlgNodeStats);
+			NEXTMEM2(dstats, mStatsType, DlgNodeStats, long, 0x40, BASE);
+			FIRSTENUM2(dstats, mStatsType, "kChoices", a, 1, 0);
+			NEXTENUM2(dstats, mStatsType, "kExtended", b, 2, 0, a);
+			NEXTENUM2(dstats, mStatsType, "kCrowdPlay", c, 3, 0, b);
+			NEXTENUM2(dstats, mStatsType, "kRelationships", d, 4, 0, c);
+			NEXTMEM2(dstats, mCohorts, DlgNodeStats, cohort, 0, mStatsType);
+			NEXTMEM2(dstats, mhImage, DlgNodeStats, Handletex, 0, mCohorts);
+			NEXTMEM2(dstats, mDisplayText, DlgNodeStats, res, 0, mhImage);
+			ADD(dstats);
+
+			DEFINET2(dExit, DlgNodeExit);
+			ADDFLAGS(dExit, 8);
+			FIRSTMEM1(dExit, "Baseclass_DlgNode", BASE, mName, DlgNodeExit,
+				dnode, 0x10);
+			meta_dExit_BASE.mOffset = PARENT_OFFSET(DlgNode, DlgNodeExit);
+			ADD(dExit);
 
 			DEFINET2(dlgcond, DlgCondition);
 			ADDFLAGS(dlgcond,8);
@@ -2907,6 +3154,7 @@ namespace MetaInit {
 			meta_dcase1_BASE.mOffset = PARENT_OFFSET(DlgChild, DlgChoice);
 			NEXTMEM1(dcase1, "Baseclass_DlgConditionSet", BASE1, mName,DlgChoice,
 				dcondset, 0x10, BASE);
+			meta_dcase1_BASE1.mOffset = PARENT_OFFSET(DlgConditionSet, DlgChoice);
 			ADD(dcase1);
 
 			DEFINET2(dcase3, DlgChoicesChildPost);
@@ -2922,6 +3170,232 @@ namespace MetaInit {
 				dlgchild, 0x10);
 			meta_dcase2_BASE.mOffset = PARENT_OFFSET(DlgChild, DlgChoicesChildPre);
 			ADD(dcase2);
+
+			DEFINET2(dtime, DlgConditionTime);
+			FIRSTMEM1(dtime, "Baseclass_DlgCondition", BASE, mDlgObjID, DlgConditionTime, dlgcond, 0x10);
+			meta_dtime_BASE.mOffset = PARENT_OFFSET(DlgCondition, DlgConditionTime);
+			NEXTMEM2(dtime, mDurationClass, DlgConditionTime, long, 0x40, BASE);
+			NEXTMEM2(dtime, mSeconds, DlgConditionTime, float, 0x20, mDurationClass);
+			ADD(dtime);
+
+			DEFINET2(dinput1, DlgConditionRule);
+			FIRSTMEM1(dinput1, "Baseclass_DlgCondition", BASE, mDlgObjID, DlgConditionRule, dlgcond, 0x10);
+			meta_dinput1_BASE.mOffset = PARENT_OFFSET(DlgCondition, DlgConditionRule);
+			NEXTMEM2(dinput1, mRule, DlgConditionRule, rule, 0, BASE);
+			ADD(dinput1);
+
+			DEFINET2(dinput, DlgConditionInput);
+			FIRSTMEM1(dinput, "Baseclass_DlgCondition", BASE, mDlgObjID, DlgConditionInput, dlgcond, 0x10);
+			meta_dinput_BASE.mOffset = PARENT_OFFSET(DlgCondition, DlgConditionInput);
+			ADD(dinput);
+
+			//all types with file extension handles that would be referenced (handle and handlelock)
+			DEFINEHANDLE(wbox, WalkBoxes);
+			DEFINEHANDLE(aam, ActorAgentMapper);
+			DEFINEHANDLE(amap, AgentMap);
+			DEFINEHANDLE(audiobus, SoundBusSystem::BusHolder);
+			DEFINEHANDLE(dss, DlgSystemSettings);
+			DEFINEHANDLE(enl, EnlightenData);
+			DEFINEHANDLE(imap, InputMapper);
+			DEFINEHANDLE(landb, LanguageDB);
+			DEFINEHANDLE(langdb, LanguageDatabase);
+			DEFINEHANDLE(llm, LanguageLookupMap);
+			DEFINEHANDLE(locreg, LocalizationRegistry);
+			DEFINEHANDLE(overlay, T3OverlayData);
+			DEFINEHANDLE(ppkgd, PreloadPackage::RuntimeDataDialog);
+			DEFINEHANDLE(ppkgs, PreloadPackage::RuntimeDataScene);
+			DEFINEHANDLE(probe, LightProbeData);
+			DEFINEHANDLE(ptable, PhonemeTable);
+			DEFINEHANDLE(rules, Rules);
+			DEFINEHANDLE(reverb, SoundReverbDefinition);
+			DEFINEHANDLE(skl, Skeleton);
+			DEFINEHANDLE(style, StyleGuide);
+
+			DEFINET2(cp, CorrespondencePoint);
+			FIRSTMEM2(cp, mFlags, CorrespondencePoint, flags, MetaFlag::MetaFlag_FlagType);
+			FIRSTFLAG(cp, mFlags, "Left Foot Down", a, 2);
+			NEXTFLAG(cp, mFlags, "Right Foot Down", b, 4, a);
+			NEXTFLAG(cp, mFlags, "Force End", c, 8, b);
+			NEXTFLAG(cp, mFlags, "Start Position Lerp", d, 16, c);
+			NEXTFLAG(cp, mFlags, "End Position Lerp", e, 32, d);
+			NEXTMEM2(cp, mEaseOutStartFlags, CorrespondencePoint, flags, MetaFlag::MetaFlag_FlagType, mFlags);
+			FIRSTFLAG(cp, mEaseOutStartFlags, "Ease Out A Open", a, 1);
+			NEXTFLAG(cp, mEaseOutStartFlags, "Ease Out B Open", b, 2, a);
+			NEXTFLAG(cp, mEaseOutStartFlags, "Ease Out C Open", c, 4, b);
+			NEXTFLAG(cp, mEaseOutStartFlags, "Ease Out D Open", d, 8, c);
+			NEXTFLAG(cp, mEaseOutStartFlags, "Ease Out E Open", e, 16, d);
+			NEXTFLAG(cp, mEaseOutStartFlags, "Ease Out F Open", f, 32, e);
+			NEXTFLAG(cp, mEaseOutStartFlags, "Ease Out G Open", g, 64, f);
+			NEXTFLAG(cp, mEaseOutStartFlags, "Ease Out H Open", h, 128, g);
+			NEXTFLAG(cp, mEaseOutStartFlags, "Ease Out I Open", i, 256, h);
+			NEXTFLAG(cp, mEaseOutStartFlags, "Ease Out J Open", j, 512, i);
+			NEXTFLAG(cp, mEaseOutStartFlags, "Ease Out K Open", k, 1024, j);
+			NEXTFLAG(cp, mEaseOutStartFlags, "Ease Out L Open", l, 2048, k);
+			NEXTFLAG(cp, mEaseOutStartFlags, "Ease Out M Open", m, 4096, l);
+			NEXTFLAG(cp, mEaseOutStartFlags, "Ease Out N Open", n, 8192, m);
+			NEXTFLAG(cp, mEaseOutStartFlags, "Ease Out O Open", o, 0x4000, n);
+			NEXTFLAG(cp, mEaseOutStartFlags, "Ease Out P Open", p, 0x8000, o);
+			NEXTMEM2(cp, mEaseOutEndFlags, CorrespondencePoint, flags, MetaFlag::MetaFlag_FlagType, mEaseOutStartFlags);
+			FIRSTFLAG(cp, mEaseOutEndFlags, "Ease Out A Close", a, 1);
+			NEXTFLAG(cp, mEaseOutEndFlags, "Ease Out B Close", b, 2, a);
+			NEXTFLAG(cp, mEaseOutEndFlags, "Ease Out C Close", c, 4, b);
+			NEXTFLAG(cp, mEaseOutEndFlags, "Ease Out D Close", d, 8, c);
+			NEXTFLAG(cp, mEaseOutEndFlags, "Ease Out E Close", e, 16, d);
+			NEXTFLAG(cp, mEaseOutEndFlags, "Ease Out F Close", f, 32, e);
+			NEXTFLAG(cp, mEaseOutEndFlags, "Ease Out G Close", g, 64, f);
+			NEXTFLAG(cp, mEaseOutEndFlags, "Ease Out H Close", h, 128, g);
+			NEXTFLAG(cp, mEaseOutEndFlags, "Ease Out I Close", i, 256, h);
+			NEXTFLAG(cp, mEaseOutEndFlags, "Ease Out J Close", j, 512, i);
+			NEXTFLAG(cp, mEaseOutEndFlags, "Ease Out K Close", k, 1024, j);
+			NEXTFLAG(cp, mEaseOutEndFlags, "Ease Out L Close", l, 2048, k);
+			NEXTFLAG(cp, mEaseOutEndFlags, "Ease Out M Close", m, 4096, l);
+			NEXTFLAG(cp, mEaseOutEndFlags, "Ease Out N Close", n, 8192, m);
+			NEXTFLAG(cp, mEaseOutEndFlags, "Ease Out O Close", o, 0x4000, n);
+			NEXTFLAG(cp, mEaseOutEndFlags, "Ease Out P Close", p, 0x8000, o);
+
+			NEXTMEM2(cp, mEaseInStartFlags, CorrespondencePoint, flags, MetaFlag::MetaFlag_FlagType, mEaseOutEndFlags);
+			FIRSTFLAG(cp, mEaseInStartFlags, "Ease In A Open", a, 1);
+			NEXTFLAG(cp, mEaseInStartFlags, "Ease In B Open", b, 2, a);
+			NEXTFLAG(cp, mEaseInStartFlags, "Ease In C Open", c, 4, b);
+			NEXTFLAG(cp, mEaseInStartFlags, "Ease In D Open", d, 8, c);
+			NEXTFLAG(cp, mEaseInStartFlags, "Ease In E Open", e, 16, d);
+			NEXTFLAG(cp, mEaseInStartFlags, "Ease In F Open", f, 32, e);
+			NEXTFLAG(cp, mEaseInStartFlags, "Ease In G Open", g, 64, f);
+			NEXTFLAG(cp, mEaseInStartFlags, "Ease In H Open", h, 128, g);
+			NEXTFLAG(cp, mEaseInStartFlags, "Ease In I Open", i, 256, h);
+			NEXTFLAG(cp, mEaseInStartFlags, "Ease In J Open", j, 512, i);
+			NEXTFLAG(cp, mEaseInStartFlags, "Ease In K Open", k, 1024, j);
+			NEXTFLAG(cp, mEaseInStartFlags, "Ease In L Open", l, 2048, k);
+			NEXTFLAG(cp, mEaseInStartFlags, "Ease In M Open", m, 4096, l);
+			NEXTFLAG(cp, mEaseInStartFlags, "Ease In N Open", n, 8192, m);
+			NEXTFLAG(cp, mEaseInStartFlags, "Ease In O Open", o, 0x4000, n);
+			NEXTFLAG(cp, mEaseInStartFlags, "Ease In P Open", p, 0x8000, o);
+			NEXTMEM2(cp, mEaseInEndFlags, CorrespondencePoint, flags, MetaFlag::MetaFlag_FlagType, mEaseInStartFlags);
+			FIRSTFLAG(cp, mEaseInEndFlags, "Ease In A Close", a, 1);
+			NEXTFLAG(cp, mEaseInEndFlags, "Ease In B Close", b, 2, a);
+			NEXTFLAG(cp, mEaseInEndFlags, "Ease In C Close", c, 4, b);
+			NEXTFLAG(cp, mEaseInEndFlags, "Ease In D Close", d, 8, c);
+			NEXTFLAG(cp, mEaseInEndFlags, "Ease In E Close", e, 16, d);
+			NEXTFLAG(cp, mEaseInEndFlags, "Ease In F Close", f, 32, e);
+			NEXTFLAG(cp, mEaseInEndFlags, "Ease In G Close", g, 64, f);
+			NEXTFLAG(cp, mEaseInEndFlags, "Ease In H Close", h, 128, g);
+			NEXTFLAG(cp, mEaseInEndFlags, "Ease In I Close", i, 256, h);
+			NEXTFLAG(cp, mEaseInEndFlags, "Ease In J Close", j, 512, i);
+			NEXTFLAG(cp, mEaseInEndFlags, "Ease In K Close", k, 1024, j);
+			NEXTFLAG(cp, mEaseInEndFlags, "Ease In L Close", l, 2048, k);
+			NEXTFLAG(cp, mEaseInEndFlags, "Ease In M Close", m, 4096, l);
+			NEXTFLAG(cp, mEaseInEndFlags, "Ease In N Close", n, 8192, m);
+			NEXTFLAG(cp, mEaseInEndFlags, "Ease In O Close", o, 0x4000, n);
+			NEXTFLAG(cp, mEaseInEndFlags, "Ease In P Close", p, 0x8000, o);
+			meta_cp_mEaseOutStartFlags.mGameIndexVersionRange.max  = TelltaleToolLib_GetGameKeyIndex("BATMAN");
+			meta_cp_mEaseInStartFlags.mGameIndexVersionRange.max  = TelltaleToolLib_GetGameKeyIndex("BATMAN");
+			meta_cp_mEaseOutEndFlags.mGameIndexVersionRange.max  = TelltaleToolLib_GetGameKeyIndex("BATMAN");
+			meta_cp_mEaseInEndFlags.mGameIndexVersionRange.max  = TelltaleToolLib_GetGameKeyIndex("BATMAN");
+			meta_cp_mEaseOutStartFlags.mGameIndexVersionRange.min = TelltaleToolLib_GetGameKeyIndex("MC2");
+			meta_cp_mEaseInStartFlags.mGameIndexVersionRange.min = TelltaleToolLib_GetGameKeyIndex("MC2");
+			meta_cp_mEaseOutEndFlags.mGameIndexVersionRange.min = TelltaleToolLib_GetGameKeyIndex("MC2");
+			meta_cp_mEaseInEndFlags.mGameIndexVersionRange.min = TelltaleToolLib_GetGameKeyIndex("MC2");
+			NEXTMEM2(cp, mSteeringFlags, CorrespondencePoint, flags, MetaFlag::MetaFlag_FlagType, mEaseInEndFlags);
+			FIRSTFLAG(cp, mSteeringFlags, "Manual Steering On", a, 1);
+			NEXTFLAG(cp, mSteeringFlags, "Manual Steering Off", b, 2, a);
+			NEXTMEM2(cp, mTransitionFlags, CorrespondencePoint, flags, MetaFlag::MetaFlag_FlagType, mSteeringFlags);
+			FIRSTFLAG(cp, mTransitionFlags, "Transition Window Open", a, 1);
+			meta_cp_mTransitionFlags.mSkipVersion = TelltaleToolLib_GetGameKeyIndex("WD3");
+			NEXTFLAG(cp, mTransitionFlags, "Transition Window Closed", b, 2, a);
+			NEXTMEM2(cp, mfTime, CorrespondencePoint, float, 0, mTransitionFlags);
+			NEXTMEM2(cp, mComment, CorrespondencePoint, string, 0, mfTime);
+			ADD(cp);
+
+			DEFINEDCARRAY(CorrespondencePoint);
+
+			DEFINET2(be, BlendEntry);
+			FIRSTMEM2(be, mParameterValues, BlendEntry, vec3, 0);
+			NEXTMEM2(be, mAnimOrChore, BlendEntry, animorchore, 0, mParameterValues);
+			NEXTMEM2(be, mCorrespondencePoints, BlendEntry, DCArray_CorrespondencePoint, 0, mAnimOrChore);
+			NEXTMEM2(be, mfAnimOrChoreLength, BlendEntry, float, 0x20, mCorrespondencePoints);
+			NEXTMEM2(be, mComment, BlendEntry, string, 0, mfAnimOrChoreLength);
+			ADD(be);
+
+			DEFINEDCARRAY(BlendEntry);
+
+			DEFINET2(bgt, BlendGraph::EnumBlendGraphType);
+			FIRSTMEM2(bgt, mVal, BlendGraph::EnumBlendGraphType, long, 0x40);
+			FIRSTENUM2(bgt, mVal, "eBlendgraph_Looping", a, 0, 0);
+			ADDFLAGS(bgt, 0x8008);
+			NEXTENUM2(bgt, mVal, "eBlendgraph_NonLooping", b, 1, 0, a);
+			NEXTMEM1(bgt, "Baseclass_EnumBase", BASE, mVal, BlendGraph::EnumBlendGraphType, enumbase, 0x10,mVal);
+			ADD(bgt);
+
+			DEFINEKEYFRAMEDVALUE(int, int, long);
+			DEFINEMAP2(float, KeyframedValue<int>, float, kfvi, std::less<float>);
+			DEFINEMAP2(float, Map<float SEP KeyframedValue<int>>, float, map_f_kfv, std::less<float>);
+
+			DEFINET2(bg, BlendGraph);
+			EXT(bg, bgh);
+			SERIALIZER(bg, BlendGraph);
+			FIRSTMEM1(bg, "mNumDimensions", ALAIS, mNumDimensions, BlendGraph, long, 0x20);
+			meta_bg_ALAIS.mGameIndexVersionRange.max = TelltaleToolLib_GetGameKeyIndex("BATMAN2");
+			NEXTMEM2(bg, mParameters, BlendGraph, DCArray_Symbol, 0, ALAIS);
+			NEXTMEM2(bg, mFrozenParameterNames, BlendGraph, DCArray_Symbol, 0, mParameters);
+			//NEXTMEM1(bg, "mFrozenParameterNames", WD3FUCKUP, mFrozenParameterNames, BlendGraph, DCArray_Symbol, 0, mFrozenParameterNames);
+			//meta_bg_mFrozenParameterNames.mGameIndexVersionRange.max = TelltaleToolLib_GetGameKeyIndex("BATMAN");
+			//meta_bg_WD3FUCKUP.mGameIndexVersionRange.min = TelltaleToolLib_GetGameKeyIndex("MARVEL");
+			meta_bg_mFrozenParameterNames.mSkipVersion = TelltaleToolLib_GetGameKeyIndex("WD3");
+			NEXTMEM2(bg, mDampeningConstants, BlendGraph, DCArray_float, 0, mFrozenParameterNames);
+			NEXTMEM2(bg, mEntries, BlendGraph, DCArray_BlendEntry, 0, mDampeningConstants);
+			NEXTMEM2(bg, mBlendGraphType, BlendGraph, bgt, 0, mEntries);
+			NEXTMEM2(bg, mDampen, BlendGraph, bool, 0, mBlendGraphType);
+			NEXTMEM2(bg, mfTimeScale, BlendGraph, float, 0, mDampen);
+			NEXTMEM2(bg, mComment, BlendGraph, string, 0, mfTimeScale);
+			NEXTMEM2(bg, mhBlendGraphAuxiliaryChore, BlendGraph, Handlehchore, 0, mComment);
+			meta_bg_mhBlendGraphAuxiliaryChore.mSkipVersion = TelltaleToolLib_GetGameKeyIndex("WD3");
+			NEXTMEM2(bg, mbInvertParameters, BlendGraph, long, 0x20, mhBlendGraphAuxiliaryChore);
+			meta_bg_mbInvertParameters.mGameIndexVersionRange.min = TelltaleToolLib_GetGameKeyIndex("WD4");
+			NEXTMEM2(bg, mVersion, BlendGraph, long, 0x20, mbInvertParameters);
+			NEXTMEM2(bg, mNumGeometryDimensions, BlendGraph,long, 0x20, mVersion);
+			NEXTMEM1(bg, "mNumDimensions", ALAIS2, mNumDimensions, BlendGraph, long, 0x20, mNumGeometryDimensions);
+			NEXTMEM2(bg, mParameterOrder, BlendGraph, DCArray_i32, 0x20, ALAIS2);
+			meta_bg_mParameterOrder.mGameIndexVersionRange.min = TelltaleToolLib_GetGameKeyIndex("WD4");
+			meta_bg_ALAIS2.mGameIndexVersionRange.min = TelltaleToolLib_GetGameKeyIndex("WD4");
+			ADD(bg);
+
+			DEFINET2(bgm, BlendGraphManager);
+			EXT(bgm, bgm);
+			FIRSTMEM2(bgm, mfTransitionTime, BlendGraphManager, float, 0);
+			NEXTMEM2(bgm, mIdleAnimOrChore, BlendGraphManager, animorchore, 0, mfTransitionTime);
+			NEXTMEM2(bgm, mbUseAnimationMoverData, BlendGraphManager, bool, 0, mIdleAnimOrChore);
+			meta_bgm_mbUseAnimationMoverData.mGameIndexVersionRange.min = TelltaleToolLib_GetGameKeyIndex("WD4");
+			NEXTMEM2(bgm, mhFreewalkStartGraph, BlendGraphManager, Handlehchore, 0, mbUseAnimationMoverData);
+			NEXTMEM2(bgm, mhFreewalkLoopGraph, BlendGraphManager, Handlehchore, 0, mhFreewalkStartGraph);
+			NEXTMEM2(bgm, mhFreewalkStopGraph, BlendGraphManager, Handlehchore, 0, mhFreewalkLoopGraph);
+			NEXTMEM2(bgm, mhTurnToFaceGraph, BlendGraphManager, Handlehchore, 0, mhFreewalkStopGraph);
+			NEXTMEM2(bgm, mhChoredMovementStartGraph, BlendGraphManager, Handlehchore, 0, mhTurnToFaceGraph);
+			NEXTMEM2(bgm, mhChoredMovementLoopGraph, BlendGraphManager, Handlehchore, 0, mhChoredMovementStartGraph);
+			NEXTMEM2(bgm, mhChoredMovementStopGraph, BlendGraphManager, Handlehchore, 0, mhChoredMovementLoopGraph);
+			meta_bgm_mhChoredMovementStartGraph.mGameIndexVersionRange.max = TelltaleToolLib_GetGameKeyIndex("WD3");
+			meta_bgm_mhChoredMovementStopGraph.mGameIndexVersionRange.max = TelltaleToolLib_GetGameKeyIndex("WD3");
+			meta_bgm_mhChoredMovementLoopGraph.mGameIndexVersionRange.max = TelltaleToolLib_GetGameKeyIndex("WD3");
+			meta_bgm_mhChoredMovementStartGraph.mGameIndexVersionRange.min = TelltaleToolLib_GetGameKeyIndex("MARVEL");
+			meta_bgm_mhChoredMovementStopGraph.mGameIndexVersionRange.min = TelltaleToolLib_GetGameKeyIndex("MARVEL");
+			meta_bgm_mhChoredMovementLoopGraph.mGameIndexVersionRange.min = TelltaleToolLib_GetGameKeyIndex("MARVEL");
+			meta_bgm_mhTurnToFaceGraph.mGameIndexVersionRange.min = TelltaleToolLib_GetGameKeyIndex("WD4");
+			NEXTMEM2(bgm, mVersion, BlendGraphManager, long, 0, mhChoredMovementStopGraph);
+			NEXTMEM2(bgm, mbUseAlgorithmicHeadTurn, BlendGraphManager, bool, 0, mVersion);
+			NEXTMEM2(bgm, mfMaxManualSteeringVelocityInDegrees, BlendGraphManager, float, 0, mbUseAlgorithmicHeadTurn);
+			NEXTMEM2(bgm, mfMinManualSteeringVelocityInDegrees, BlendGraphManager, float, 0, mfMaxManualSteeringVelocityInDegrees);
+			NEXTMEM2(bgm, mfMaxLeanInPercentVelocity, BlendGraphManager, float, 0, mfMinManualSteeringVelocityInDegrees);
+			NEXTMEM2(bgm, mfMinLeanInPercentVelocity, BlendGraphManager, float, 0, mfMaxLeanInPercentVelocity);
+			NEXTMEM2(bgm, mfWalkSpeedScale, BlendGraphManager, float, 0, mfMinLeanInPercentVelocity);
+			NEXTMEM2(bgm, mfRunSpeedScale, BlendGraphManager, float, 0, mfWalkSpeedScale);
+			meta_bgm_mfMaxManualSteeringVelocityInDegrees.mSkipVersion = TelltaleToolLib_GetGameKeyIndex("WD3");
+			meta_bgm_mfMinManualSteeringVelocityInDegrees.mSkipVersion = TelltaleToolLib_GetGameKeyIndex("WD3");
+			meta_bgm_mfMaxLeanInPercentVelocity.mSkipVersion = TelltaleToolLib_GetGameKeyIndex("WD3");
+			meta_bgm_mfMinLeanInPercentVelocity.mSkipVersion = TelltaleToolLib_GetGameKeyIndex("WD3");
+			meta_bgm_mfWalkSpeedScale.mSkipVersion = TelltaleToolLib_GetGameKeyIndex("WD3");
+			meta_bgm_mfRunSpeedScale.mSkipVersion = TelltaleToolLib_GetGameKeyIndex("WD3");
+			meta_bgm_mbUseAlgorithmicHeadTurn.mSkipVersion = TelltaleToolLib_GetGameKeyIndex("WD3");
+			ADD(bgm);
+
 
 		}
 		Initialize2();

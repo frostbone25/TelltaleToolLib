@@ -99,6 +99,7 @@ struct SerializedVersionInfo {
 		bool mbBlocked;
 		u32 mSize;
 		u32 mVersionCrc;
+		MetaMemberDescription* mpMemberDesc;
 	};
 
 	String mFileName;
@@ -965,8 +966,10 @@ struct MetaMemberDescription {
 	MetaClassDescription* mpMemberDesc;
 	i32 mMinMetaVersion;//by lib for other game support
 	TRange<int> mGameIndexVersionRange;
+	i32 mSkipVersion;
 	inline MetaMemberDescription() {
 		mMinMetaVersion = -1;
+		mSkipVersion = -1;
 		mpName = NULL;
 		mOffset = 0;
 		mFlags = 0;
@@ -1034,7 +1037,7 @@ struct ScriptEnum {
 	inline static const char* ENUM_MENU_VERTICAL_ALIGN = "ScriptEnum:MenuVerticalAlignment";
 	inline static const char* ENUM_UI_COLOUR = "ScriptEnum:UIColor";
 	inline static const char* ENUM_CHASE_FORWARD_VECTOR = "ScriptEnum:ChaseForwardVector";
-	inline static const char* ENUM_RETICLE_DISPLAY_MODE = "ScriptEnum:Reticle Display Mode";
+	inline static const char* ENUM_RETICLE_DISPLAY_MODE = "ScriptEnum:ReticleDisplayMode";
 	inline static const char* ENUM_CONTROLLER_BUTTONS = "ScriptEnum:ControllerButtons";
 	inline static const char* ENUM_DIALOG_MODE = "ScriptEnum:DialogMode";
 	inline static const char* ENUM_USEABLE_TYPE = "ScriptEnum:UseableType";
