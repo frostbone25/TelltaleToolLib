@@ -443,6 +443,15 @@ public:
 		return NULL;
 	}
 
+	template<typename T> T* GetProperty(const Symbol keyName) {
+		u64 crc = keyName.GetCRC();
+		for (auto it = mKeyMap.begin(); it != mKeyMap.end(); it++) {
+			if (it->mKeyName.GetCRC() == crc)
+				return it->mValue.CastValue<T>();
+		}
+		return NULL;
+	}
+
 	template<typename T> T* GetProperty(const char* keyName) {
 		u64 crc = CRC64_CaseInsensitive(0, keyName);
 		for (auto it = mKeyMap.begin(); it != mKeyMap.end(); it++) {

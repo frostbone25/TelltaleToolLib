@@ -491,16 +491,37 @@ struct T3MaterialCompiledData {
 	BinaryBuffer mPreShaderBuffer;
 	Flags mFlags;
 	long mParameterBufferScalarSize[2];
-	long mPreShaderParameterBufferScalaSize;
+	long mPreShaderParameterBufferScalarSize;
+};
+
+enum T3MaterialDomainType {
+	 eMaterialDomain_Mesh = 0,
+	 eMaterialDomain_Particle = 1,
+	 eMaterialDomain_Decal = 2,
+	 eMaterialDomain_Post = 3,
+	 eMaterialDomain_ExportMeshShader = 4,
+	 eMaterialDomain_Count = 5,
+	 eMaterialDomain_None = 0xFFFFFFFF
 };
 
 struct T3MaterialData {
-	Symbol mName, mRuntimePropertiesName, mLegacyRenderTextureProperty;
-	long mDomain;
+	Symbol mMaterialName, mRuntimePropertiesName, mLegacyRenderTextureProperty;
+	Symbol mLegacyBlendModeRuntimeProperty;
+	T3MaterialDomainType mDomain;
 	DCArray<T3MaterialRuntimeProperty> mRuntimeProperties;
-	Flags mFlags, mRuntimeFlags;//flags not serialized
+	Flags mFlags, mRuntimeFlags;//runtimeflags not serialized
 	long mVersion;
 	DCArray<T3MaterialCompiledData> mCompiledData2;
+
+	static METAOP_FUNC_IMPL__(SerializeAsync) {
+		CAST_METAOP(T3MaterialData, data);
+		MetaOpResult r = Meta::MetaOperation_SerializeAsync(pObj, pObjDescription, pContextDescription, pUserData);
+		if (r == eMetaOp_Succeed) {
+
+		}
+		return r;
+	}
+
 };
 
 enum T3MeshMaterialFlags : u32 {
@@ -581,9 +602,11 @@ struct T3MeshLOD {
 	BoundingBox mBoundingBox;
 	Sphere mBoundingSphere;
 	Flags mFlags;
+	//vertex state index, index into T3MeshData::mVertexStates (buffers)
 	long mVertexStateIndex, mNumPrimitives, mNumBatches, mVertexStart, mVertexCount, mTextureAtlasWidth, mTextureAtlasHeight;
 	float mPixelSize, mDistance;
 	DCArray<Symbol> mBones;
+	//default serializer
 };
 
 enum T3MeshTextureType {
@@ -633,7 +656,7 @@ struct T3MaterialRequirements {
 	BitSetBase<3> mInputs;
 };
 
-struct T3EffectPreloadDynamicFeatures {
+struct T3MeshEffectPreloadDynamicFeatures {
 	BitSetBase<1> mDynamicFeatures;
 	long mPriority;
 };
@@ -642,7 +665,7 @@ struct T3MeshEffectPreloadEntry {
 	T3EffectType mEffectType;
 	BitSetBase<3> mStaticEffectFeatures;
 	u64 mMaterialCRC;
-	DCArray<T3EffectPreloadDynamicFeatures> mDynamicEffectFeatures;
+	DCArray<T3MeshEffectPreloadDynamicFeatures> mDynamicEffectFeatures;
 };
 
 struct T3MeshEffectPreload {
@@ -662,7 +685,10 @@ struct T3MeshTexCoordTransform {
 };
 
 struct T3MeshCPUSkinningData {
-
+	GFXPlatformFormat mPositionFormat, mNormalFormat, mWeightFormat;
+	BitSetBase<1> mVertexStreams;
+	long mNormalCount, mWeightOffset, mVertexSize, mWeightSize;
+	BinaryBuffer mData;
 };
 
 struct GFXPlatformAttributeParams {
@@ -853,13 +879,13 @@ struct T3MeshData {
 	T3MeshCPUSkinningData* mpCPUSkinningData;
 	BoundingBox mBoundingBox;
 	Sphere mBoundingSphere;
+	T3MeshEndianType mEndianType;
 	Vector3 mPositionScale, mPositionWScale, mPositionOffset;
 	float mLightmapTexelAreaPerSurfaceArea;
 	Symbol mPropertyKeyBase;
 	long mVertexCount;
 	Flags mFlags;
 	DCArray<T3MeshEffectPreload> mMeshPreload;
-	//T3MeshEndianType mEndianType;
 	T3MeshTexCoordTransform mTexCoordTransform[4];
 
 	T3MeshData() {
@@ -1008,6 +1034,13 @@ struct D3DMesh {
 		return NULL;
 	}
 
+	T3MaterialData* GetMaterialData(PropertySet* pMeshProps) {
+		if (!pMeshProps)
+			return NULL;
+		return pMeshProps->GetProperty<T3MaterialData>(
+			T3MaterialInternal::kPropKeyMaterialData);
+	}
+
 	~D3DMesh() {
 		if (mpOcclusionMeshData)
 			delete mpOcclusionMeshData;
@@ -1086,6 +1119,9 @@ struct D3DMesh {
 			meta->serialize_uint32(&hasToolData);
 			if (hasToolData) {
 				meta->BeginBlock();
+				TelltaleToolLib_RaiseError("Mesh contains tool data; "
+					"skipping block (safely)",
+					ErrorSeverity::WARN);
 				meta->SkipToEndOfCurrentBlock();
 				meta->EndBlock();
 			}

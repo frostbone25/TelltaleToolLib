@@ -2133,6 +2133,10 @@ namespace MetaInit {
 			NEXTMEM2(seen, mAdditionalScenes, PreloadPackage::ResourceSeenTimes, Set_symbol,0, mfLatest);
 			ADD(seen);
 
+			DEFINET2(bitsetbase3, BitSetBase<3>);
+			SERIALIZER(bitsetbase3, BitSetBase<3>);
+			ADD(bitsetbase3);
+
 			DEFINET2(bitsetbase1, BitSetBase<1>);
 			SERIALIZER(bitsetbase1, BitSetBase<1>);
 			ADD(bitsetbase1);
@@ -3396,8 +3400,335 @@ namespace MetaInit {
 			meta_bgm_mbUseAlgorithmicHeadTurn.mSkipVersion = TelltaleToolLib_GetGameKeyIndex("WD3");
 			ADD(bgm);
 
-			//TODO
-			//boundingbox, check sphere, t3 occlusion mesh data, t3 mesh data, d3dmesh
+			DEFINET2(omesh, T3OcclusionMeshBatch);
+			FIRSTMEM2(omesh, mFlags, T3OcclusionMeshBatch, long, 0);
+			NEXTMEM2(omesh, mStartIndex, T3OcclusionMeshBatch, long, 0, mFlags);
+			NEXTMEM2(omesh, mNumTriangles, T3OcclusionMeshBatch, long, 0, mStartIndex);
+			ADD(omesh);
+
+			DEFINEDCARRAY(T3OcclusionMeshBatch);
+
+			DEFINET2(bbox, BoundingBox);
+			ADDFLAGS(bbox, MetaFlag::MetaFlag_MetaSerializeBlockingDisabled);
+			FIRSTMEM2(bbox, mMin, BoundingBox, vec3, 0);
+			NEXTMEM2(bbox, mMax, BoundingBox, vec3, 0, mMin);
+			ADD(bbox);
+
+			DEFINET2(mesho, T3OcclusionMeshData);
+			SERIALIZER(mesho, T3OcclusionMeshData);
+			FIRSTMEM2(mesho, mData, T3OcclusionMeshData, bb, 0);
+			NEXTMEM2(mesho, mBoundingBox, T3OcclusionMeshData, bbox, 0, mData);
+			NEXTMEM2(mesho, mBoundingSphere, T3OcclusionMeshData, sphere, 0, mBoundingBox);
+			NEXTMEM2(mesho, mBatches, T3OcclusionMeshData, DCArray_T3OcclusionMeshBatch, 0, mBoundingSphere);
+			NEXTMEM2(mesho, mVertexCount, T3OcclusionMeshData, long, 0, mBatches);
+			ADD(mesho);
+
+			DEFINET2(texind, T3MeshTextureIndices);
+			SERIALIZER(texind, T3MeshTextureIndices);
+			ADD(texind);
+
+			DEFINET2(batch, T3MeshBatch);
+			FIRSTMEM2(batch, mBoundingBox, T3MeshBatch, bbox, 0);
+			NEXTMEM2(batch, mBoundingSphere, T3MeshBatch, sphere, 0, mBoundingBox);
+			NEXTMEM2(batch, mBatchUsage, T3MeshBatch, flags, 0, mBoundingSphere);
+			NEXTMEM2(batch, mMinVertIndex, T3MeshBatch, long, 0, mBatchUsage);
+			NEXTMEM2(batch, mMaxVertIndex, T3MeshBatch, long, 0, mMinVertIndex);
+			NEXTMEM2(batch, mBaseIndex, T3MeshBatch, long, 0, mMaxVertIndex);
+			NEXTMEM2(batch, mStartIndex, T3MeshBatch, long, 0, mBaseIndex);
+			NEXTMEM2(batch, mNumPrimitives, T3MeshBatch, long, 0, mStartIndex);
+			NEXTMEM2(batch, mNumIndices, T3MeshBatch, long, 0, mNumPrimitives);
+			NEXTMEM2(batch, mTextureIndices, T3MeshBatch, texind, 0, mNumIndices);
+			NEXTMEM2(batch, mMaterialIndex, T3MeshBatch, long, 0, mTextureIndices);
+			NEXTMEM2(batch, mAdjacencyStartIndex, T3MeshBatch, long, 0, mMaterialIndex);
+			ADD(batch);
+
+			DEFINEDCARRAY(T3MeshBatch);
+
+			DEFINET2(lod, T3MeshLOD);
+			FIRSTMEM(lod, "mBatches[0]", mBatches, T3MeshLOD, DCArray_T3MeshBatch, 0);
+			NEXTMEM1(lod, "mBatches[1]", mBatches1, mBatches, T3MeshLOD, DCArray_T3MeshBatch, 0, mBatches);
+			meta_lod_mBatches1.mOffset += sizeof(DCArray<T3MeshBatch>);
+			NEXTMEM2(lod, mVertexStreams, T3MeshLOD, bitsetbase1,0, mBatches1);
+			NEXTMEM2(lod, mBoundingBox, T3MeshLOD, bbox, 0, mVertexStreams);
+			NEXTMEM2(lod, mBoundingSphere, T3MeshLOD, sphere, 0, mBoundingBox);
+			NEXTMEM2(lod, mFlags, T3MeshLOD, flags, 0, mBoundingSphere);
+			NEXTMEM2(lod, mVertexStateIndex, T3MeshLOD, long,0, mFlags);
+			NEXTMEM2(lod, mNumPrimitives, T3MeshLOD, long, 0, mVertexStateIndex);
+			NEXTMEM2(lod, mNumBatches, T3MeshLOD, long, 0, mNumPrimitives);
+			NEXTMEM2(lod, mVertexStart, T3MeshLOD, long, 0, mNumBatches);
+			NEXTMEM2(lod, mVertexCount, T3MeshLOD, long, 0, mVertexStart);
+			NEXTMEM2(lod, mTextureAtlasWidth, T3MeshLOD, long, 0, mVertexCount);
+			NEXTMEM2(lod, mTextureAtlasHeight, T3MeshLOD, long, 0, mTextureAtlasWidth);
+			NEXTMEM2(lod, mPixelSize, T3MeshLOD, float, 0, mTextureAtlasHeight);
+			NEXTMEM2(lod, mDistance, T3MeshLOD, float, 0, mPixelSize);
+			NEXTMEM2(lod, mBones, T3MeshLOD, DCArray_Symbol, 0, mDistance);
+			ADD(lod);
+
+			DEFINET2(mesht, T3MeshTexture);
+			FIRSTMEM2(mesht, mTextureType, T3MeshTexture, long, 0);
+			NEXTMEM2(mesht, mhTexture, T3MeshTexture, Handletex, 0, mTextureType);
+			NEXTMEM2(mesht, mNameSymbol, T3MeshTexture, symbol, 0, mhTexture);
+			NEXTMEM2(mesht, mBoundingBox, T3MeshTexture, bbox, 0, mNameSymbol);
+			NEXTMEM2(mesht, mBoundingSphere, T3MeshTexture, sphere, 0, mBoundingBox);
+			NEXTMEM2(mesht, mMaxObjAreaPerUVArea, T3MeshTexture, float, 0, mBoundingSphere);
+			NEXTMEM2(mesht, mAverageObjAreaPerUVArea, T3MeshTexture, float, 0, mMaxObjAreaPerUVArea);
+			ADD(mesht);
+
+			DEFINET2(meshm, T3MeshMaterial);
+			FIRSTMEM2(meshm, mhMaterial, T3MeshMaterial, Handlepropset, 0);
+			NEXTMEM2(meshm, mBaseMaterialName, T3MeshMaterial, symbol, 0, mhMaterial);
+			NEXTMEM2(meshm, mLegacyRenderTextureProperty, T3MeshMaterial, symbol, 0, mBaseMaterialName);
+			NEXTMEM2(meshm, mBoundingBox, T3MeshMaterial, bbox, 0, mLegacyRenderTextureProperty);
+			NEXTMEM2(meshm, mBoundingSphere, T3MeshMaterial, sphere, 0, mBoundingBox);
+			NEXTMEM2(meshm, mFlags, T3MeshMaterial, flags, 0, mBoundingSphere);
+			ADD(meshm);
+
+			DEFINET2(over, T3MeshMaterialOverride);
+			FIRSTMEM2(over, mhOverrideMaterial, T3MeshMaterialOverride, Handlepropset, 0);
+			NEXTMEM2(over, mMaterialIndex, T3MeshMaterialOverride, long, 0, mhOverrideMaterial);
+			ADD(over);
+
+			DEFINET2(bone, T3MeshBoneEntry);
+			FIRSTMEM2(bone, mBoneName, T3MeshBoneEntry, symbol, 0);
+			NEXTMEM2(bone, mBoundingBox, T3MeshBoneEntry, bbox, 0, mBoneName);
+			NEXTMEM2(bone, mBoundingSphere, T3MeshBoneEntry, sphere, 0, mBoundingBox);
+			NEXTMEM2(bone, mNumVerts, T3MeshBoneEntry,long, 0, mBoundingSphere);
+			ADD(bone);
+
+			DEFINET2(tle, T3MeshLocalTransformEntry);
+			FIRSTMEM2(tle, mTransform, T3MeshLocalTransformEntry, transform, 0);
+			NEXTMEM2(tle, mCameraFacingType, T3MeshLocalTransformEntry, long, 0, mTransform);
+			ADD(tle);
+
+			DEFINET2(df, T3MeshEffectPreloadDynamicFeatures);
+			FIRSTMEM2(df, mDynamicFeatures, T3MeshEffectPreloadDynamicFeatures, bitsetbase1, 0);
+			NEXTMEM2(df, mPriority, T3MeshEffectPreloadDynamicFeatures, long, 0, mDynamicFeatures);
+			ADD(df);
+
+			DEFINEDCARRAY(T3MeshEffectPreloadDynamicFeatures);
+
+			DEFINET2(fxe, T3MeshEffectPreloadEntry);
+			FIRSTMEM2(fxe, mEffectType, T3MeshEffectPreloadEntry, long, 0);
+			NEXTMEM2(fxe, mStaticEffectFeatures, T3MeshEffectPreloadEntry, bitsetbase3, 0, mEffectType);
+			NEXTMEM2(fxe, mMaterialCRC, T3MeshEffectPreloadEntry, __int64, 0, mStaticEffectFeatures);
+			NEXTMEM2(fxe, mDynamicEffectFeatures, T3MeshEffectPreloadEntry,
+				DCArray_T3MeshEffectPreloadDynamicFeatures, 0, mMaterialCRC);
+			ADD(fxe);
+
+			DEFINEDCARRAY(T3MeshEffectPreloadEntry);
+
+			DEFINET2(fx, T3MeshEffectPreload);
+			FIRSTMEM2(fx, mEffectQuality, T3MeshEffectPreload, long, 0);
+			NEXTMEM2(fx, mEntries, T3MeshEffectPreload, DCArray_T3MeshEffectPreloadEntry, 0, mEffectQuality);
+			NEXTMEM2(fx, mTotalEffectCount, T3MeshEffectPreload, long, 0, mEntries);
+			ADD(fx);
+
+			DEFINET2(bitsetreq, BitSet<enum T3MaterialChannelType SEP 46 SEP 0>);
+			SERIALIZER(bitsetreq, BitSet<enum T3MaterialChannelType SEP 46 SEP 0>);
+			ADD(bitsetreq);
+
+			DEFINET2(reqs, T3MaterialRequirements);
+			FIRSTMEM2(reqs, mPasses, T3MaterialRequirements, bitsetbase1, 0);
+			NEXTMEM2(reqs, mChannels, T3MaterialRequirements, bitsetreq, 0, mPasses);
+			NEXTMEM2(reqs, mInputs, T3MaterialRequirements, bitsetbase3, 0, mChannels);
+			ADD(reqs);
+
+			DEFINET2(skin, T3MeshCPUSkinningData);
+			FIRSTMEM2(skin, mPositionFormat, T3MeshCPUSkinningData, long, 0);
+			NEXTMEM2(skin, mWeightFormat, T3MeshCPUSkinningData, long, 0, mPositionFormat);
+			NEXTMEM2(skin, mNormalFormat, T3MeshCPUSkinningData, long, 0, mWeightFormat);
+			NEXTMEM2(skin, mVertexStreams, T3MeshCPUSkinningData, bitsetbase1, 0, mNormalFormat);
+			NEXTMEM2(skin, mNormalCount, T3MeshCPUSkinningData, long, 0, mVertexStreams);
+			NEXTMEM2(skin, mWeightOffset, T3MeshCPUSkinningData, long, 0, mNormalCount);
+			NEXTMEM2(skin, mVertexSize, T3MeshCPUSkinningData, long, 0, mWeightOffset);
+			NEXTMEM2(skin, mWeightSize, T3MeshCPUSkinningData, long, 0, mVertexSize);
+			NEXTMEM2(skin, mData, T3MeshCPUSkinningData, bb, 0, mWeightSize);
+			ADD(skin);
+
+			DEFINET2(tct, T3MeshTexCoordTransform);
+			FIRSTMEM2(tct, mScale, T3MeshTexCoordTransform, vec2, 0);
+			NEXTMEM2(tct, mOffset, T3MeshTexCoordTransform, vec2, 0, mScale);
+			ADD(tct);
+
+			DEFINET2(state, T3GFXVertexState);
+			SERIALIZER(state, T3GFXVertexState);
+			FIRSTMEM2(state, mVertexCountPerInstance, T3GFXVertexState, long, 0);
+			NEXTMEM2(state, mIndexBufferCount, T3GFXVertexState, long, 0, mVertexCountPerInstance);
+			NEXTMEM2(state, mVertexBufferCount, T3GFXVertexState, long, 0, mIndexBufferCount);
+			NEXTMEM2(state, mAttributeCount, T3GFXVertexState, long, 0, mVertexBufferCount);
+			ADD(state);
+
+			DEFINET2(params, GFXPlatformAttributeParams);
+			FIRSTMEM2(params, mAttribute, GFXPlatformAttributeParams, long, 0);
+			NEXTMEM2(params, mFormat, GFXPlatformAttributeParams, long, 0, mAttribute);
+			NEXTMEM2(params, mAttributeIndex, GFXPlatformAttributeParams, long, 0, mFormat);
+			NEXTMEM2(params, mBufferIndex, GFXPlatformAttributeParams, long, 0, mAttributeIndex);
+			NEXTMEM2(params, mBufferOffset, GFXPlatformAttributeParams, long, 0, mBufferIndex);
+			ADD(params);
+
+			DEFINET2(buffer, T3GFXBuffer);
+			SERIALIZER(buffer, T3GFXBuffer);
+			FIRSTMEM2(buffer, mResourceUsage, T3GFXBuffer, long, 0);
+			NEXTMEM2(buffer, mBufferFormat, T3GFXBuffer, long, 0, mResourceUsage);
+			NEXTMEM2(buffer, mBufferUsage, T3GFXBuffer, long, 0, mBufferFormat);
+			NEXTMEM2(buffer, mCount, T3GFXBuffer, long, 0, mBufferUsage);
+			NEXTMEM2(buffer, mStride, T3GFXBuffer, long, 0, mCount);
+			ADD(buffer);
+
+			DEFINEDCARRAY(T3MeshLOD);
+			DEFINEDCARRAY(T3MeshMaterial);
+			DEFINEDCARRAY(T3MeshMaterialOverride);
+			DEFINEDCARRAY(T3MeshTexture);
+			DEFINEDCARRAY(T3MeshBoneEntry);
+			DEFINEDCARRAY(T3MeshLocalTransformEntry);
+			DEFINEDCARRAY(T3MeshEffectPreload);
+
+			DEFINET2(data, T3MeshData);
+			SERIALIZER(data, T3MeshData);
+			FIRSTMEM2(data, mLODs, T3MeshData, DCArray_T3MeshLOD, 0);
+			NEXTMEM2(data, mTextures, T3MeshData, DCArray_T3MeshTexture, 0, mLODs);
+			NEXTMEM2(data, mMaterials, T3MeshData, DCArray_T3MeshMaterial, 0, mTextures);
+			NEXTMEM2(data, mMaterialOverrides, T3MeshData, DCArray_T3MeshMaterialOverride, 0, mMaterials);
+			NEXTMEM2(data, mBones, T3MeshData, DCArray_T3MeshBoneEntry, 0, mMaterialOverrides);
+			NEXTMEM2(data, mLocalTransforms, T3MeshData, DCArray_T3MeshLocalTransformEntry, 0, mBones);
+			NEXTMEM2(data, mMaterialRequirements, T3MeshData, reqs, 0, mLocalTransforms);
+			NEXTMEM2(data, mVertexStreams, T3MeshData, bitsetbase1, 0, mMaterialRequirements);
+			NEXTMEM2(data, mBoundingBox, T3MeshData, bbox, 0, mVertexStreams);
+			NEXTMEM2(data, mBoundingSphere, T3MeshData, sphere, 0, mBoundingBox);
+			NEXTMEM2(data, mEndianType, T3MeshData, long, 0, mBoundingSphere);
+			NEXTMEM2(data, mPositionScale, T3MeshData, vec3, 0, mEndianType);
+			NEXTMEM2(data, mPositionWScale, T3MeshData, vec3, 0, mPositionScale);
+			NEXTMEM2(data, mPositionOffset, T3MeshData, vec3, 0, mPositionWScale);
+			NEXTMEM2(data, mLightmapTexelAreaPerSurfaceArea, T3MeshData, float, 0, mPositionOffset);
+			NEXTMEM2(data, mPropertyKeyBase, T3MeshData, symbol, 0, mLightmapTexelAreaPerSurfaceArea);
+			NEXTMEM2(data, mVertexCount, T3MeshData, long, 0, mPropertyKeyBase);
+			NEXTMEM2(data, mFlags, T3MeshData, flags, 0, mVertexCount);
+			NEXTMEM2(data, mMeshPreload, T3MeshData, DCArray_T3MeshEffectPreload, 0, mFlags);
+			ADD(data);
+
+			DEFINEDCARRAY(HandleBase);
+
+			DEFINET2(mesh, D3DMesh);
+			SERIALIZER(mesh, D3DMesh);
+			EXT(mesh, d3dmesh);
+			ADDFLAGS(mesh, MetaFlag::MetaFlag_RenderResource);
+			FIRSTMEM2(mesh, mName, D3DMesh, string, 0);
+			NEXTMEM2(mesh, mVersion, D3DMesh, long, 0, mName);
+			NEXTMEM2(mesh, mMeshData, D3DMesh, data, 1, mVersion);
+			NEXTMEM2(mesh, mInternalResources, D3DMesh, DCArray_HandleBase, 1, mMeshData);
+			NEXTMEM2(mesh, mToolProps, D3DMesh, tp,0, mInternalResources);
+			NEXTMEM2(mesh, mLightmapGlobalScale, D3DMesh, float, 0, mToolProps);
+			NEXTMEM2(mesh, mLightmapTexCoordVersion, D3DMesh, long, 0, mLightmapGlobalScale);
+			NEXTMEM2(mesh, mLODParamCRC, D3DMesh, __int64, 0, mLightmapTexCoordVersion);
+			ADD(mesh);
+
+			DEFINET2(runtp, T3MaterialRuntimeProperty);
+			FIRSTMEM2(runtp, mName, T3MaterialRuntimeProperty, symbol, 0);
+			NEXTMEM2(runtp, mRuntimeName, T3MaterialRuntimeProperty, symbol, 0, mName);
+			ADD(runtp);
+
+			DEFINEDCARRAY(T3MaterialRuntimeProperty);
+
+			DEFINET2(matp, T3MaterialParameter);
+			FIRSTMEM2(matp, mName, T3MaterialParameter, symbol, 0);
+			NEXTMEM2(matp, mPropertyType, T3MaterialParameter, long, 0, mName);
+			NEXTMEM2(matp, mValueType, T3MaterialParameter, long, 0, mPropertyType);
+			NEXTMEM2(matp, mFlags, T3MaterialParameter, long, 0, mValueType);
+			NEXTMEM2(matp, mScalarOffset, T3MaterialParameter, long, 0, mFlags);
+			NEXTMEM2(matp, mPreShaderScalarOffset, T3MaterialParameter, long, 0, mScalarOffset);
+			NEXTMEM2(matp, mNestedMaterialIndex, T3MaterialParameter, long, 0, mPreShaderScalarOffset);
+			ADD(matp);
+
+			DEFINET2(mapt, T3MaterialTransform2D);
+			FIRSTMEM2(mapt, mParameterPrefix, T3MaterialTransform2D, symbol, 0);
+			NEXTMEM2(mapt, mFlags, T3MaterialTransform2D, flags, 0, mParameterPrefix);
+			NEXTMEM2(mapt, mScalarOffset0, T3MaterialTransform2D, long, 0, mFlags);
+			NEXTMEM2(mapt, mScalarOffset1, T3MaterialTransform2D, long, 0, mScalarOffset0);
+			NEXTMEM2(mapt, mPreShaderScalarOffset0, T3MaterialTransform2D, long,0, mScalarOffset1);
+			NEXTMEM2(mapt, mPreShaderScalarOffset1, T3MaterialTransform2D, long, 0, mPreShaderScalarOffset0);
+			NEXTMEM2(mapt, mNestedMaterialIndex, T3MaterialTransform2D, long, 0, mPreShaderScalarOffset1);
+			ADD(mapt);
+
+			DEFINET2(matt, T3MaterialTextureParam);
+			FIRSTMEM2(matt, mParamType, T3MaterialTextureParam, long, 0);
+			NEXTMEM2(matt, mValueType, T3MaterialTextureParam, long, 0, mParamType);
+			NEXTMEM2(matt, mFlags, T3MaterialTextureParam, long, 0, mValueType);
+			NEXTMEM2(matt, mScalarOffset, T3MaterialTextureParam, long, 0, mFlags);
+			ADD(matt);
+
+			DEFINET2(mats, T3MaterialStaticParameter);
+			FIRSTMEM2(mats, mName, T3MaterialStaticParameter, symbol, 0);
+			NEXTMEM2(mats, mNestedMaterialIndex, T3MaterialStaticParameter, long, 0, mName);
+			ADD(mats);
+
+			DEFINET2(matsh, T3MaterialPreShader);
+			FIRSTMEM2(matsh, mValueType, T3MaterialPreShader, long, 0);
+			NEXTMEM2(matsh, mFlags, T3MaterialPreShader, long, 0, mValueType);
+			NEXTMEM2(matsh, mPreShaderOffset, T3MaterialPreShader, long, 0, mFlags);
+			NEXTMEM2(matsh, mScalarParameterOffset, T3MaterialPreShader, long, 0, mPreShaderOffset);
+			ADD(matsh);
+
+			DEFINET2(matpass, T3MaterialPassData);
+			FIRSTMEM2(matpass, mPassType, T3MaterialPassData, long, 0);
+			NEXTMEM2(matpass, mBlendMode, T3MaterialPassData, long, 0, mPassType);
+			NEXTMEM2(matpass, mMaterialCrc, T3MaterialPassData, __int64, 0, mBlendMode);
+			ADD(matpass);
+
+			DEFINET2(matn, T3MaterialNestedMaterial);
+			FIRSTMEM2(matn, mhMaterial, T3MaterialNestedMaterial, Handlepropset, 0);
+			ADD(matn);
+
+			DEFINEDCARRAY(T3MaterialParameter);
+			DEFINEDCARRAY(T3MaterialTexture);
+			DEFINEDCARRAY(T3MaterialTransform2D);
+			DEFINEDCARRAY(T3MaterialNestedMaterial);
+			DEFINEDCARRAY(T3MaterialPreShader);
+			DEFINEDCARRAY(T3MaterialStaticParameter);
+			DEFINEDCARRAY(T3MaterialTextureParam);
+			DEFINEDCARRAY(T3MaterialPassData);
+
+			DEFINET2(com, T3MaterialCompiledData);
+			FIRSTMEM2(com, mParameters, T3MaterialCompiledData, DCArray_T3MaterialParameter, 0);
+			NEXTMEM2(com, mTextures, T3MaterialCompiledData, DCArray_T3MaterialTexture, 0, mParameters);
+			NEXTMEM2(com, mTransforms, T3MaterialCompiledData, DCArray_T3MaterialTransform2D, 0, mTextures);
+			NEXTMEM2(com, mNestedMaterials, T3MaterialCompiledData, DCArray_T3MaterialNestedMaterial, 0, mTransforms);
+			NEXTMEM2(com, mPreShaders, T3MaterialCompiledData, DCArray_T3MaterialPreShader, 0, mNestedMaterials);
+			NEXTMEM2(com, mStaticParameters, T3MaterialCompiledData, DCArray_T3MaterialStaticParameter, 0, mPreShaders);
+			NEXTMEM2(com, mTextureParams, T3MaterialCompiledData, DCArray_T3MaterialTextureParam, 0, mStaticParameters);
+			NEXTMEM2(com, mPasses, T3MaterialCompiledData, DCArray_T3MaterialPassData, 0, mTextureParams);
+			NEXTMEM2(com, mMaterialQuality, T3MaterialCompiledData, long, 0, mPasses);
+			NEXTMEM2(com, mMaterialBlendModes, T3MaterialCompiledData, bitsetbase1, 0, mMaterialQuality);
+			NEXTMEM2(com, mMaterialPasses, T3MaterialCompiledData, bitsetbase1, 0, mMaterialBlendModes);
+			NEXTMEM2(com, mMaterialChannels, T3MaterialCompiledData, bitsetreq, 0, mMaterialPasses);
+			NEXTMEM2(com, mShaderInputs, T3MaterialCompiledData, bitsetbase3, 0, mMaterialChannels);
+			NEXTMEM2(com, mSceneTextures, T3MaterialCompiledData, bitsetbase1, 0, mShaderInputs);
+			NEXTMEM2(com, mOptionalPropertyTypes, T3MaterialCompiledData, bitsetbase1, 0, mSceneTextures);
+			NEXTMEM2(com, mPreShaderBuffer, T3MaterialCompiledData, bb, 0, mOptionalPropertyTypes);
+			NEXTMEM2(com, mFlags, T3MaterialCompiledData, flags, 0, mPreShaderBuffer);
+			NEXTMEM(com, "mParameterBufferScalarSize[0]", mParameterBufferScalarSize,
+				T3MaterialCompiledData, long, 0, mFlags);
+			NEXTMEM1(com, "mParameterBufferScalarSize[1]", ALAIS,mParameterBufferScalarSize,
+				T3MaterialCompiledData, long, 0, mParameterBufferScalarSize);
+			meta_com_ALAIS.mOffset = offsetof(T3MaterialCompiledData, mParameterBufferScalarSize) + 4;
+			NEXTMEM2(com, mPreShaderParameterBufferScalarSize, T3MaterialCompiledData, long, 0, ALAIS);
+			ADD(com);
+
+			DEFINEDCARRAY(T3MaterialCompiledData);
+
+			DEFINET2(matdata, T3MaterialData);
+			SERIALIZER(matdata, T3MaterialData);
+			ADDFLAGS(matdata, 0x20);
+			FIRSTMEM2(matdata, mMaterialName, T3MaterialData, symbol, 0);
+			NEXTMEM2(matdata, mRuntimePropertiesName, T3MaterialData, symbol, 0, mMaterialName);
+			NEXTMEM2(matdata, mLegacyRenderTextureProperty, T3MaterialData, symbol, 0, mRuntimePropertiesName);
+			NEXTMEM2(matdata, mLegacyBlendModeRuntimeProperty, T3MaterialData, symbol, 0, mLegacyRenderTextureProperty);
+			NEXTMEM2(matdata, mDomain, T3MaterialData, long, 0, mLegacyBlendModeRuntimeProperty);
+			NEXTMEM2(matdata, mRuntimeProperties, T3MaterialData, DCArray_T3MaterialRuntimeProperty, 0, mDomain);
+			NEXTMEM2(matdata, mFlags, T3MaterialData, flags, 0, mRuntimeProperties);
+			NEXTMEM2(matdata, mRuntimeFlags, T3MaterialData, flags, 1, mFlags);
+			NEXTMEM2(matdata, mVersion, T3MaterialData, long, 0, mRuntimeFlags);
+			NEXTMEM2(matdata, mCompiledData2, T3MaterialData, DCArray_T3MaterialCompiledData, 0, mVersion);
+			ADD(matdata);
 
 		}
 		Initialize2();
