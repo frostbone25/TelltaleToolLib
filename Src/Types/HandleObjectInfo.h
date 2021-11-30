@@ -108,7 +108,7 @@ public:
 		MetaClassDescription* type = ::GetMetaClassDescription<T>();
 		if (type != mpDataDescription)
 			return NULL;
-		return (T*)GetHandleObjectPointer()
+		return (T*)GetHandleObjectPointer();
 	}
 
 	INLINE void Delete() {

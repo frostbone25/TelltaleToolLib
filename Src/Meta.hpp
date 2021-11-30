@@ -462,9 +462,9 @@ public:
 	}
 
 	constexpr Symbol(u64 crc) : mCrc64(crc) {}
-	constexpr Symbol(const char* const pString) {
-		mCrc64 = CRC64_CaseInsensitive(0, pString);
-	}
+	//constexpr Symbol(const char* const pString) {
+	//	mCrc64 = CRC64_CaseInsensitive(0, pString);
+	//}
 
 	Symbol& operator=(const Symbol& rhs) {
 		this->mCrc64 = rhs.mCrc64;

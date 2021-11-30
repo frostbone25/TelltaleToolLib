@@ -181,8 +181,8 @@ enum T3EffectType {
 	eEffect_FX_FinalDebugOverlay = 0x3B,
 	eEffect_SceneText = 0x3C,
 	eEffect_SceneSimple_Texture_AlphaOnly = 0x3D,
-	eEffect_ScenE, LSMovieYUV = 0x3E,
-	eEffect_ScenE, LSMovieRGB = 0x3F,
+	eEffect_SceneHLSMovieYUV = 0x3E,
+	eEffect_SceneHLSMovieRGB = 0x3F,
 	eEffect_DirectionalLightShadow = 0x40,
 	eEffect_DirectionalLightShadow_High = 0x41,
 	eEffect_ProjectedTextureShadow = 0x42,
@@ -417,6 +417,12 @@ struct T3MaterialParameter {
 	long mPreShaderScalarOffset, mNestedMaterialIndex;
 };
 
+struct T3MaterialEnlightenPrecomputeParams {
+	float mIndirectReflectivity;
+	float mIndirectTransparency;
+	T3MaterialEnlightenPrecomputeParams() : mIndirectReflectivity(1.0f) {}
+};
+
 struct T3MaterialTexture {
 	Symbol mName, mTextureName, mTextureNameWithoutExtension;
 	T3TextureLayout mLayout;
@@ -514,7 +520,7 @@ struct T3MaterialData {
 	DCArray<T3MaterialCompiledData> mCompiledData2;
 
 	static METAOP_FUNC_IMPL__(SerializeAsync) {
-		CAST_METAOP(T3MaterialData, data);
+		//CAST_METAOP(T3MaterialData, data);
 		MetaOpResult r = Meta::MetaOperation_SerializeAsync(pObj, pObjDescription, pContextDescription, pUserData);
 		if (r == eMetaOp_Succeed) {
 
@@ -548,8 +554,8 @@ struct T3MeshTextureIndices {
 	int mIndex[2];
 
 	T3MeshTextureIndices(){
-		mIndex[0] = 0;
-		mIndex[1] = 0;
+		mIndex[0] = -1;
+		mIndex[1] = -1;
 	}
 
 	static METAOP_FUNC_IMPL__(SerializeAsync) {
@@ -682,6 +688,12 @@ enum T3MeshEndianType {
 
 struct T3MeshTexCoordTransform {
 	Vector2 mScale, mOffset;
+	T3MeshTexCoordTransform() {
+		mScale.x = 1.0f;
+		mScale.y = 1.0f;
+		mOffset.x = 0.0f;
+		mOffset.y = 0.0f;
+	}
 };
 
 struct T3MeshCPUSkinningData {
@@ -727,7 +739,8 @@ struct T3GFXBuffer {
 	}
 
 	~T3GFXBuffer() {
-		free(mpCPUBuffer);
+		if(mpCPUBuffer)
+			free(mpCPUBuffer);
 	}
 
 	void AsyncRead(MetaStream* stream) {
@@ -797,7 +810,6 @@ struct T3GFXVertexState {
 				TelltaleToolLib_RaiseError("Too many index buffers in vertex state!", ErrorSeverity::ERR);
 				return eMetaOp_Fail;
 			}
-			//index 2, vertex 5, attrib 5 from 0x2F24, 
 			if (state->mAttributeCount) {
 				MetaClassDescription* mcd = ::GetMetaClassDescription<GFXPlatformAttributeParams>();
 				if (!mcd) {
@@ -954,23 +966,23 @@ struct T3MeshData {
 					if (r != eMetaOp_Succeed)
 						return r;
 				}
-				v = data->mVertexStates.GetSize();
-				meta->serialize_uint32(&v);
-				T3GFXVertexState* state;
-				for (int i = 0; i < v; i++) {
-					if (meta->IsRead()) {
-						state = new T3GFXVertexState;
-						if (!state)
-							return eMetaOp_OutOfMemory;
-						data->mVertexStates.AddElement(0, NULL, &state);
-					}
-					else {
-						state = data->mVertexStates[i];
-					}
-					r = PerformMetaSerializeAsync<T3GFXVertexState>(meta, state);
-					if (r != eMetaOp_Succeed)
-						break;//if adding more below change this to return r;
+			}
+			u32 v = data->mVertexStates.GetSize();
+			meta->serialize_uint32(&v);
+			T3GFXVertexState* state;
+			for (int i = 0; i < v; i++) {
+				if (meta->IsRead()) {
+					state = new T3GFXVertexState;
+					if (!state)
+						return eMetaOp_OutOfMemory;
+					data->mVertexStates.AddElement(0, NULL, &state);
 				}
+				else {
+					state = data->mVertexStates[i];
+				}
+				r = PerformMetaSerializeAsync<T3GFXVertexState>(meta, state);
+				if (r != eMetaOp_Succeed)
+					return r;
 			}
 		}
 		return r;
@@ -1093,10 +1105,12 @@ struct D3DMesh {
 			for (int i = 0; i < res; i++) {
 				meta->serialize_Symbol(&mesh->mInternalResources[i]->mHandleObjectInfo.mObjectName);
 				meta->serialize_uint64(&mesh->mInternalResources[i]->GetTypeDesc()->mHash);
+				meta->BeginBlock();
 				r=PerformMetaSerializeFull(meta, mesh->mInternalResources[i]->GetHandleObjectPointer(), 
 					mesh->mInternalResources[i]->GetTypeDesc());
 				if (r != eMetaOp_Succeed)
 					return r;
+				meta->EndBlock();
 			}
 		}
 		return eMetaOp_Succeed;

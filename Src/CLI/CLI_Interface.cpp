@@ -492,10 +492,10 @@ void _anm_chk() {
 	}
 }
 
-#include "../Types/BlendGraph.h"
+#include "../Types/D3DMesh.h"
 
 void _testing_func() {
-	TelltaleToolLib_Initialize("MC2");
+	TelltaleToolLib_Initialize("WDC");
 
 	TelltaleToolLib_SetGlobalHashDatabaseFromStream(
 		_OpenDataStreamFromDisc("c:/users/lucas/desktop/My Stuff/Projects/HashDB Creator/LibTelltale DB/LibTelltale.HashDB",
@@ -503,14 +503,14 @@ void _testing_func() {
 
 	DataStream* stream1 = _OpenDataStreamFromDisc("c:/users/lucas/desktop/out.bin", WRITE);
 
-	DataStream* stream = OpenDataStreamFromDisc("c:/users/lucas/desktop/MC2.bgh", READ);
+	DataStream* stream = OpenDataStreamFromDisc("c:/users/lucas/desktop/in.d3dmesh", READ);
 	{
 		MetaStream meta{};
 		meta.Open(stream, MetaStreamMode::eMetaStream_Read, { 0 });
-		BlendGraph g;
-		MetaOpResult r = PerformMetaSerializeAsync(&meta, &g);
+		D3DMesh mesh;
+		MetaOpResult r = PerformMetaSerializeAsync(&meta, &mesh);
 		meta.SwitchToMode(MetaStreamMode::eMetaStream_Write,stream1);
-		r = PerformMetaSerializeAsync(&meta, &g);
+		r = PerformMetaSerializeAsync(&meta, &mesh);
 		printf("%d\n", r);
 		printf("-done\n");
 	}

@@ -3678,6 +3678,24 @@ namespace MetaInit {
 			FIRSTMEM2(matn, mhMaterial, T3MaterialNestedMaterial, Handlepropset, 0);
 			ADD(matn);
 
+			DEFINET2(mattex, T3MaterialTexture);
+			FIRSTMEM2(mattex, mName, T3MaterialTexture, symbol, 0);
+			NEXTMEM2(mattex, mTextureName, T3MaterialTexture, symbol, 0, mName);
+			NEXTMEM2(mattex, mTextureNameWithoutExtension, T3MaterialTexture, symbol, 0, mTextureName);
+			NEXTMEM2(mattex, mLayout, T3MaterialTexture, long, 0, mTextureNameWithoutExtension);
+			NEXTMEM2(mattex, mPropertyType, T3MaterialTexture, long, 0, mLayout);
+			NEXTMEM2(mattex, mTextureTypes, T3MaterialTexture, bitsetbase1, 0, mPropertyType);
+			NEXTMEM2(mattex, mFirstParamIndex, T3MaterialTexture, long, 0, mTextureTypes);
+			NEXTMEM2(mattex, mParamCount, T3MaterialTexture, long, 0, mFirstParamIndex);
+			NEXTMEM2(mattex, mTextureIndex, T3MaterialTexture, long, 0, mParamCount);
+			NEXTMEM2(mattex, mNestedMaterialIndex, T3MaterialTexture, long, 0,mTextureIndex);
+			ADD(mattex);
+
+			DEFINET2(pcp, T3MaterialEnlightenPrecomputeParams);
+			FIRSTMEM2(pcp, mIndirectReflectivity, T3MaterialEnlightenPrecomputeParams, float, 0);
+			NEXTMEM2(pcp, mIndirectTransparency, T3MaterialEnlightenPrecomputeParams, float, 0, mIndirectReflectivity);
+			ADD(pcp);
+
 			DEFINEDCARRAY(T3MaterialParameter);
 			DEFINEDCARRAY(T3MaterialTexture);
 			DEFINEDCARRAY(T3MaterialTransform2D);

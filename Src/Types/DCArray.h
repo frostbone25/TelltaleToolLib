@@ -36,7 +36,14 @@ public:
 		DCArray<T>* array = static_cast<DCArray<T>*>(pObj);
 		MetaStream* meta = static_cast<MetaStream*>(pUserData);
 		MetaClassDescription* vtype = ::GetMetaClassDescription(typeid(T).name());
-		if (!array || !meta || !vtype)return eMetaOp_Fail;
+		if (!array || !meta)return eMetaOp_Fail;
+		if (!vtype) {
+#ifdef DEBUGMODE
+			printf("Value type %s has no metaclass\n", typeid(T).name());
+#endif
+			TelltaleToolLib_RaiseError("Value type metaclass not found for DCArray type", ErrorSeverity::ERR);
+			return eMetaOp_Fail;
+		}
 		MetaOperation op = vtype->GetOperationSpecialization(74);
 		if (!op)op = Meta::MetaOperation_SerializeAsync;
 		u32 size = array->mSize;

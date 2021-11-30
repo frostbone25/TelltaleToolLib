@@ -1360,7 +1360,9 @@ MetaOpResult Meta::MetaOperation_SerializeAsync(void* pObj, MetaClassDescription
 	else stream->BeginAnonObject(NULL);
 	if (stream->mMode == MetaStreamMode::eMetaStream_Write) {
 		SerializedVersionInfo* ver = SerializedVersionInfo::RetrieveCompiledVersionInfo(pObjDescription);
-		if (ver && !pObjDescription->mbIsIntrinsic)stream->AddVersion(ver);
+		if (ver && !pObjDescription->mbIsIntrinsic) {
+			//stream->AddVersion(ver);//we dont realy need this
+		}
 		MetaSerializeAccel* accel = pObjDescription->mpSerializeAccel;
 		if (!accel)accel = MetaSerialize_GenerateAccel(pObjDescription);
 		if (accel && accel->mpFunctionAsync) {
