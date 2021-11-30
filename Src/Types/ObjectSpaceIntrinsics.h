@@ -84,4 +84,10 @@ struct Transform {
 	float mPaddingAlign;//to align it since vec3 is 12 bytes and rot is 16, 16 + 16 = 32, a nice one unlike 28
 };
 
+struct LocationInfo {
+	String mAttachedAgent;
+	Symbol mAttachedNode;
+	Transform mInitialLocalTransform;
+};
+
 #endif

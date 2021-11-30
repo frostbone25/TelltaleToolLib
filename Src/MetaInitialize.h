@@ -754,30 +754,6 @@ namespace MetaInit {
 			meta_color_r.mpNextMember = &meta_color_g;
 			meta_color.mpFirstMember = &meta_color_r;
 			meta_color.Insert();
-			DEFINET(propvalue, PropertyValue);
-			meta_propvalue.Initialize(typeid(PropertyValue));
-			meta_propvalue.Insert();
-			DEFINET(propkeyinfo, PropertySet::KeyInfo);
-			meta_propkeyinfo.Initialize(typeid(PropertySet::KeyInfo));
-			DEFINEM(propkeyinfo, value);
-			meta_propkeyinfo_value.mpName = "mValue";
-			meta_propkeyinfo_value.mOffset = offsetof(PropertySet::KeyInfo, mValue);
-			meta_propkeyinfo_value.mFlags |= (int)MetaFlag::MetaFlag_EditorHide | (int)MetaFlag::MetaFlag_NoPanelCaption;
-			meta_propkeyinfo_value.mpMemberDesc = &meta_propvalue;
-			DEFINEM(propkeyinfo, flags);
-			meta_propkeyinfo_flags.mFlags |= (int)MetaFlag::MetaFlag_MetaSerializeDisable;
-			meta_propkeyinfo_flags.mpName = "mFlags";
-			meta_propkeyinfo_flags.mpMemberDesc = &meta_flags;
-			meta_propkeyinfo_flags.mpNextMember = &meta_propkeyinfo_value;
-			meta_propkeyinfo_flags.mOffset = offsetof(PropertySet::KeyInfo, mFlags);
-			DEFINEM(propkeyinfo, keyname);
-			meta_propkeyinfo_keyname.mFlags |= (int)MetaFlag::MetaFlag_EditorHide;
-			meta_propkeyinfo_keyname.mpName = "mKeyName";
-			meta_propkeyinfo_keyname.mOffset = offsetof(PropertySet::KeyInfo, mKeyName);
-			meta_propkeyinfo_keyname.mpNextMember = &meta_propkeyinfo_flags;
-			meta_propkeyinfo_keyname.mpMemberDesc = &meta_symbol;
-			meta_propkeyinfo.mpFirstMember = &meta_propkeyinfo_keyname;
-			meta_propkeyinfo.Insert();
 			DEFINEHANDLE(propset, PropertySet);
 			DEFINESARRAY(u32, 3);
 			DEFINESARRAY(u8, 32);
@@ -842,9 +818,9 @@ namespace MetaInit {
 			meta_prop_version.mpNextMember = &meta_prop_flags;
 			DEFINEM(prop, keymap);
 			meta_prop_keymap.mpName = "mKeyMap";
-			meta_prop_keymap.mpMemberDesc = &meta_Set_keyinfo;
+			meta_prop_keymap.mpMemberDesc = &meta_long;//! no serialize
 			meta_prop_keymap.mFlags |= (int)MetaFlag::MetaFlag_MetaSerializeDisable;
-			meta_prop_keymap.mOffset = offsetof(PropertySet, mKeyMap);
+			meta_prop_keymap.mOffset = -1;
 			meta_prop_flags.mpNextMember = &meta_prop_keymap;
 			meta_prop.Insert();
 
@@ -3706,6 +3682,7 @@ namespace MetaInit {
 			DEFINEDCARRAY(T3MaterialPassData);
 
 			DEFINET2(com, T3MaterialCompiledData);
+			SERIALIZER(com, T3MaterialCompiledData);
 			FIRSTMEM2(com, mParameters, T3MaterialCompiledData, DCArray_T3MaterialParameter, 0);
 			NEXTMEM2(com, mTextures, T3MaterialCompiledData, DCArray_T3MaterialTexture, 0, mParameters);
 			NEXTMEM2(com, mTransforms, T3MaterialCompiledData, DCArray_T3MaterialTransform2D, 0, mTextures);
@@ -3747,6 +3724,12 @@ namespace MetaInit {
 			NEXTMEM2(matdata, mVersion, T3MaterialData, long, 0, mRuntimeFlags);
 			NEXTMEM2(matdata, mCompiledData2, T3MaterialData, DCArray_T3MaterialCompiledData, 0, mVersion);
 			ADD(matdata);
+
+			DEFINET2(ldata, LocationInfo);
+			FIRSTMEM2(ldata, mAttachedAgent, LocationInfo, string, 0);
+			NEXTMEM2(ldata, mAttachedNode, LocationInfo, symbol, 0, mAttachedAgent);
+			NEXTMEM2(ldata, mInitialLocalTransform, LocationInfo, transform, 0, mAttachedNode);
+			ADD(ldata);
 
 		}
 		Initialize2();

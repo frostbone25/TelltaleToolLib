@@ -8,6 +8,7 @@
 #include "Set.h"
 #include "List.h"
 #include "Map.h"
+#include <memory>
 #include "HandleObjectInfo.h"
 #include <algorithm>
 
@@ -38,11 +39,15 @@ struct PropertyValue {
 	}
 
 	void SetData(void* pSrcObj, MetaClassDescription* pDescription) {
-		if (!pDescription)return;
+		if (!pDescription) {
+			if (!mpDataDescription)
+				return;
+			pDescription = mpDataDescription;
+		}
 		ClearData();
 		mpDataDescription = pDescription;
 		if (!(pDescription->mpVTable[0]) || !(pDescription->mpVTable[2]) || !(pDescription->mpVTable[3])) {
-			TelltaleToolLib_RaiseError("Cannot add non trivial virtual types as a property as its not a concrete object type!", ErrorSeverity::ERR);
+			TelltaleToolLib_RaiseError("Cannot add non trivial virtual types as a property as its not a concrete type!", ErrorSeverity::ERR);
 			return;
 		}
 		mpValue = operator new(pDescription->mClassSize);
@@ -136,7 +141,19 @@ public:
 	struct KeyInfo {
 		Flags mFlags;
 		Symbol mKeyName;
-		PropertyValue mValue;
+		std::shared_ptr<PropertyValue> mpValue;
+
+		KeyInfo() {
+			mFlags.mFlags = 0;
+			mKeyName = {};
+			mpValue = std::make_shared<PropertyValue>();
+		}
+
+		KeyInfo(const KeyInfo& o) {
+			mFlags = o.mFlags;
+			mKeyName = o.mKeyName;
+			mpValue = o.mpValue;
+		}
 
 		inline bool operator<(const KeyInfo& other) const {
 			return mKeyName.GetCRC() < other.mKeyName.GetCRC();
@@ -145,7 +162,7 @@ public:
 		KeyInfo& operator=(const KeyInfo& other) {
 			mFlags = other.mFlags;
 			mKeyName = other.mKeyName;
-			mValue = other.mValue;
+			mpValue = other.mpValue;
 			return *this;
 		}
 
@@ -278,7 +295,7 @@ public:
 			Map<Symbol, List<KeyInfo>, Symbol::CompareCRC> typeMap;
 			for (int i = 0; i < prop->mKeyMap.size(); i++) {
 				KeyInfo mapping = prop->mKeyMap[i];
-				Symbol typeSymbol = mapping.mValue.mpDataDescription->GetDescriptionSymbol();
+				Symbol typeSymbol = mapping.mpValue->mpDataDescription->GetDescriptionSymbol();
 				auto it = typeMap.find(typeSymbol);
 				if (it == typeMap.end()) {
 					List<KeyInfo> l;
@@ -300,8 +317,8 @@ public:
 				for (int i = 0; i < size; i++) {
 					KeyInfo keyInfo = list[i];
 					stream->serialize_Symbol(&keyInfo.mKeyName);
-					PerformMetaSerializeFull(stream, keyInfo.mValue.mpValue,
-						keyInfo.mValue.mpDataDescription); 
+					PerformMetaSerializeFull(stream, keyInfo.mpValue->mpValue,
+						keyInfo.mpValue->mpDataDescription); 
 				}
 			}
 			if (prop->mEmbeddedToolProps)
@@ -349,14 +366,14 @@ public:
 				MetaOpResult opres = eMetaOp_Succeed;
 				void* (*metaTypedNew)(void);
 				for (int i = 0; i < numvalues; i++) {
-					KeyInfo property;
+					KeyInfo property{};
 					stream->serialize_Symbol(&property.mKeyName);
-					property.mValue.mpDataDescription = typeDesc;
+					property.mpValue->mpDataDescription = typeDesc;
 					metaTypedNew = (void*(*)(void))typeDesc->mpVTable[0];
 					if (!metaTypedNew)return eMetaOp_Fail;//ABSTRACT! no
-					property.mValue.mpValue = metaTypedNew();
+					property.mpValue->mpValue = metaTypedNew();
 					if((opres=PerformMetaSerializeFull(stream, 
-						property.mValue.mpValue,typeDesc)) 
+						property.mpValue->mpValue,typeDesc)) 
 						!= eMetaOp_Succeed) return opres;
 					prop->mKeyMap.AddElement(0, NULL, &property);
 				}
@@ -418,7 +435,7 @@ public:
 	void* GetProperty(u64 crc) {
 		for (auto it = mKeyMap.begin(); it != mKeyMap.end(); it++) {
 			if (it->mKeyName.GetCRC() == crc)
-				return it->mValue.mpValue;
+				return it->mpValue->mpValue;
 		}
 		return NULL;
 	}
@@ -426,10 +443,7 @@ public:
 	void SetProperty(u64 crc, void* val) {
 		for (List<PropertySet::KeyInfo>::iterator it = mKeyMap.begin(); it != mKeyMap.end(); it++) {
 			if (it->mKeyName.GetCRC() == crc) {
-				if (it->mValue.mpValue && it->mValue.mpDataDescription) {
-					it->mValue.mpDataDescription->Delete(it->mValue.mpValue);
-				}
-				(*it).mValue.mpValue = val;
+				it->mpValue->SetData(val, NULL);
 			}
 		}
 	}
@@ -438,7 +452,7 @@ public:
 		u64 crc = CRC64_CaseInsensitive(0, keyName);
 		for (auto it = mKeyMap.begin(); it != mKeyMap.end(); it++) {
 			if (it->mKeyName.GetCRC() == crc)
-				return it->mValue.mpValue;
+				return it->mpValue->mpValue;
 		}
 		return NULL;
 	}
@@ -447,7 +461,7 @@ public:
 		u64 crc = keyName.GetCRC();
 		for (auto it = mKeyMap.begin(); it != mKeyMap.end(); it++) {
 			if (it->mKeyName.GetCRC() == crc)
-				return it->mValue.CastValue<T>();
+				return it->mpValue->CastValue<T>();
 		}
 		return NULL;
 	}
@@ -456,7 +470,7 @@ public:
 		u64 crc = CRC64_CaseInsensitive(0, keyName);
 		for (auto it = mKeyMap.begin(); it != mKeyMap.end(); it++) {
 			if (it->mKeyName.GetCRC() == crc)
-				return it->mValue.CastValue<T>();
+				return it->mpValue->CastValue<T>();
 		}
 		return NULL;
 	}
@@ -468,7 +482,7 @@ public:
 	u32 GetNumPropertiesOfType(MetaClassDescription* type) {
 		u32 ret = 0;
 		for (auto it = mKeyMap.begin(); it != mKeyMap.end(); it++) {
-			if (it->mValue.mpDataDescription && it->mValue.mpDataDescription == type)
+			if (it->mpValue->mpDataDescription && it->mpValue->mpDataDescription == type)
 				ret++;
 		}
 		return ret;
@@ -485,7 +499,7 @@ public:
 		if (!desc)return;
 		KeyInfo k;
 		k.mKeyName = crc;
-		k.mValue.SetData(value, desc);
+		k.mpValue->SetData(value, desc);
 		mKeyMap.AddElement(0, NULL, &k);
 	}
 
@@ -503,7 +517,7 @@ public:
 
 	void CreateKey(const Symbol& KeyName, MetaClassDescription* pDesc) {
 		KeyInfo k;
-		k.mValue.SetData(NULL, pDesc);
+		k.mpValue->SetData(NULL, pDesc);
 		k.mKeyName = KeyName;
 		mKeyMap.AddElement(0, NULL, &k);
 	}
@@ -512,7 +526,7 @@ public:
 		if (!keyName || !desc)return;
 		KeyInfo k;
 		k.mKeyName = CRC64_CaseInsensitive(0, keyName);
-		k.mValue.SetData(value, desc);
+		k.mpValue->SetData(value, desc);
 		mKeyMap.AddElement(0, NULL, &k);
 	}
 
@@ -552,7 +566,7 @@ public:
 		if (!pObjDesc)return List<KeyInfo>();
 		List<KeyInfo> keyInfo;
 		for (auto it = mKeyMap.begin(); it != mKeyMap.end(); it++) {
-			if (it->mValue.mpDataDescription && it->mValue.mpDataDescription == pObjDesc)
+			if (it->mpValue->mpDataDescription && it->mpValue->mpDataDescription == pObjDesc)
 				keyInfo.push_back(*it);
 		}
 		return keyInfo;

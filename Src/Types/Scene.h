@@ -16,6 +16,17 @@
 //.SCENE FILES
 struct Scene {//only included whats serialized and needed. this is a very very big struct! (class in the engine)
 
+	static constexpr Symbol kSceneLocationInfo{ 0x0CDAB21B527F20135 };
+	static constexpr Symbol kSceneStartPosKey{ 0x0A1FB3B4404D8C439 };
+	static constexpr Symbol kSceneStartRotKey{ 0x53F29BE330D2D613 };
+	static constexpr Symbol kSceneStartVisibilityKey{ 0x2AA2DE83FB51649C };
+	static constexpr Symbol kSceneTransientKey{ 0x0C120B5E7442846DA };
+	static constexpr Symbol kSceneAttachedKey{ 0x9ABEF281E8A46346 };
+	static constexpr Symbol kSceneAttachedAgentKey{ 0x42BF5BF71E37A541 };
+	static constexpr Symbol kSceneAttachedNodeKey{ 0x990221055FE50803 };
+	static constexpr Symbol kSceneQualitySettingKey{ 0x349D77B9827E1962 };
+	static constexpr Symbol kSceneUseDeprecatedChoreCameraLayers{ 0x6961EFFDCDAE4D59 };
+
 	struct AgentInfo {
 		void* mpAgent;//no need for agent
 		String mAgentName;

@@ -1162,6 +1162,8 @@ namespace Environment {
 	inline Symbol const kPropKeyPriority("Env - Priority");
 }
 
+inline Symbol const kPropKeyEnableCamCuts("Enable Camera Cuts");
+
 namespace EnvironmentTile {
 	inline Symbol const kPropKeyLightProbeData("EnvTile - Light Probe Data");
 	inline Symbol const kPropKeyReflectionLocalEnable("EnvTile - Reflection Local Enable");

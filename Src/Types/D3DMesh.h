@@ -498,6 +498,19 @@ struct T3MaterialCompiledData {
 	Flags mFlags;
 	long mParameterBufferScalarSize[2];
 	long mPreShaderParameterBufferScalarSize;
+	static METAOP_FUNC_IMPL__(SerializeAsync) {
+		CAST_METAOP(T3MaterialCompiledData, data);
+		MetaOpResult r = Meta::MetaOperation_SerializeAsync(pObj, pObjDescription, pContextDescription, pUserData);
+		if (r == eMetaOp_Succeed) {
+
+		}
+		return r;
+	}
+
+	T3MaterialCompiledData() {
+		printf("Created\n");
+	}
+
 };
 
 enum T3MaterialDomainType {

@@ -7,6 +7,8 @@
 #include "../Meta.hpp"
 #include "Container.h"
 
+struct T3MaterialCompiledData;
+
 #ifndef _DYNAMIC_ARRAY
 #define _DYNAMIC_ARRAY
 
@@ -52,8 +54,10 @@ public:
 		meta->SetObjectAsArrayType();
 		MetaOpResult result = eMetaOp_Succeed;
 		if (meta->mMode == MetaStreamMode::eMetaStream_Write) {
+			int id;
 			for (int i = 0; i < array->mSize; i++) {
-				int id = meta->BeginAnonObject(&array->mpStorage[i]);
+				id = meta->BeginAnonObject(&array->mpStorage[i]);
+
 				if (op(&array->mpStorage[i], vtype, NULL, pUserData) != eMetaOp_Succeed)return eMetaOp_Fail;
 				meta->EndAnonObject(id);
 			}
@@ -257,3 +261,4 @@ template<typename T>
 using DCArrayNM = DCArray<T>;
 
 #endif
+
