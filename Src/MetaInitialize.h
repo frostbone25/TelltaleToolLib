@@ -3627,6 +3627,8 @@ namespace MetaInit {
 			NEXTMEM2(data, mVertexCount, T3MeshData, long, 0, mPropertyKeyBase);
 			NEXTMEM2(data, mFlags, T3MeshData, flags, 0, mVertexCount);
 			NEXTMEM2(data, mMeshPreload, T3MeshData, DCArray_T3MeshEffectPreload, 0, mFlags);
+			meta_data_mMeshPreload.mGameIndexVersionRange.min =
+				TelltaleToolLib_GetGameKeyIndex("WD4");
 			ADD(data);
 
 			DEFINEDCARRAY(HandleBase);
@@ -3816,7 +3818,7 @@ namespace MetaInit {
 			NEXTMEM2(ldata, mAttachedNode, LocationInfo, symbol, 0, mAttachedAgent);
 			NEXTMEM2(ldata, mInitialLocalTransform, LocationInfo, transform, 0, mAttachedNode);
 			ADD(ldata);
-			//todo unknown values at end of meshdata (check chunk sizes)
+
 		}
 		Initialize2();
 		Initialize3();

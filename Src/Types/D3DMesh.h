@@ -509,7 +509,7 @@ enum T3MaterialDomainType {
 	 eMaterialDomain_Post = 3,
 	 eMaterialDomain_ExportMeshShader = 4,
 	 eMaterialDomain_Count = 5,
-	 eMaterialDomain_None = 0xFFFFFFFF
+	 eMaterialDomain_None = 0xFFFFFFFF,
 };
 
 struct T3MaterialData {
@@ -933,7 +933,7 @@ struct T3MeshData {
 	Symbol mPropertyKeyBase;
 	long mVertexCount;
 	Flags mFlags;
-	DCArray<T3MeshEffectPreload> mMeshPreload;
+	DCArray<T3MeshEffectPreload> mMeshPreload;//>=wd4
 	T3MeshTexCoordTransform mTexCoordTransform[4];
 
 	T3MeshData() {
