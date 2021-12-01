@@ -3443,6 +3443,7 @@ namespace MetaInit {
 			NEXTMEM2(lod, mDistance, T3MeshLOD, float, 0, mPixelSize);
 			meta_lod_mVertexStart.mGameIndexVersionRange.min = TelltaleToolLib_GetGameKeyIndex("WD4");
 			meta_lod_mVertexCount.mGameIndexVersionRange.min = TelltaleToolLib_GetGameKeyIndex("WD4");
+			meta_lod_mFlags.mGameIndexVersionRange.min = TelltaleToolLib_GetGameKeyIndex("WD4");
 			meta_lod_mDistance.mGameIndexVersionRange.min = TelltaleToolLib_GetGameKeyIndex("WD4");
 			meta_lod_mTextureAtlasWidth.mGameIndexVersionRange.min = TelltaleToolLib_GetGameKeyIndex("WD4");
 			meta_lod_mTextureAtlasHeight.mGameIndexVersionRange.min = TelltaleToolLib_GetGameKeyIndex("WD4");
@@ -3516,6 +3517,9 @@ namespace MetaInit {
 			FIRSTMEM2(reqs, mPasses, T3MaterialRequirements, bitsetbase1, 0);
 			NEXTMEM2(reqs, mChannels, T3MaterialRequirements, bitsetreq, 0, mPasses);
 			NEXTMEM2(reqs, mInputs, T3MaterialRequirements, bitsetbase3, 0, mChannels);
+			NEXTMEM2(reqs, mInputs2, T3MaterialRequirements, bitsetbase2, 0, mInputs);
+			meta_reqs_mInputs.mGameIndexVersionRange.min = TelltaleToolLib_GetGameKeyIndex("WD4");
+			meta_reqs_mInputs2.mGameIndexVersionRange.max = TelltaleToolLib_GetGameKeyIndex("BATMAN2");
 			ADD(reqs);
 
 			DEFINET2(skin, T3MeshCPUSkinningData);
@@ -3528,6 +3532,8 @@ namespace MetaInit {
 			NEXTMEM2(skin, mVertexSize, T3MeshCPUSkinningData, long, 0, mWeightOffset);
 			NEXTMEM2(skin, mWeightSize, T3MeshCPUSkinningData, long, 0, mVertexSize);
 			NEXTMEM2(skin, mData, T3MeshCPUSkinningData, bb, 0, mWeightSize);
+			meta_skin_mWeightOffset.mGameIndexVersionRange.min = TelltaleToolLib_GetGameKeyIndex("WD4");
+			meta_skin_mWeightSize.mGameIndexVersionRange.min = TelltaleToolLib_GetGameKeyIndex("WD4");
 			ADD(skin);
 
 			DEFINET2(tct, T3MeshTexCoordTransform);
@@ -3810,7 +3816,7 @@ namespace MetaInit {
 			NEXTMEM2(ldata, mAttachedNode, LocationInfo, symbol, 0, mAttachedAgent);
 			NEXTMEM2(ldata, mInitialLocalTransform, LocationInfo, transform, 0, mAttachedNode);
 			ADD(ldata);
-
+			//todo unknown values at end of meshdata (check chunk sizes)
 		}
 		Initialize2();
 		Initialize3();

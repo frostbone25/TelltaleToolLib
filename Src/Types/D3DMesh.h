@@ -640,7 +640,7 @@ struct T3MeshLOD {
 	BitSetBase<1> mVertexStreams;
 	BoundingBox mBoundingBox;
 	Sphere mBoundingSphere;
-	Flags mFlags;
+	Flags mFlags;//>=wd4
 	//vertex state index, index into T3MeshData::mVertexStates (buffers)
 	//vertex start,count, atlas width and height only in wd4 or higher
 	long mVertexStateIndex, mNumPrimitives, mNumBatches, mVertexStart, mVertexCount, mTextureAtlasWidth, mTextureAtlasHeight;
@@ -694,7 +694,8 @@ struct T3MeshLocalTransformEntry {
 struct T3MaterialRequirements {
 	BitSetBase<1> mPasses;
 	BitSet<T3MaterialChannelType, 46, 0> mChannels;
-	BitSetBase<3> mInputs;
+	BitSetBase<3> mInputs;//>=wd4
+	BitSetBase<2> mInputs2;//batman>=
 };
 
 struct T3MeshEffectPreloadDynamicFeatures {
@@ -734,7 +735,7 @@ struct T3MeshTexCoordTransform {
 struct T3MeshCPUSkinningData {
 	GFXPlatformFormat mPositionFormat, mNormalFormat, mWeightFormat;
 	BitSetBase<1> mVertexStreams;
-	long mNormalCount, mWeightOffset, mVertexSize, mWeightSize;
+	long mNormalCount, mWeightOffset, mVertexSize, mWeightSize;//weight off/size >= wd4
 	BinaryBuffer mData;
 };
 
@@ -972,7 +973,7 @@ struct T3MeshData {
 						}
 					}
 					meta->serialize_uint32(&x[i]);
-					r = PerformMetaSerializeFull(meta, &data->mTexCoordTransform[i], desc);
+					r = PerformMetaSerializeFull(meta, &data->mTexCoordTransform[x[i]], desc);
 					if (r != eMetaOp_Succeed)
 						return r;
 				}
