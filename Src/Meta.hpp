@@ -792,6 +792,19 @@ struct MetaSerializeAccel {
 	MetaMemberDescription* mpMemberDesc;
 };
 
+enum RenderLightmapUVGenerationType {
+	eRenderLightmapUVGeneration_Default = 0,
+	eRenderLightmapUVGeneration_Auto = 1,
+	eRenderLightmapUVGeneration_UV0 = 2,
+	eRenderLightmapUVGeneration_UV1 = 3,
+	eRenderLightmapUVGeneration_UV2 = 4,
+	eRenderLightmapUVGeneration_UV3 = 5,
+};
+
+struct EnumRenderLightmapUVGenerationType {
+	RenderLightmapUVGenerationType mVal;
+};
+
 typedef MetaOpResult(*MetaOperation)(void*, MetaClassDescription*, MetaMemberDescription*, void*);
 
 struct MetaOperationDescription {
@@ -889,6 +902,10 @@ struct MetaOperationDescription {
 	sIDs id;
 	MetaOperation mpOpFn;
 	MetaOperationDescription* mpNext;
+};
+
+struct LightType {
+	int mLightType;
 };
 
 struct MetaClassDescription {
@@ -1033,6 +1050,29 @@ namespace RenderPostMaterial {
 	inline Symbol const kPropKeyMaterial("Post - Material");
 	inline Symbol const kPropKeyRenderLayer("Post - Render Layer");
 }
+
+enum T3MaterialLightModelType {
+	eMaterialLightModel_Unlit = 0,
+	eMaterialLightModel_VertexDiffuse = 1,
+	eMaterialLightModel_Diffuse = 2,
+	eMaterialLightModel_Phong = 3,
+	eMaterialLightModel_PhongGloss = 4,
+	eMaterialLightModel_Toon = 5,
+	eMaterialLightModel_NPR_Depreceated = 6,
+	eMaterialLightModel_PBS = 7,
+	eMaterialLightModel_Cloth = 8,
+	eMaterialLightModel_Hair = 9,
+	eMaterialLightModel_Skin = 0xA,
+	eMaterialLightModel_HybridCloth = 0xB,
+	eMaterialLightModel_DiffuseNoDirection = 0xC,
+	eMaterialLightModel_HybridHair = 0xD,
+	eMaterialLightModel_Count = 0xE,
+	eMaterialLightModel_Default = 0xFFFFFFFF
+};
+
+struct EnumT3MaterialLightModelType : EnumBase {
+	T3MaterialLightModelType mVal;
+};
 
 namespace T3MaterialUtil {
 	inline Symbol const kPropKeyAlphaMeshCullsLines("Material - Force Linear Culls Lines");
@@ -1218,6 +1258,15 @@ namespace EnvironmentLightGroup {
 	inline Symbol const kPropKeyLightGroupSet("EnvLightGroup - Groups");
 	inline Symbol const kPropKeyPriority("EnvLightGroup - Priority");
 }
+
+enum MeshDebugRenderType {
+	eMeshRender_Solid = 1,
+	eMeshRender_Wireframe = 2
+};
+
+struct EnumMeshDebugRenderType : EnumBase {
+	MeshDebugRenderType mVal;
+};
 
 namespace CinematicLight {
 	inline Symbol const kPropKeyColor("CinLight - Color");

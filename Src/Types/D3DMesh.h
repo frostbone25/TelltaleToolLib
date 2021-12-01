@@ -426,7 +426,7 @@ struct T3MaterialEnlightenPrecomputeParams {
 struct T3MaterialTexture {
 	Symbol mName, mTextureName, mTextureNameWithoutExtension;
 	T3TextureLayout mLayout;
-	T3MaterialPropertyType mPropertyType;
+	T3MaterialPropertyType mPropertyType;//wd4+
 	BitSetBase<1> mTextureTypes;
 	long mFirstParamIndex, mParamCount, mTextureIndex, mNestedMaterialIndex;
 };
@@ -489,27 +489,16 @@ struct T3MaterialCompiledData {
 	DCArray<T3MaterialStaticParameter> mStaticParameters;
 	DCArray<T3MaterialTextureParam> mTextureParams;
 	DCArray<T3MaterialPassData> mPasses;
-	T3MaterialQualityType mMaterialQuality;
+	T3MaterialQualityType mMaterialQuality;//>=wd4
 	BitSetBase<1> mMaterialBlendModes, mMaterialPasses;
 	BitSet<T3MaterialChannelType, 46, 0> mMaterialChannels;
-	BitSetBase<3> mShaderInputs;
-	BitSetBase<1> mSceneTextures, mOptionalPropertyTypes;
+	BitSetBase<3> mShaderInputs;//>=wd4
+	BitSetBase<2> mShaderInputs2;//batman2>=
+	BitSetBase<1> mSceneTextures, mOptionalPropertyTypes;//scene textures >=wd4
 	BinaryBuffer mPreShaderBuffer;
 	Flags mFlags;
 	long mParameterBufferScalarSize[2];
 	long mPreShaderParameterBufferScalarSize;
-	static METAOP_FUNC_IMPL__(SerializeAsync) {
-		CAST_METAOP(T3MaterialCompiledData, data);
-		MetaOpResult r = Meta::MetaOperation_SerializeAsync(pObj, pObjDescription, pContextDescription, pUserData);
-		if (r == eMetaOp_Succeed) {
-
-		}
-		return r;
-	}
-
-	T3MaterialCompiledData() {
-		printf("Created\n");
-	}
 
 };
 
@@ -526,17 +515,48 @@ enum T3MaterialDomainType {
 struct T3MaterialData {
 	Symbol mMaterialName, mRuntimePropertiesName, mLegacyRenderTextureProperty;
 	Symbol mLegacyBlendModeRuntimeProperty;
-	T3MaterialDomainType mDomain;
+	T3MaterialDomainType mDomain;//wd4+
+	LightType mLightType;//batman2 and below
 	DCArray<T3MaterialRuntimeProperty> mRuntimeProperties;
 	Flags mFlags, mRuntimeFlags;//runtimeflags not serialized
 	long mVersion;
+	float mMaxDistance;//batman2 and below, not sure if its a float/int always 0
 	DCArray<T3MaterialCompiledData> mCompiledData2;
 
 	static METAOP_FUNC_IMPL__(SerializeAsync) {
-		//CAST_METAOP(T3MaterialData, data);
+		CAST_METAOP(T3MaterialData, data);
+		static i32 wd4 = -1;
 		MetaOpResult r = Meta::MetaOperation_SerializeAsync(pObj, pObjDescription, pContextDescription, pUserData);
-		if (r == eMetaOp_Succeed) {
-
+		if (r != eMetaOp_Succeed)
+			return r;
+		if (wd4 == -1)
+			wd4 = TelltaleToolLib_GetGameKeyIndex("WD4");
+		if (sSetKeyIndex >= wd4) {
+			r = PerformMetaSerializeAsync<DCArray<T3MaterialCompiledData>>(meta, &data->mCompiledData2);
+			if (r != eMetaOp_Succeed)
+				return r;
+		}
+		else {
+			u32 num = data->mCompiledData2.GetSize();
+			meta->serialize_uint32(&num);
+			if (meta->IsRead()) {
+				if (data->mCompiledData2.mpStorage)
+					delete[] data->mCompiledData2.mpStorage;
+				data->mCompiledData2.mpStorage = new T3MaterialCompiledData[num];
+				data->mCompiledData2.mSize = num;
+				data->mCompiledData2.mCapacity = num;
+			}
+			u32 index = 0;
+			for (u32 i = 0; i < num; i++, index++) {
+				meta->serialize_uint32(&index);
+				if (index >= num) {
+					TelltaleToolLib_RaiseError("Material index was larget than number of materials", ErrorSeverity::ERR);
+					return eMetaOp_Fail;
+				}
+				r=PerformMetaSerializeAsync<T3MaterialCompiledData>(meta, data->mCompiledData2.mpStorage + index);
+				if (r != eMetaOp_Succeed)
+					return r;
+			}
 		}
 		return r;
 	}
@@ -576,7 +596,7 @@ struct T3MeshTextureIndices {
 		if (meta->IsWrite()) {
 			for (u32 i = 0; i < 2; i++) {
 				u32 index = tex->mIndex[i];
-				if (index >= 0) {
+				if ((index & 0x80000000) == 0) {
 					meta->serialize_uint32(&i);
 					meta->serialize_uint32(&index);
 				}
@@ -622,7 +642,9 @@ struct T3MeshLOD {
 	Sphere mBoundingSphere;
 	Flags mFlags;
 	//vertex state index, index into T3MeshData::mVertexStates (buffers)
+	//vertex start,count, atlas width and height only in wd4 or higher
 	long mVertexStateIndex, mNumPrimitives, mNumBatches, mVertexStart, mVertexCount, mTextureAtlasWidth, mTextureAtlasHeight;
+	//distance only in wd4 or higher
 	float mPixelSize, mDistance;
 	DCArray<Symbol> mBones;
 	//default serializer
@@ -1036,11 +1058,16 @@ struct D3DMesh {
 	ToolProps mToolProps;
 	float mLightmapGlobalScale;
 	long mLightmapTexCoordVersion;
-	u64 mLODParamCRC;
+	MeshDebugRenderType mType;//batman2 and below,99%sure
+	EnumRenderLightmapUVGenerationType mLightmapUVGenerationType;//batman2 and below
+	long mLightmapTextureWidth, mLightmapTextureHeight;//batman2 and below
+	u64 mLODParamCRC;//wd4+
 	T3OcclusionMeshData* mpOcclusionMeshData;
 
 	D3DMesh() {
 		mpOcclusionMeshData = NULL;
+		mLightmapGlobalScale = 1.0f;
+		mLightmapTextureWidth = mLightmapTextureHeight = 0;
 	}
 
 	PropertySet* GetMeshProps() {

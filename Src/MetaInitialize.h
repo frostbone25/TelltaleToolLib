@@ -2113,6 +2113,10 @@ namespace MetaInit {
 			SERIALIZER(bitsetbase3, BitSetBase<3>);
 			ADD(bitsetbase3);
 
+			DEFINET2(bitsetbase2, BitSetBase<2>);
+			SERIALIZER(bitsetbase2, BitSetBase<2>);
+			ADD(bitsetbase2);
+
 			DEFINET2(bitsetbase1, BitSetBase<1>);
 			SERIALIZER(bitsetbase1, BitSetBase<1>);
 			ADD(bitsetbase1);
@@ -3437,6 +3441,11 @@ namespace MetaInit {
 			NEXTMEM2(lod, mTextureAtlasHeight, T3MeshLOD, long, 0, mTextureAtlasWidth);
 			NEXTMEM2(lod, mPixelSize, T3MeshLOD, float, 0, mTextureAtlasHeight);
 			NEXTMEM2(lod, mDistance, T3MeshLOD, float, 0, mPixelSize);
+			meta_lod_mVertexStart.mGameIndexVersionRange.min = TelltaleToolLib_GetGameKeyIndex("WD4");
+			meta_lod_mVertexCount.mGameIndexVersionRange.min = TelltaleToolLib_GetGameKeyIndex("WD4");
+			meta_lod_mDistance.mGameIndexVersionRange.min = TelltaleToolLib_GetGameKeyIndex("WD4");
+			meta_lod_mTextureAtlasWidth.mGameIndexVersionRange.min = TelltaleToolLib_GetGameKeyIndex("WD4");
+			meta_lod_mTextureAtlasHeight.mGameIndexVersionRange.min = TelltaleToolLib_GetGameKeyIndex("WD4");
 			NEXTMEM2(lod, mBones, T3MeshLOD, DCArray_Symbol, 0, mDistance);
 			ADD(lod);
 
@@ -3526,6 +3535,38 @@ namespace MetaInit {
 			NEXTMEM2(tct, mOffset, T3MeshTexCoordTransform, vec2, 0, mScale);
 			ADD(tct);
 
+			DEFINET2(lmtype, EnumRenderLightmapUVGenerationType);
+			ADDFLAGS(lmtype , MetaFlag::MetaFlag_MetaSerializeBlockingDisabled);
+			FIRSTMEM2(lmtype, mVal, EnumRenderLightmapUVGenerationType, long, 0x40);
+			FIRSTENUM2(lmtype, mVal, "eRenderLightmapUVGeneration_Default", a, 0, 0);
+			NEXTENUM2(lmtype, mVal, "eRenderLightmapUVGeneration_Auto", b, 1, 0, a);
+			NEXTENUM2(lmtype, mVal, "eRenderLightmapUVGeneration_UV0", c, 2, 0, b);
+			NEXTENUM2(lmtype, mVal, "eRenderLightmapUVGeneration_UV1", d, 3, 0, c);
+			NEXTENUM2(lmtype, mVal, "eRenderLightmapUVGeneration_UV2", e, 4, 0, d);
+			NEXTENUM2(lmtype, mVal, "eRenderLightmapUVGeneration_UV3", f, 5, 0, e);
+			NEXTMEM1(lmtype, "Baseclass_EnumBase", ALAIS, mVal, EnumRenderLightmapUVGenerationType, enumbase, 0, mVal);
+			ADD(lmtype);
+
+			DEFINET2(mt, EnumT3MaterialLightModelType);
+			FIRSTMEM2(mt, mVal, EnumT3MaterialLightModelType, long, 0x40);
+			FIRSTENUM2(mt, mVal, "eMaterialLightModel_Default", a, -1, 0);
+			NEXTENUM2(mt, mVal, "eMaterialLightModel_Unlit", b, 0, 0, a);
+			NEXTENUM2(mt, mVal, "eMaterialLightModel_VertexDiffuse", c, 1, 0, b);
+			NEXTENUM2(mt, mVal, "eMaterialLightModel_Diffuse", d, 2, 0, c);
+			NEXTENUM2(mt, mVal, "eMaterialLightModel_Phong", e, 3, 0, d);
+			NEXTENUM2(mt, mVal, "eMaterialLightModel_PhongGloss", f, 4, 0, e);
+			NEXTENUM2(mt, mVal, "eMaterialLightModel_Toon", g, 5, 0, f);
+			NEXTENUM2(mt, mVal, "eMaterialLightModel_NPR_Depreceated", h, 6, 0, g);
+			NEXTENUM2(mt, mVal, "eMaterialLightModel_PBS", i, 7, 0, h);
+			NEXTENUM2(mt, mVal, "eMaterialLightModel_Cloth", j, 8, 0, i);
+			NEXTENUM2(mt, mVal, "eMaterialLightModel_Hair", k, 9, 0, j);
+			NEXTENUM2(mt, mVal, "eMaterialLightModel_Skin", l, 10, 0, k);
+			NEXTENUM2(mt, mVal, "eMaterialLightModel_HybridCloth", m, 11, 0, l);
+			NEXTENUM2(mt, mVal, "eMaterialLightModel_DiffuseNoDirection", n, 12, 0, m);
+			NEXTENUM2(mt, mVal, "eMaterialLightModel_HybridHair", o, 13, 0, n);
+			NEXTMEM1(mt, "Baseclass_EnumBase", ALAIS, mVal, EnumT3MaterialLightModelType, enumbase, 0, mVal);
+			ADD(mt);
+
 			DEFINET2(state, T3GFXVertexState);
 			SERIALIZER(state, T3GFXVertexState);
 			FIRSTMEM2(state, mVertexCountPerInstance, T3GFXVertexState, long, 0);
@@ -3584,6 +3625,14 @@ namespace MetaInit {
 
 			DEFINEDCARRAY(HandleBase);
 
+			DEFINET2(dbgt, EnumMeshDebugRenderType);
+			ADDFLAGS(dbgt, MetaFlag::MetaFlag_MetaSerializeBlockingDisabled);
+			FIRSTMEM2(dbgt, mVal, EnumMeshDebugRenderType, long, 0x40);
+			FIRSTENUM2(dbgt, mVal, "eMeshRender_Solid", a, 1, 0);
+			NEXTENUM2(dbgt, mVal, "eMeshRender_Wireframe", b, 2, 0, a);
+			NEXTMEM1(dbgt, "Baseclass_EnumBase", ALAIS, mVal, EnumMeshDebugRenderType, enumbase, 0, mVal);
+			ADD(dbgt);
+
 			DEFINET2(mesh, D3DMesh);
 			SERIALIZER(mesh, D3DMesh);
 			EXT(mesh, d3dmesh);
@@ -3593,9 +3642,18 @@ namespace MetaInit {
 			NEXTMEM2(mesh, mMeshData, D3DMesh, data, 1, mVersion);
 			NEXTMEM2(mesh, mInternalResources, D3DMesh, DCArray_HandleBase, 1, mMeshData);
 			NEXTMEM2(mesh, mToolProps, D3DMesh, tp,0, mInternalResources);
-			NEXTMEM2(mesh, mLightmapGlobalScale, D3DMesh, float, 0, mToolProps);
+			NEXTMEM2(mesh, mType, D3DMesh, dbgt, 0, mToolProps);
+			NEXTMEM2(mesh, mLightmapUVGenerationType, D3DMesh, lmtype, 0, mType);
+			NEXTMEM2(mesh, mLightmapGlobalScale, D3DMesh, float, 0, mLightmapUVGenerationType);
 			NEXTMEM2(mesh, mLightmapTexCoordVersion, D3DMesh, long, 0, mLightmapGlobalScale);
-			NEXTMEM2(mesh, mLODParamCRC, D3DMesh, __int64, 0, mLightmapTexCoordVersion);
+			NEXTMEM2(mesh, mLightmapTextureWidth, D3DMesh, long, 0, mLightmapTexCoordVersion);
+			NEXTMEM2(mesh, mLightmapTextureHeight, D3DMesh, long, 0, mLightmapTextureWidth);
+			meta_mesh_mLightmapTextureWidth.mGameIndexVersionRange.max = TelltaleToolLib_GetGameKeyIndex("BATMAN2");
+			meta_mesh_mLightmapUVGenerationType.mGameIndexVersionRange.max = TelltaleToolLib_GetGameKeyIndex("BATMAN2");
+			meta_mesh_mLightmapTextureHeight.mGameIndexVersionRange.max = TelltaleToolLib_GetGameKeyIndex("BATMAN2");
+			meta_mesh_mType.mGameIndexVersionRange.max = TelltaleToolLib_GetGameKeyIndex("BATMAN2");
+			NEXTMEM2(mesh, mLODParamCRC, D3DMesh, __int64, 0, mLightmapTextureHeight);
+			meta_mesh_mLODParamCRC.mGameIndexVersionRange.min = TelltaleToolLib_GetGameKeyIndex("WD4");
 			ADD(mesh);
 
 			DEFINET2(runtp, T3MaterialRuntimeProperty);
@@ -3660,6 +3718,7 @@ namespace MetaInit {
 			NEXTMEM2(mattex, mTextureNameWithoutExtension, T3MaterialTexture, symbol, 0, mTextureName);
 			NEXTMEM2(mattex, mLayout, T3MaterialTexture, long, 0, mTextureNameWithoutExtension);
 			NEXTMEM2(mattex, mPropertyType, T3MaterialTexture, long, 0, mLayout);
+			meta_mattex_mPropertyType.mGameIndexVersionRange.min = TelltaleToolLib_GetGameKeyIndex("WD4");
 			NEXTMEM2(mattex, mTextureTypes, T3MaterialTexture, bitsetbase1, 0, mPropertyType);
 			NEXTMEM2(mattex, mFirstParamIndex, T3MaterialTexture, long, 0, mTextureTypes);
 			NEXTMEM2(mattex, mParamCount, T3MaterialTexture, long, 0, mFirstParamIndex);
@@ -3682,7 +3741,6 @@ namespace MetaInit {
 			DEFINEDCARRAY(T3MaterialPassData);
 
 			DEFINET2(com, T3MaterialCompiledData);
-			SERIALIZER(com, T3MaterialCompiledData);
 			FIRSTMEM2(com, mParameters, T3MaterialCompiledData, DCArray_T3MaterialParameter, 0);
 			NEXTMEM2(com, mTextures, T3MaterialCompiledData, DCArray_T3MaterialTexture, 0, mParameters);
 			NEXTMEM2(com, mTransforms, T3MaterialCompiledData, DCArray_T3MaterialTransform2D, 0, mTextures);
@@ -3692,11 +3750,16 @@ namespace MetaInit {
 			NEXTMEM2(com, mTextureParams, T3MaterialCompiledData, DCArray_T3MaterialTextureParam, 0, mStaticParameters);
 			NEXTMEM2(com, mPasses, T3MaterialCompiledData, DCArray_T3MaterialPassData, 0, mTextureParams);
 			NEXTMEM2(com, mMaterialQuality, T3MaterialCompiledData, long, 0, mPasses);
+			meta_com_mMaterialQuality.mGameIndexVersionRange.min = TelltaleToolLib_GetGameKeyIndex("WD4");
 			NEXTMEM2(com, mMaterialBlendModes, T3MaterialCompiledData, bitsetbase1, 0, mMaterialQuality);
 			NEXTMEM2(com, mMaterialPasses, T3MaterialCompiledData, bitsetbase1, 0, mMaterialBlendModes);
 			NEXTMEM2(com, mMaterialChannels, T3MaterialCompiledData, bitsetreq, 0, mMaterialPasses);
 			NEXTMEM2(com, mShaderInputs, T3MaterialCompiledData, bitsetbase3, 0, mMaterialChannels);
-			NEXTMEM2(com, mSceneTextures, T3MaterialCompiledData, bitsetbase1, 0, mShaderInputs);
+			NEXTMEM2(com, mShaderInputs2, T3MaterialCompiledData, bitsetbase2, 0, mShaderInputs);
+			NEXTMEM2(com, mSceneTextures, T3MaterialCompiledData, bitsetbase1, 0, mShaderInputs2);
+			meta_com_mSceneTextures.mGameIndexVersionRange.min = TelltaleToolLib_GetGameKeyIndex("WD4");
+			meta_com_mShaderInputs.mGameIndexVersionRange.min = TelltaleToolLib_GetGameKeyIndex("WD4");
+			meta_com_mShaderInputs2.mGameIndexVersionRange.max = TelltaleToolLib_GetGameKeyIndex("BATMAN2");
 			NEXTMEM2(com, mOptionalPropertyTypes, T3MaterialCompiledData, bitsetbase1, 0, mSceneTextures);
 			NEXTMEM2(com, mPreShaderBuffer, T3MaterialCompiledData, bb, 0, mOptionalPropertyTypes);
 			NEXTMEM2(com, mFlags, T3MaterialCompiledData, flags, 0, mPreShaderBuffer);
@@ -3710,6 +3773,22 @@ namespace MetaInit {
 
 			DEFINEDCARRAY(T3MaterialCompiledData);
 
+			DEFINET2(lightt, LightType);
+			ADDFLAGS(lightt, MetaFlag::MetaFlag_MetaSerializeBlockingDisabled);
+			FIRSTMEM2(lightt, mLightType, LightType, long, 0x40);
+			FIRSTENUM2(lightt, mLightType, "Directional", a, 0, 0);
+			NEXTENUM2(lightt, mLightType, "Point Light", b, 1, 0, a);
+			NEXTENUM2(lightt, mLightType, "Local Ambient Light", b1, 2, 0, b);
+			NEXTENUM2(lightt, mLightType, "Directional Shadows", b2, 3, 0, b1);
+			NEXTENUM2(lightt, mLightType, "Point shadows", b3, 4, 0, b2);
+			NEXTENUM2(lightt, mLightType, "Gobo Shadows", b4, 5, 0, b3);
+			NEXTENUM2(lightt, mLightType, "Gobo Color", b5, 6, 0, b4);
+			NEXTENUM2(lightt, mLightType, "Point Light Simple", b6, 7, 0, b5);
+			NEXTENUM2(lightt, mLightType, "Local Ambient Falloff", b7, 8, 0, b6);
+			NEXTENUM2(lightt, mLightType, "Directional scene shadows", b8, 9, 0, b7);
+			NEXTENUM2(lightt, mLightType, "Lightmap Specular", b9, 10, 0, b8);
+			ADD(lightt);
+
 			DEFINET2(matdata, T3MaterialData);
 			SERIALIZER(matdata, T3MaterialData);
 			ADDFLAGS(matdata, 0x20);
@@ -3718,11 +3797,12 @@ namespace MetaInit {
 			NEXTMEM2(matdata, mLegacyRenderTextureProperty, T3MaterialData, symbol, 0, mRuntimePropertiesName);
 			NEXTMEM2(matdata, mLegacyBlendModeRuntimeProperty, T3MaterialData, symbol, 0, mLegacyRenderTextureProperty);
 			NEXTMEM2(matdata, mDomain, T3MaterialData, long, 0, mLegacyBlendModeRuntimeProperty);
+			meta_matdata_mDomain.mGameIndexVersionRange.min = TelltaleToolLib_GetGameKeyIndex("WD4");
 			NEXTMEM2(matdata, mRuntimeProperties, T3MaterialData, DCArray_T3MaterialRuntimeProperty, 0, mDomain);
 			NEXTMEM2(matdata, mFlags, T3MaterialData, flags, 0, mRuntimeProperties);
 			NEXTMEM2(matdata, mRuntimeFlags, T3MaterialData, flags, 1, mFlags);
 			NEXTMEM2(matdata, mVersion, T3MaterialData, long, 0, mRuntimeFlags);
-			NEXTMEM2(matdata, mCompiledData2, T3MaterialData, DCArray_T3MaterialCompiledData, 0, mVersion);
+			NEXTMEM2(matdata, mCompiledData2, T3MaterialData, DCArray_T3MaterialCompiledData, 1, mVersion);
 			ADD(matdata);
 
 			DEFINET2(ldata, LocationInfo);
