@@ -3650,16 +3650,16 @@ namespace MetaInit {
 			NEXTMEM2(mesh, mMeshData, D3DMesh, data, 1, mVersion);
 			NEXTMEM2(mesh, mInternalResources, D3DMesh, DCArray_HandleBase, 1, mMeshData);
 			NEXTMEM2(mesh, mToolProps, D3DMesh, tp,0, mInternalResources);
-			NEXTMEM2(mesh, mType, D3DMesh, dbgt, 0, mToolProps);
-			NEXTMEM2(mesh, mLightmapUVGenerationType, D3DMesh, lmtype, 0, mType);
-			NEXTMEM2(mesh, mLightmapGlobalScale, D3DMesh, float, 0, mLightmapUVGenerationType);
+			NEXTMEM2(mesh, mLightmapUVGenerationType, D3DMesh, lmtype, 0, mToolProps);
+			NEXTMEM2(mesh, mScaleSomething, D3DMesh, float, 0, mLightmapUVGenerationType);
+			NEXTMEM2(mesh, mLightmapGlobalScale, D3DMesh, float, 0, mScaleSomething);
 			NEXTMEM2(mesh, mLightmapTexCoordVersion, D3DMesh, long, 0, mLightmapGlobalScale);
 			NEXTMEM2(mesh, mLightmapTextureWidth, D3DMesh, long, 0, mLightmapTexCoordVersion);
 			NEXTMEM2(mesh, mLightmapTextureHeight, D3DMesh, long, 0, mLightmapTextureWidth);
 			meta_mesh_mLightmapTextureWidth.mGameIndexVersionRange.max = TelltaleToolLib_GetGameKeyIndex("BATMAN2");
 			meta_mesh_mLightmapUVGenerationType.mGameIndexVersionRange.max = TelltaleToolLib_GetGameKeyIndex("BATMAN2");
 			meta_mesh_mLightmapTextureHeight.mGameIndexVersionRange.max = TelltaleToolLib_GetGameKeyIndex("BATMAN2");
-			meta_mesh_mType.mGameIndexVersionRange.max = TelltaleToolLib_GetGameKeyIndex("BATMAN2");
+			meta_mesh_mScaleSomething.mGameIndexVersionRange.max = TelltaleToolLib_GetGameKeyIndex("BATMAN2");
 			NEXTMEM2(mesh, mLODParamCRC, D3DMesh, __int64, 0, mLightmapTextureHeight);
 			meta_mesh_mLODParamCRC.mGameIndexVersionRange.min = TelltaleToolLib_GetGameKeyIndex("WD4");
 			ADD(mesh);
@@ -3818,6 +3818,8 @@ namespace MetaInit {
 			NEXTMEM2(ldata, mAttachedNode, LocationInfo, symbol, 0, mAttachedAgent);
 			NEXTMEM2(ldata, mInitialLocalTransform, LocationInfo, transform, 0, mAttachedNode);
 			ADD(ldata);
+
+			DEFINEHANDLE(mesh, D3DMesh);
 
 		}
 		Initialize2();

@@ -1057,9 +1057,10 @@ struct D3DMesh {
 	T3MeshData mMeshData;
 	DCArray<HandleUncached*> mInternalResources;
 	ToolProps mToolProps;
+	float mScaleSomething;//no idea, in games older and including batman2
 	float mLightmapGlobalScale;
 	long mLightmapTexCoordVersion;
-	MeshDebugRenderType mType;//batman2 and below,99%sure
+	//MeshDebugRenderType mType;//batman2 and below,99%sure
 	EnumRenderLightmapUVGenerationType mLightmapUVGenerationType;//batman2 and below
 	long mLightmapTextureWidth, mLightmapTextureHeight;//batman2 and below
 	u64 mLODParamCRC;//wd4+
@@ -1165,6 +1166,7 @@ struct D3DMesh {
 				r = SerializeAsyncInternalResources(meta, mesh);
 				if (r != eMetaOp_Succeed)
 					return r;
+				printf("finished from %llX\n", meta->GetPos());
 			}
 			if (19 > mesh->mVersion) {
 				//TODO not supported in WDC
