@@ -3419,7 +3419,14 @@ namespace MetaInit {
 			NEXTMEM2(batch, mNumIndices, T3MeshBatch, long, 0, mNumPrimitives);
 			NEXTMEM2(batch, mTextureIndices, T3MeshBatch, texind, 0, mNumIndices);
 			NEXTMEM2(batch, mMaterialIndex, T3MeshBatch, long, 0, mTextureIndices);
-			NEXTMEM2(batch, mAdjacencyStartIndex, T3MeshBatch, long, 0, mMaterialIndex);
+			NEXTMEM2(batch, mBonePaletteIndex, T3MeshBatch, long, 0, mMaterialIndex);
+			NEXTMEM2(batch, mLocalTransformIndex, T3MeshBatch, long, 0, mBonePaletteIndex);
+			NEXTMEM2(batch, mAdjacencyStartIndex, T3MeshBatch, long, 0, mLocalTransformIndex);
+			meta_batch_mBonePaletteIndex.mGameIndexVersionRange.max = TelltaleToolLib_GetGameKeyIndex("WD3");
+			meta_batch_mLocalTransformIndex.mGameIndexVersionRange.max = TelltaleToolLib_GetGameKeyIndex("WD3");
+			//meta_batch_mMaterialIndex.mGameIndexVersionRange.min = TelltaleToolLib_GetGameKeyIndex("MARVEL");
+			meta_batch_mBaseIndex.mGameIndexVersionRange.min = TelltaleToolLib_GetGameKeyIndex("MARVEL");
+			meta_batch_mNumIndices.mGameIndexVersionRange.min = TelltaleToolLib_GetGameKeyIndex("MARVEL");
 			ADD(batch);
 
 			DEFINEDCARRAY(T3MeshBatch);
@@ -3622,6 +3629,9 @@ namespace MetaInit {
 			NEXTMEM2(data, mPositionScale, T3MeshData, vec3, 0, mEndianType);
 			NEXTMEM2(data, mPositionWScale, T3MeshData, vec3, 0, mPositionScale);
 			NEXTMEM2(data, mPositionOffset, T3MeshData, vec3, 0, mPositionWScale);
+			meta_data_mPositionScale.mGameIndexVersionRange.min = TelltaleToolLib_GetGameKeyIndex("MARVEL");
+			meta_data_mPositionWScale.mGameIndexVersionRange.min = TelltaleToolLib_GetGameKeyIndex("MARVEL");
+			meta_data_mPositionOffset.mGameIndexVersionRange.min = TelltaleToolLib_GetGameKeyIndex("MARVEL");
 			NEXTMEM2(data, mLightmapTexelAreaPerSurfaceArea, T3MeshData, float, 0, mPositionOffset);
 			NEXTMEM2(data, mPropertyKeyBase, T3MeshData, symbol, 0, mLightmapTexelAreaPerSurfaceArea);
 			NEXTMEM2(data, mVertexCount, T3MeshData, long, 0, mPropertyKeyBase);
@@ -3677,7 +3687,19 @@ namespace MetaInit {
 			NEXTMEM2(matp, mValueType, T3MaterialParameter, long, 0, mPropertyType);
 			NEXTMEM2(matp, mFlags, T3MaterialParameter, long, 0, mValueType);
 			NEXTMEM2(matp, mScalarOffset, T3MaterialParameter, long, 0, mFlags);
-			NEXTMEM2(matp, mPreShaderScalarOffset, T3MaterialParameter, long, 0, mScalarOffset);
+			NEXTMEM1(matp, "mScalarOffset[0]", OFF0, mScalarOffset, T3MaterialParameter, long, 0, mScalarOffset);
+			NEXTMEM1(matp, "mScalarOffset[1]", OFF1, mScalarOffset, T3MaterialParameter, long, 0,OFF0);
+			NEXTMEM1(matp, "mScalarOffset[2]", OFF2, mScalarOffset, T3MaterialParameter, long, 0, OFF1);
+			NEXTMEM1(matp, "mScalarOffset[3]", OFF3, mScalarOffset, T3MaterialParameter, long, 0, OFF2);
+			NEXTMEM2(matp, mPreShaderScalarOffset, T3MaterialParameter, long, 0, OFF3);
+			meta_matp_OFF1.mOffset += 4;
+			meta_matp_OFF2.mOffset += 8;
+			meta_matp_OFF3.mOffset += 12;
+			meta_matp_OFF0.mGameIndexVersionRange.max = TelltaleToolLib_GetGameKeyIndex("WD3");
+			meta_matp_OFF1.mGameIndexVersionRange.max = TelltaleToolLib_GetGameKeyIndex("WD3");
+			meta_matp_OFF2.mGameIndexVersionRange.max = TelltaleToolLib_GetGameKeyIndex("WD3");
+			meta_matp_mScalarOffset.mGameIndexVersionRange.min = TelltaleToolLib_GetGameKeyIndex("MARVEL");
+			meta_matp_OFF3.mGameIndexVersionRange.max = TelltaleToolLib_GetGameKeyIndex("WD3");
 			NEXTMEM2(matp, mNestedMaterialIndex, T3MaterialParameter, long, 0, mPreShaderScalarOffset);
 			ADD(matp);
 
@@ -3685,8 +3707,33 @@ namespace MetaInit {
 			FIRSTMEM2(mapt, mParameterPrefix, T3MaterialTransform2D, symbol, 0);
 			NEXTMEM2(mapt, mFlags, T3MaterialTransform2D, flags, 0, mParameterPrefix);
 			NEXTMEM2(mapt, mScalarOffset0, T3MaterialTransform2D, long, 0, mFlags);
-			NEXTMEM2(mapt, mScalarOffset1, T3MaterialTransform2D, long, 0, mScalarOffset0);
-			NEXTMEM2(mapt, mPreShaderScalarOffset0, T3MaterialTransform2D, long,0, mScalarOffset1);
+			NEXTMEM1(mapt, "mScalarOffset0[0]", OFF0, mScalarOffset0, T3MaterialTransform2D, long, 0, mScalarOffset0);
+			NEXTMEM1(mapt, "mScalarOffset0[1]", OFF1, mScalarOffset0, T3MaterialTransform2D, long, 0, OFF0);
+			NEXTMEM1(mapt, "mScalarOffset0[2]", OFF2, mScalarOffset0, T3MaterialTransform2D, long, 0, OFF1);
+			NEXTMEM1(mapt, "mScalarOffset0[3]", OFF3, mScalarOffset0, T3MaterialTransform2D, long, 0, OFF2);
+			meta_mapt_OFF0.mGameIndexVersionRange.max = TelltaleToolLib_GetGameKeyIndex("WD3");
+			meta_mapt_OFF1.mGameIndexVersionRange.max = TelltaleToolLib_GetGameKeyIndex("WD3");
+			meta_mapt_OFF2.mGameIndexVersionRange.max = TelltaleToolLib_GetGameKeyIndex("WD3");
+			meta_mapt_OFF3.mGameIndexVersionRange.max = TelltaleToolLib_GetGameKeyIndex("WD3");
+			meta_mapt_OFF1.mOffset += 4;
+			meta_mapt_OFF2.mOffset += 8;
+			meta_mapt_OFF3.mOffset += 12;
+			NEXTMEM2(mapt, mScalarOffset1, T3MaterialTransform2D, long, 0, OFF3);
+			NEXTMEM1(mapt, "mScalarOffset1[0]", OOFF0, mScalarOffset1, T3MaterialTransform2D, long, 0, mScalarOffset1);
+			NEXTMEM1(mapt, "mScalarOffset1[1]", OOFF1, mScalarOffset1, T3MaterialTransform2D, long, 0, OOFF0);
+			NEXTMEM1(mapt, "mScalarOffset1[2]", OOFF2, mScalarOffset1, T3MaterialTransform2D, long, 0, OOFF1);
+			NEXTMEM1(mapt, "mScalarOffset1[3]", OOFF3, mScalarOffset1, T3MaterialTransform2D, long, 0, OOFF2);
+			meta_mapt_mScalarOffset0.mGameIndexVersionRange.min = TelltaleToolLib_GetGameKeyIndex("MARVEL");
+			meta_mapt_mScalarOffset1.mGameIndexVersionRange.min = TelltaleToolLib_GetGameKeyIndex("MARVEL");
+			meta_mapt_mFlags.mGameIndexVersionRange.min = TelltaleToolLib_GetGameKeyIndex("MARVEL");
+			meta_mapt_OOFF0.mGameIndexVersionRange.max = TelltaleToolLib_GetGameKeyIndex("WD3");
+			meta_mapt_OOFF1.mGameIndexVersionRange.max = TelltaleToolLib_GetGameKeyIndex("WD3");
+			meta_mapt_OOFF2.mGameIndexVersionRange.max = TelltaleToolLib_GetGameKeyIndex("WD3");
+			meta_mapt_OOFF3.mGameIndexVersionRange.max = TelltaleToolLib_GetGameKeyIndex("WD3");
+			meta_mapt_OOFF1.mOffset += 4;
+			meta_mapt_OOFF2.mOffset += 8;
+			meta_mapt_OOFF3.mOffset += 12;
+			NEXTMEM2(mapt, mPreShaderScalarOffset0, T3MaterialTransform2D, long,0, OOFF3);
 			NEXTMEM2(mapt, mPreShaderScalarOffset1, T3MaterialTransform2D, long, 0, mPreShaderScalarOffset0);
 			NEXTMEM2(mapt, mNestedMaterialIndex, T3MaterialTransform2D, long, 0, mPreShaderScalarOffset1);
 			ADD(mapt);
@@ -3706,8 +3753,21 @@ namespace MetaInit {
 			DEFINET2(matsh, T3MaterialPreShader);
 			FIRSTMEM2(matsh, mValueType, T3MaterialPreShader, long, 0);
 			NEXTMEM2(matsh, mFlags, T3MaterialPreShader, long, 0, mValueType);
+			meta_matsh_mFlags.mGameIndexVersionRange.min = TelltaleToolLib_GetGameKeyIndex("MARVEL");
 			NEXTMEM2(matsh, mPreShaderOffset, T3MaterialPreShader, long, 0, mFlags);
 			NEXTMEM2(matsh, mScalarParameterOffset, T3MaterialPreShader, long, 0, mPreShaderOffset);
+			NEXTMEM1(matsh, "mScalarParameterOffset[0]", OFF0, mScalarParameterOffset, T3MaterialPreShader, long, 0, mScalarParameterOffset);
+			NEXTMEM1(matsh, "mScalarParameterOffset[1]", OFF1, mScalarParameterOffset, T3MaterialPreShader, long, 0, OFF0);
+			NEXTMEM1(matsh, "mScalarParameterOffset[2]", OFF2, mScalarParameterOffset, T3MaterialPreShader, long, 0, OFF1);
+			NEXTMEM1(matsh, "mScalarParameterOffset[3]", OFF3, mScalarParameterOffset, T3MaterialPreShader, long, 0, OFF2);
+			meta_matsh_mScalarParameterOffset.mGameIndexVersionRange.min = TelltaleToolLib_GetGameKeyIndex("MARVEL");
+			meta_matsh_OFF0.mGameIndexVersionRange.max = TelltaleToolLib_GetGameKeyIndex("WD3");
+			meta_matsh_OFF1.mGameIndexVersionRange.max = TelltaleToolLib_GetGameKeyIndex("WD3");
+			meta_matsh_OFF2.mGameIndexVersionRange.max = TelltaleToolLib_GetGameKeyIndex("WD3");
+			meta_matsh_OFF3.mGameIndexVersionRange.max = TelltaleToolLib_GetGameKeyIndex("WD3");
+			meta_matsh_OFF1.mOffset += 4;
+			meta_matsh_OFF2.mOffset += 8;
+			meta_matsh_OFF3.mOffset += 12;
 			ADD(matsh);
 
 			DEFINET2(matpass, T3MaterialPassData);
@@ -3775,8 +3835,16 @@ namespace MetaInit {
 				T3MaterialCompiledData, long, 0, mFlags);
 			NEXTMEM1(com, "mParameterBufferScalarSize[1]", ALAIS,mParameterBufferScalarSize,
 				T3MaterialCompiledData, long, 0, mParameterBufferScalarSize);
+			NEXTMEM1(com, "mParameterBufferScalarSize[2]", ALAIS1, mParameterBufferScalarSize,
+				T3MaterialCompiledData, long, 0, ALAIS);
+			NEXTMEM1(com, "mParameterBufferScalarSize[3]", ALAIS2, mParameterBufferScalarSize,
+				T3MaterialCompiledData, long, 0, ALAIS1);
 			meta_com_ALAIS.mOffset = offsetof(T3MaterialCompiledData, mParameterBufferScalarSize) + 4;
-			NEXTMEM2(com, mPreShaderParameterBufferScalarSize, T3MaterialCompiledData, long, 0, ALAIS);
+			meta_com_ALAIS1.mOffset = offsetof(T3MaterialCompiledData, mParameterBufferScalarSize) + 8;
+			meta_com_ALAIS2.mOffset = offsetof(T3MaterialCompiledData, mParameterBufferScalarSize) + 12;
+			meta_com_ALAIS1.mGameIndexVersionRange.max = TelltaleToolLib_GetGameKeyIndex("WD3");
+			meta_com_ALAIS2.mGameIndexVersionRange.max = TelltaleToolLib_GetGameKeyIndex("WD3");
+			NEXTMEM2(com, mPreShaderParameterBufferScalarSize, T3MaterialCompiledData, long, 0, ALAIS2);
 			ADD(com);
 
 			DEFINEDCARRAY(T3MaterialCompiledData);

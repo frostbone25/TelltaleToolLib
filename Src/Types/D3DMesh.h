@@ -413,7 +413,7 @@ struct T3MaterialParameter {
 	Symbol mName;
 	T3MaterialPropertyType mPropertyType;
 	T3MaterialValueType mValueType;
-	long mFlags, mScalarOffset;//scalar offset is like the stride in glvertexarrayattribpointer i think
+	long mFlags, mScalarOffset[4];//in marvel and above its just mScalarOffset, not an array
 	long mPreShaderScalarOffset, mNestedMaterialIndex;
 };
 
@@ -433,8 +433,8 @@ struct T3MaterialTexture {
 
 struct T3MaterialTransform2D {
 	Symbol mParameterPrefix;
-	long mFlags, mScalarOffset0, mScalarOffset1, mPreShaderScalarOffset0, mPreShaderScalarOffset1;
-	long mNestedMaterialIndex;
+	long mFlags, mScalarOffset0[4], mScalarOffset1[4], mPreShaderScalarOffset0, mPreShaderScalarOffset1;//not arrays in games newer marvel (inc)
+	long mNestedMaterialIndex;//mflags only in marvel and above
 };
 
 struct T3MaterialNestedMaterial {
@@ -443,7 +443,7 @@ struct T3MaterialNestedMaterial {
 
 struct T3MaterialPreShader {
 	T3MaterialValueType mValueType;
-	long mFlags, mPreShaderOffset, mScalarParameterOffset;
+	long mFlags, mPreShaderOffset, mScalarParameterOffset[4];//flags newer and inc marvel
 };
 
 struct T3MaterialStaticParameter {
@@ -487,7 +487,7 @@ struct T3MaterialCompiledData {
 	DCArray<T3MaterialNestedMaterial> mNestedMaterials;
 	DCArray<T3MaterialPreShader> mPreShaders;
 	DCArray<T3MaterialStaticParameter> mStaticParameters;
-	DCArray<T3MaterialTextureParam> mTextureParams;
+	DCArray<T3MaterialTextureParam> mTextureParams;//TODO CHECK WD3!
 	DCArray<T3MaterialPassData> mPasses;
 	T3MaterialQualityType mMaterialQuality;//>=wd4
 	BitSetBase<1> mMaterialBlendModes, mMaterialPasses;
@@ -497,7 +497,7 @@ struct T3MaterialCompiledData {
 	BitSetBase<1> mSceneTextures, mOptionalPropertyTypes;//scene textures >=wd4
 	BinaryBuffer mPreShaderBuffer;
 	Flags mFlags;
-	long mParameterBufferScalarSize[2];
+	long mParameterBufferScalarSize[4];//size 2 array in games newer and including marvels GoG
 	long mPreShaderParameterBufferScalarSize;
 
 };
@@ -550,7 +550,7 @@ struct T3MaterialData {
 			for (u32 i = 0; i < num; i++, index++) {
 				meta->serialize_uint32(&index);
 				if (index >= num) {
-					TelltaleToolLib_RaiseError("Material index was larget than number of materials", ErrorSeverity::ERR);
+					TelltaleToolLib_RaiseError("Material index was larger than number of materials", ErrorSeverity::ERR);
 					return eMetaOp_Fail;
 				}
 				r=PerformMetaSerializeAsync<T3MaterialCompiledData>(meta, data->mCompiledData2.mpStorage + index);
@@ -630,9 +630,10 @@ struct T3MeshBatch {
 	BoundingBox mBoundingBox;
 	Sphere mBoundingSphere;
 	Flags mBatchUsage;
-	long mMinVertIndex, mMaxVertIndex, mBaseIndex, mStartIndex, mNumPrimitives, mNumIndices;
+	long mMinVertIndex, mMaxVertIndex, mBaseIndex, mStartIndex, mNumPrimitives, mNumIndices;//base index and indices in marvel and above
 	T3MeshTextureIndices mTextureIndices;
 	long mMaterialIndex, mAdjacencyStartIndex;
+	int mLocalTransformIndex, mBonePaletteIndex;//wd3 and below
 };
 
 struct T3MeshLOD {
@@ -928,7 +929,7 @@ struct T3MeshData {
 	BoundingBox mBoundingBox;
 	Sphere mBoundingSphere;
 	T3MeshEndianType mEndianType;
-	Vector3 mPositionScale, mPositionWScale, mPositionOffset;
+	Vector3 mPositionScale, mPositionWScale, mPositionOffset;//all three in marvel and above
 	float mLightmapTexelAreaPerSurfaceArea;
 	Symbol mPropertyKeyBase;
 	long mVertexCount;
@@ -1158,18 +1159,32 @@ struct D3DMesh {
 		return eMetaOp_Succeed;
 	}
 
+#define ENDBATFIX() if(batfix)sSetKeyIndex = TelltaleToolLib_GetGameKeyIndex("BATMAN");
+
 	static METAOP_FUNC_IMPL__(SerializeAsync) {
 		CAST_METAOP(D3DMesh, mesh);
+		bool batfix = false;
+		if (sSetKeyIndex == TelltaleToolLib_GetGameKeyIndex("BATMAN")) {
+			batfix = true;
+			sSetKeyIndex = TelltaleToolLib_GetGameKeyIndex("WD4");
+		}
 		MetaOpResult r = Meta::MetaOperation_SerializeAsync(pObj, pObjDescription, pContextDescription, pUserData);
 		if (r == eMetaOp_Succeed) {
+			if (batfix && mesh->mVersion != 46) {
+				TelltaleToolLib_RaiseError("Cannot serialize D3DMesh: Only BAT Season1's latest PC release is supported",ErrorSeverity::ERR);
+				ENDBATFIX();
+				return eMetaOp_Fail;
+			}
 			if (mesh->mVersion >= 22) {
 				r = SerializeAsyncInternalResources(meta, mesh);
-				if (r != eMetaOp_Succeed)
+				if (r != eMetaOp_Succeed) {
+					ENDBATFIX();
 					return r;
-				printf("finished from %llX\n", meta->GetPos());
+				}
 			}
 			if (19 > mesh->mVersion) {
 				//TODO not supported in WDC
+				ENDBATFIX();
 				return eMetaOp_Fail;
 			}
 			u32 hasToolData = 0;
@@ -1190,17 +1205,22 @@ struct D3DMesh {
 					if (!mesh->mpOcclusionMeshData)
 						mesh->mpOcclusionMeshData = new T3OcclusionMeshData;
 					r = PerformMetaSerializeAsync<T3OcclusionMeshData>(meta, mesh->mpOcclusionMeshData);
-					if (r != eMetaOp_Succeed)
+					if (r != eMetaOp_Succeed) {
+						ENDBATFIX();
 						return r;
+					}
 					meta->EndBlock();
 				}
 			}
 			meta->BeginBlock();
 			r = PerformMetaSerializeAsync<T3MeshData>(meta, &mesh->mMeshData);
-			if (r != eMetaOp_Succeed)
+			if (r != eMetaOp_Succeed) {
+				ENDBATFIX();
 				return r;
+			}
 			meta->EndBlock();
 		}
+		ENDBATFIX();
 		return r;
 	}
 

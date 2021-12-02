@@ -453,7 +453,7 @@ struct _LeakSlave {
 };
 
 void _anm_chk() {
-	TelltaleToolLib_Initialize("FABLES");
+	TelltaleToolLib_Initialize("WD3");
 
 	TelltaleToolLib_SetGlobalHashDatabaseFromStream(
 		_OpenDataStreamFromDisc("c:/users/lucas/desktop/My Stuff/Projects/HashDB Creator/LibTelltale DB/LibTelltale.HashDB",
@@ -461,25 +461,25 @@ void _anm_chk() {
 
 	struct dirent* dp;
 	static char dir1[1000];
-	DIR* dir = opendir("D:/games/telltale archives/tales from the borderlands");
-	const char* s = "D:/games/telltale archives/tales from the borderlands/";//TODO check games
+	DIR* dir = opendir("D:/games/telltale archives/the walking dead - new frontier");
+	const char* s = "D:/games/telltale archives/the walking dead - new frontier/";//TODO check games
 	int l = strlen(s);
 	memcpy(dir1, s, l);
 	std::string f;
 	static u64 array[0x1000];
 	while (dp = readdir(dir)) {
-		if (dp->d_type == DT_REG && dp->d_name[dp->d_namlen-1] == 'g' && dp->d_name[dp->d_namlen - 2] == 'o'
-			&& dp->d_name[dp->d_namlen - 3] == 'l' && dp->d_name[dp->d_namlen - 4] == 'd') {
+		if (dp->d_type == DT_REG && dp->d_name[dp->d_namlen-1] == 'h' && dp->d_name[dp->d_namlen - 2] == 's'
+			&& dp->d_name[dp->d_namlen - 3] == 'e' && dp->d_name[dp->d_namlen - 4] == 'm') {
 			MetaStream meta{};
 			memcpy(dir1 + l, dp->d_name, dp->d_namlen + 1);
 			meta.Open(_OpenDataStreamFromDisc(dir1, DataStreamMode::eMode_Read), MetaStreamMode::eMetaStream_Read, { 0 });
-			printf("- done %s\n",dir1);
-			meta.SetPos(0x10);
-			u64 d = 0;
-			meta.serialize_uint64(&d);
-			if (d != 8) {
-				printf("%s !!!!!!!!!!!!!!!\n",dir1);
+			for (auto v : meta.mVersionInfo) {
+				if (v.mTypeSymbolCrc == 0x825EC630BEE9EA3E) {
+					printf("FOUND %s\n", dir1);
+					return;
+				}
 			}
+			printf("- not %s\n",dir1);
 		}
 	}
 	closedir(dir);
@@ -495,7 +495,7 @@ void _anm_chk() {
 #include "../Types/D3DMesh.h"
 
 void _testing_func() {
-	TelltaleToolLib_Initialize("MARVEL");
+	TelltaleToolLib_Initialize("WD3");
 
 	TelltaleToolLib_SetGlobalHashDatabaseFromStream(
 		_OpenDataStreamFromDisc("c:/users/lucas/desktop/My Stuff/Projects/HashDB Creator/LibTelltale DB/LibTelltale.HashDB",
@@ -522,6 +522,7 @@ int main(int argn, char* argv[]) {
 
 	{
 		_testing_func();
+		//_anm_chk();
 	}
 
 	return 0;
