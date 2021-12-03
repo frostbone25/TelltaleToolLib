@@ -413,6 +413,7 @@ struct T3MaterialParameter {
 	Symbol mName;
 	T3MaterialPropertyType mPropertyType;
 	T3MaterialValueType mValueType;
+	//in michonne its mscalaroffset[2]
 	long mFlags, mScalarOffset[4];//in marvel and above its just mScalarOffset, not an array
 	long mPreShaderScalarOffset, mNestedMaterialIndex;
 };
@@ -491,9 +492,11 @@ struct T3MaterialCompiledData {
 	DCArray<T3MaterialPassData> mPasses;
 	T3MaterialQualityType mMaterialQuality;//>=wd4
 	BitSetBase<1> mMaterialBlendModes, mMaterialPasses;
-	BitSet<T3MaterialChannelType, 46, 0> mMaterialChannels;
+	BitSet<T3MaterialChannelType, 46, 0> mMaterialChannels;//>=wd3
+	BitSet<T3MaterialChannelType, 32, 0> mMaterialChannels2;//michonne
 	BitSetBase<3> mShaderInputs;//>=wd4
 	BitSetBase<2> mShaderInputs2;//batman2>=
+	BitSetBase<1> mShaderInputs3;//michonne
 	BitSetBase<1> mSceneTextures, mOptionalPropertyTypes;//scene textures >=wd4
 	BinaryBuffer mPreShaderBuffer;
 	Flags mFlags;
@@ -570,7 +573,7 @@ enum T3MeshMaterialFlags : u32 {
 
 struct T3MeshMaterial {
 	Handle<PropertySet> mhMaterial;
-	Symbol mBaseMaterialName, mLegacyRenderTextureProperty;
+	Symbol mBaseMaterialName, mLegacyRenderTextureProperty;//legacy >michonne excl
 	BoundingBox mBoundingBox;
 	Sphere mBoundingSphere;
 	Flags mFlags;
@@ -632,16 +635,18 @@ struct T3MeshBatch {
 	Flags mBatchUsage;
 	long mMinVertIndex, mMaxVertIndex, mBaseIndex, mStartIndex, mNumPrimitives, mNumIndices;//base index and indices in marvel and above
 	T3MeshTextureIndices mTextureIndices;
-	long mMaterialIndex, mAdjacencyStartIndex;
+	long mMaterialIndex, mAdjacencyStartIndex;//adjancency games newer (excl) than michonne
 	int mLocalTransformIndex, mBonePaletteIndex;//wd3 and below
 };
 
 struct T3MeshLOD {
 	DCArray<T3MeshBatch> mBatches[2];
+	DCArray<T3MeshBatch> mBatchesM;//michonne
 	BitSetBase<1> mVertexStreams;
 	BoundingBox mBoundingBox;
 	Sphere mBoundingSphere;
 	Flags mFlags;//>=wd4
+	//primitives,batches not in michonne
 	//vertex state index, index into T3MeshData::mVertexStates (buffers)
 	//vertex start,count, atlas width and height only in wd4 or higher
 	long mVertexStateIndex, mNumPrimitives, mNumBatches, mVertexStart, mVertexCount, mTextureAtlasWidth, mTextureAtlasHeight;
@@ -697,6 +702,7 @@ struct T3MaterialRequirements {
 	BitSet<T3MaterialChannelType, 46, 0> mChannels;
 	BitSetBase<3> mInputs;//>=wd4
 	BitSetBase<2> mInputs2;//batman>=
+	BitSetBase<1> mInputs3;//michonne
 };
 
 struct T3MeshEffectPreloadDynamicFeatures {
@@ -1058,6 +1064,7 @@ struct D3DMesh {
 	T3MeshData mMeshData;
 	DCArray<HandleUncached*> mInternalResources;
 	ToolProps mToolProps;
+	//below is only in games newer than WD michonne (exclusive)
 	float mScaleSomething;//no idea, in games older and including batman2
 	float mLightmapGlobalScale;
 	long mLightmapTexCoordVersion;

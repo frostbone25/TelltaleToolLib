@@ -1,11 +1,13 @@
 TODO LIST:
 
-- D3DMESH- after internal resources + tool data check
+- D3DMESH - below michonne
 - META VERSIONING - GO THROUGH ALL TYPES AND ADD MEMBER DESC VERSIONS
 
 - PROP PARENT SEARCHING. ITS NOT IMPLEMENTED! PROBABALY WONT BE
 - .BUNDLE .PROBE ARE NOT SUPPORTED
 notes:
+when making telltale ui editor, remember batfix for d3dmesh, get members using
+wd4 set key then set back
 metastream deletes the datastream passed on open
 can only write MSV6&5, implement more in future (maybe check EXEs)
 TTCZ/TTCE are datastreamcontainers (see DataStreamContainerParams):

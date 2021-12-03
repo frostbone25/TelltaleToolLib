@@ -495,7 +495,7 @@ void _anm_chk() {
 #include "../Types/D3DMesh.h"
 
 void _testing_func() {
-	TelltaleToolLib_Initialize("WD3");
+	TelltaleToolLib_Initialize("MICHONNE");
 
 	TelltaleToolLib_SetGlobalHashDatabaseFromStream(
 		_OpenDataStreamFromDisc("c:/users/lucas/desktop/My Stuff/Projects/HashDB Creator/LibTelltale DB/LibTelltale.HashDB",
