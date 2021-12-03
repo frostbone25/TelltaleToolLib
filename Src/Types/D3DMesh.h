@@ -1171,7 +1171,7 @@ struct D3DMesh {
 		MetaOpResult r = Meta::MetaOperation_SerializeAsync(pObj, pObjDescription, pContextDescription, pUserData);
 		if (r == eMetaOp_Succeed) {
 			if (batfix && mesh->mVersion != 46) {
-				TelltaleToolLib_RaiseError("Cannot serialize D3DMesh: Only BAT Season1's latest PC release is supported",ErrorSeverity::ERR);
+				TelltaleToolLib_RaiseError("Cannot serialize D3DMesh: Only BAT Season 1's latest PC release is supported",ErrorSeverity::ERR);
 				ENDBATFIX();
 				return eMetaOp_Fail;
 			}
