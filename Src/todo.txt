@@ -1,24 +1,13 @@
-TODO LIST:
+TODO AND INFO:
 
 - D3DMESH - below michonne
 - META VERSIONING - GO THROUGH ALL TYPES AND ADD MEMBER DESC VERSIONS
 
 - PROP PARENT SEARCHING. ITS NOT IMPLEMENTED! PROBABALY WONT BE
 - .BUNDLE .PROBE ARE NOT SUPPORTED
-notes:
+
 when making telltale ui editor, remember batfix for d3dmesh, get members using
 wd4 set key then set back
-metastream deletes the datastream passed on open
-can only write MSV6&5, implement more in future (maybe check EXEs)
-TTCZ/TTCE are datastreamcontainers (see DataStreamContainerParams):
-mpDstStream     Ptr<DataStream>
-mpSrcStream     Ptr<DataStream> //telltale ptr type, just a normal ptr will do 
-mDstOffset      dq
-mWindowSize     dd
-mbCompress      db
-mbEncrypt       db
-mCompressionLibrary dd ? ; enum Compression::Library
-//db byte dd int32 dq int64 (quad)
 
 THINGS THAT DONT WORK WITH THE LIB
 - VERSION CRCS! HOW THE FUCK? DO? YOU? CALCULATE THEM?! NOTE if i get them to work, scene agent info wont work since i skipped the mpAgent member

@@ -492,10 +492,10 @@ void _anm_chk() {
 	}
 }
 
-#include "../Types/D3DMesh.h"
+#include "../Types/Chore.h"
 
 void _testing_func() {
-	TelltaleToolLib_Initialize("MICHONNE");
+	TelltaleToolLib_Initialize("FABLES");
 
 	TelltaleToolLib_SetGlobalHashDatabaseFromStream(
 		_OpenDataStreamFromDisc("c:/users/lucas/desktop/My Stuff/Projects/HashDB Creator/LibTelltale DB/LibTelltale.HashDB",
@@ -503,14 +503,14 @@ void _testing_func() {
 
 	DataStream* stream1 = _OpenDataStreamFromDisc("c:/users/lucas/desktop/out.bin", WRITE);
 
-	DataStream* stream = OpenDataStreamFromDisc("c:/users/lucas/desktop/in.d3dmesh", READ);
+	DataStream* stream = OpenDataStreamFromDisc("c:/users/lucas/desktop/in.chore", READ);
 	{
 		MetaStream meta{};
 		meta.Open(stream, MetaStreamMode::eMetaStream_Read, { 0 });
-		D3DMesh mesh;
-		MetaOpResult r = PerformMetaSerializeAsync(&meta, &mesh);
+		Chore o;
+		MetaOpResult r = PerformMetaSerializeAsync(&meta, &o);
 		meta.SwitchToMode(MetaStreamMode::eMetaStream_Write,stream1);
-		r = PerformMetaSerializeAsync(&meta, &mesh);
+		r = PerformMetaSerializeAsync(&meta, &o);
 		printf("%d\n", r);
 		printf("-done\n");
 	}
