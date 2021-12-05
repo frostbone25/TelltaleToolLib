@@ -1445,11 +1445,14 @@ MetaOpResult Meta::MetaOperation_SerializeAsync(void* pObj, MetaClassDescription
 		}
 		if (!disable && member->mSkipVersion != -1)
 			disable = sSetKeyIndex == member->mSkipVersion;
-		if (disable)continue;
+		if (disable) {
+			//printf("DISABLE %s::%s\n", pObjDescription->mpTypeInfoName, member->mpName);
+			continue;
+		}
 		if (!member)break;
 		if (desc.mbBlocked)
 			stream->BeginBlock();
-		//printf("%s\n", member->mpName);
+		//printf("%s::%s\n", pObjDescription->mpTypeInfoName,member->mpName);
 		MetaOperation serasync = member->mpMemberDesc->GetOperationSpecialization(74);
 		MetaOpResult r;
 		if (serasync) {

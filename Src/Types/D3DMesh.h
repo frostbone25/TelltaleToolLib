@@ -700,6 +700,7 @@ struct T3MeshLocalTransformEntry {
 struct T3MaterialRequirements {
 	BitSetBase<1> mPasses;
 	BitSet<T3MaterialChannelType, 46, 0> mChannels;
+	BitSet<T3MaterialChannelType, 32, 0> mChannels2;//michonne>=
 	BitSetBase<3> mInputs;//>=wd4
 	BitSetBase<2> mInputs2;//batman>=
 	BitSetBase<1> mInputs3;//michonne
@@ -839,6 +840,7 @@ struct T3GFXVertexState {
 
 	static METAOP_FUNC_IMPL__(SerializeAsync) {
 		CAST_METAOP(T3GFXVertexState, state);
+		int mich = TelltaleToolLib_GetGameKeyIndex("MICHONNE");
 		MetaOpResult r = Meta::MetaOperation_SerializeAsync(pObj, pObjDescription, pContextDescription, pUserData);
 		if (r == eMetaOp_Succeed) {
 			if (state->mAttributeCount > 32) {
@@ -865,19 +867,40 @@ struct T3GFXVertexState {
 						return r;
 				}
 			}
-			for (int i = 0; i < state->mIndexBufferCount; i++) {
-				if (meta->IsRead()) {
-					if (state->mpIndexBuffer[i])
-						delete state->mpIndexBuffer[i];
-					state->mpIndexBuffer[i] = new T3GFXBuffer;
+			if (sSetKeyIndex > mich) {
+				for (int i = 0; i < state->mIndexBufferCount; i++) {
+					if (meta->IsRead()) {
+						if (state->mpIndexBuffer[i])
+							delete state->mpIndexBuffer[i];
+						state->mpIndexBuffer[i] = new T3GFXBuffer;
+					}
+					if (!state->mpIndexBuffer[i]) {
+						TelltaleToolLib_RaiseError("Could not find or create index buffers", ErrorSeverity::ERR);
+						return eMetaOp_OutOfMemory;
+					}
+					r = PerformMetaSerializeAsync<T3GFXBuffer>(meta, state->mpIndexBuffer[i]);
+					if (r != eMetaOp_Succeed)
+						return r;
 				}
-				if (!state->mpIndexBuffer[i]) {
-					TelltaleToolLib_RaiseError("Could not find or create index buffers", ErrorSeverity::ERR);
-					return eMetaOp_OutOfMemory;
+			}
+			else{
+				state->mIndexBufferCount = 1;
+				bool hasIndexBuffer = state->mpIndexBuffer[0] != NULL;
+				meta->serialize_bool(&hasIndexBuffer);
+				if (hasIndexBuffer) {
+					if (meta->IsRead()) {
+						if (state->mpIndexBuffer[0])
+							delete state->mpIndexBuffer[0];
+						state->mpIndexBuffer[0] = new T3GFXBuffer;
+					}
+					else {
+						if (!state->mpIndexBuffer[0])
+							state->mpIndexBuffer[0] = new T3GFXBuffer;
+					}
+					r = PerformMetaSerializeAsync<T3GFXBuffer>(meta, state->mpIndexBuffer[0]);
+					if (r != eMetaOp_Succeed)
+						return r;
 				}
-				r = PerformMetaSerializeAsync<T3GFXBuffer>(meta, state->mpIndexBuffer[i]);
-				if (r != eMetaOp_Succeed)
-					return r;
 			}
 			for (int i = 0; i < state->mVertexBufferCount; i++) {
 				if (meta->IsRead()) {
@@ -937,7 +960,7 @@ struct T3MeshData {
 	T3MeshEndianType mEndianType;
 	Vector3 mPositionScale, mPositionWScale, mPositionOffset;//all three in marvel and above
 	float mLightmapTexelAreaPerSurfaceArea;
-	Symbol mPropertyKeyBase;
+	Symbol mPropertyKeyBase;//all keys in internal resources concat onto this crc (crc with this as the start CRC64). very anoying.
 	long mVertexCount;
 	Flags mFlags;
 	DCArray<T3MeshEffectPreload> mMeshPreload;//>=wd4
@@ -1191,6 +1214,7 @@ struct D3DMesh {
 			}
 			if (19 > mesh->mVersion) {
 				//TODO not supported in WDC
+				TelltaleToolLib_RaiseError("Cannot serialize D3DMeshes from games older and including MC: Story Mode (yet..)", ErrorSeverity::ERR);
 				ENDBATFIX();
 				return eMetaOp_Fail;
 			}
