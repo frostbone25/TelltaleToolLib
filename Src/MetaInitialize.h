@@ -45,6 +45,12 @@ meta_##name_.mpTypeInfoExternalName = typeid(Ty).name();
 
 #define PARENT_OFFSET(parent, child) (char*)(parent*)(child*)0x100 - (char*)(child*)0x100
 
+#define MKNAME(_var, _str) if(_var.mpTypeInfoName && _var.mbNameIsHeapAllocated){free((void*)##_var##.mpTypeInfoName);}\
+_var.mpTypeInfoName = _str;\
+_var.mbNameIsHeapAllocated = false;\
+_var.mHash = CRC64_CaseInsensitive(0, _str);\
+
+
 #define DEFINESARRAY(type,count) DEFINET(sarray_##type##_##count##, SArray<type SEP count>);\
 meta_sarray_##type##_##count##.Initialize(typeid(SArray<type SEP count>));\
 METAOP_CUSTOM(sarray_##type##_##count, eMetaOpSerializeAsync, SArray<type SEP count>::MetaOperation_SerializeAsync);\
@@ -290,7 +296,10 @@ meta_Handle##name_##.mpFirstMember = &meta_Handle##name_##_handlebase;\
 METAOP_CUSTOM(Handle##name_,eMetaOpSerializeAsync, Handle<Ty>::MetaOperation_SerializeAsync);\
 meta_Handle##name_##.InstallSpecializedMetaOperation(&meta_Handle##name_##_eMetaOpSerializeAsync);\
 meta_Handle##name_##.Insert();\
-DEFINEHANDLELOCK(name_,Ty);
+DEFINEHANDLELOCK(name_,Ty);\
+DEFINEDCARRAY2(Handle<Ty>,meta_Handle##name_);\
+MKNAME(meta_Handle##name_, "Handle<" #Ty ">");\
+MKNAME(meta_DCArray_##meta_Handle##name_, "DCArray<Handle<" #Ty ">>");\
 
 #define SERIALIZER(name,_Ty) \
 METAOP_CUSTOM(name, eMetaOpSerializeAsync, _Ty##::MetaOperation_SerializeAsync);\
@@ -307,7 +316,10 @@ meta_HandleLock##name_##_handlebase.mFlags |= 0x10;\
 meta_HandleLock##name_##.mpFirstMember = &meta_HandleLock##name_##_handlebase;\
 METAOP_CUSTOM(HandleLock##name_,eMetaOpSerializeAsync, HandleLock<Ty>::MetaOperation_SerializeAsync);\
 meta_HandleLock##name_##.InstallSpecializedMetaOperation(&meta_HandleLock##name_##_eMetaOpSerializeAsync);\
-meta_HandleLock##name_##.Insert();
+meta_HandleLock##name_##.Insert();\
+MKNAME(meta_HandleLock##name_, "HandleLock<" #Ty ">");\
+DEFINEDCARRAY2(HandleLock<Ty>,meta_HandleLock##name_);\
+MKNAME(meta_DCArray_##meta_HandleLock##name_, "DCArray<HandleLock<" #Ty ">>");
 
 #define DEFINEOP(name, opName,fid,fun)static MetaOperationDescription meta_##name##_##opName; meta_##name##_##opName.id = fid;\
 meta_##name##_##opName.mpOpFn = fun;
@@ -771,6 +783,15 @@ namespace MetaInit {
 			DEFINEDCARRAY(Symbol);
 			DEFINEDCARRAY(bool);
 			DEFINEDCARRAY(String);
+			MKNAME(meta_sarray_u32_3, "SArray<unsigned int,3>");
+			MKNAME(meta_sarray_i32_4, "SArray<int,4>");
+			MKNAME(meta_sarray_i32_3, "SArray<int,3>");
+			MKNAME(meta_sarray_float_3, "SArray<float,3>");
+			MKNAME(meta_sarray_float_9, "SArray<float,9>");
+			MKNAME(meta_DCArray_float, "DCArray<float>");
+			MKNAME(meta_DCArray_String, "DCArray<String>");
+			MKNAME(meta_DCArray_bool, "DCArray<bool>");
+			MKNAME(meta_sarray_rangefloat_3, "SArray<TRange<float>,3>");
 			if (meta_DCArray_String.mbNameIsHeapAllocated) {
 				free((void*)meta_DCArray_String.mpTypeInfoName);
 				meta_DCArray_String.mbNameIsHeapAllocated = false;
@@ -786,6 +807,15 @@ namespace MetaInit {
 			DEFINELIST(String);
 			DEFINEDEQUE(i32);
 			DEFINEDEQUE(String);
+			MKNAME(meta_Set_i32, "Set<int,less<int>>");
+			MKNAME(meta_Set_String, "Set<String,Less<String>>");
+			MKNAME(meta_Set_u32, "Set<uint,less<uint>>");
+			MKNAME(meta_Set_u64, "Set<uint64,less<uint64>>");
+			MKNAME(meta_List_Symbol, "List<Symbol>");
+			MKNAME(meta_List_i32, "List<int>");
+			MKNAME(meta_List_String, "List<String>");
+			MKNAME(meta_Deque_i32, "Deque<int>");
+			MKNAME(meta_Deque_String, "Deque<String>");
 			DEFINEMAP(Symbol, String, Symbol::CompareCRC);
 			DEFINEMAP(Symbol, Symbol, Symbol::CompareCRC);
 			DEFINEMAP(Symbol, float, Symbol::CompareCRC);
@@ -800,6 +830,20 @@ namespace MetaInit {
 			DEFINEMAP2(int, Map<int SEP int SEP std::less<int>>, int, mapintint, std::less<int>);
 			DEFINEMAP(String, String, std::less<String>);
 			DEFINEMAP(int, bool, std::less<int>);
+			MKNAME(meta_Map_Symbol_String, "Map<Symbol,String,Less<Symbol>>");
+			MKNAME(meta_Map_Symbol_Symbol, "Map<Symbol,String,Less<Symbol>>");
+			MKNAME(meta_Map_Symbol_float , "Map<Symbol,String,Less<Symbol>>");
+			MKNAME(meta_Map_Symbol_int   , "Map<Symbol,int,Less<Symbol>>");
+			MKNAME(meta_Map_String_int   , "Map<String,int,Less<String>>");
+			MKNAME(meta_Map_int_Symbol, "Map<int,Symbol,Less<int>>");
+			MKNAME(meta_Map_int_int, "Map<int,int,Less<int>>");
+			MKNAME(meta_Map_int_float, "Map<int,float,Less<int>>");
+			MKNAME(meta_Map_Symbol_setsymbol, "Map<Symbol,Set<Symbol,less<Symbol>>,Less<Symbol>>");
+			MKNAME(meta_Map_String_dcarraystring, "Map<String,DCArray<String>,Less<String>>");
+			MKNAME(meta_Map_int_bool, "Map<int,bool,less<int>>");
+			MKNAME(meta_Map_String_String, "Map<String,String,Less<String>>");
+			MKNAME(meta_Map_int_mapintint, "Map<int,Map<int,int,less<int>>,less<int>>");
+			MKNAME(meta_Map_int_mapintmapsymbolfloat, "Map<int,Map<int,Map<Symbol,float,less<Symbol>>,less<int>>,less<int>>");
 			DEFINESET_(PropertySet::KeyInfo, keyinfo);
 			DEFINET(prop, PropertySet);
 			meta_prop.Initialize(typeid(PropertySet));
@@ -994,6 +1038,7 @@ namespace MetaInit {
 			meta_amape.Insert();
 
 			DEFINEMAP2(String, AgentMap::AgentMapEntry, str, amape, std::less<String>);
+			MKNAME(meta_Map_str_amape, "Map<String,AgentMap::AgentMapEntry,less<String>>");
 
 			DEFINET(amap, AgentMap);
 			meta_amap.Initialize(typeid(AgentMap));
@@ -1027,7 +1072,7 @@ namespace MetaInit {
 			meta_acol.Insert();
 
 			DEFINEMAP2(String, SoundBusSystem::BusDescription, str, bd, std::less<String>);//we can define since it doesnt ref the mcd yet
-
+			MKNAME(meta_Map_str_bd, "Map<String,SoundBusSystem::BusDescription,less<String>>");
 			DEFINET(busd, SoundBusSystem::BusDescription);
 			meta_busd.Initialize(typeid(SoundBusSystem::BusDescription));
 			FIRSTMEM(busd, "fVolumedB", fVolumedB, SoundBusSystem::BusDescription, float, 0);
@@ -1494,6 +1539,7 @@ namespace MetaInit {
 			ADD(tmi);
 
 			DEFINEMAP2(Symbol, TransitionMap::TransitionMapInfo, symbol, tmapinfo, Symbol::CompareCRC);
+			MKNAME(meta_Map_symbol_tmapinfo, "Map<Symbol,TransitionMap::TransitionMapInfo,less<Symbol>>");
 
 			DEFINET2(tmap, TransitionMap);
 			EXT(tmap, tmap);
@@ -1842,6 +1888,7 @@ namespace MetaInit {
 			ADD(lr);
 
 			DEFINEMAP(int, LanguageResource, std::less<int>);
+			MKNAME(meta_Map_int_LanguageResource, "Map<int,LanguageResource,less<int>>");
 
 			DEFINET2(langdb, LanguageDatabase);
 			EXT(langdb, langdb);
@@ -1926,6 +1973,7 @@ namespace MetaInit {
 			DEFINEDCARRAY2(ProjectDatabaseIDPair, pdbidp);
 
 			DEFINEMAP2(unsigned int, LanguageRes, uint, langres, std::less<unsigned int>);
+			MKNAME(meta_Map_uint_langres, "Map<unsigned int,LanguageRes,less<unsigned int>>");
 
 			DEFINET2(landb, LanguageDB);
 			EXT(landb, landb);
@@ -2061,6 +2109,9 @@ namespace MetaInit {
 
 			DEFINEDCARRAY(T3Texture);
 			DEFINEDCARRAY2(unsigned int, uint);
+			MKNAME(meta_DCArray_T3Texture, "DCArray<T3Texture>");
+			MKNAME(meta_DCArray_uint, "DCArray<uint>");
+			MKNAME(meta_Map_uint_glyphinf, "Map<uint,Font::GlyphInfo,less<uint>>");
 
 			DEFINET2(font, Font);
 			ADDFLAGS(font, MetaFlag::MetaFlag_RenderResource);
@@ -2176,6 +2227,7 @@ namespace MetaInit {
 			//ADD(walkpath);
 
 			DEFINEMAP(Symbol, bool, Symbol::CompareCRC);
+			MKNAME(meta_Map_Symbol_bool, "Map<Symbol,bool,less<Symbol>>");
 
 			DEFINET2(litem, LogicGroup::LogicItem);
 			FIRSTMEM(litem, "Baseclass_PropertySet", mPropVersion,LogicGroup::LogicItem, prop, 0);
@@ -2190,6 +2242,7 @@ namespace MetaInit {
 
 			DEFINEDCARRAY(LogicGroup);
 			DEFINEMAP2(String, LogicGroup::LogicItem, string, logicitem, std::less<String>);
+			MKNAME(meta_Map_string_logicitem, "Map<String,LogicGroup::LogicItem,less<String>>");
 
 			DEFINET2(lgroup, LogicGroup);
 			FIRSTMEM2(lgroup, mOperator, LogicGroup, long, 0);
@@ -2462,6 +2515,12 @@ namespace MetaInit {
 				TelltaleToolLib_GetGameKeyIndex("MICHONNE");
 			ADD(cres);
 
+			DEFINET2(rsin, ResourceGroupInfo);
+			ADDFLAGS(rsin, MetaFlag::MetaFlag_PlaceInAddPropMenu);
+			FIRSTMEM2(rsin, mColor, ResourceGroupInfo, color, 0);
+			NEXTMEM2(rsin, mPriority, ResourceGroupInfo, long, 0, mColor);
+			ADD(rsin);
+
 			DEFINET2(pkey, PhonemeKey);
 			FIRSTMEM2(pkey, mPhoneme, PhonemeKey, symbol, 0);
 			NEXTMEM2(pkey, mFadeInTime, PhonemeKey, float, 0, mPhoneme);
@@ -2685,6 +2744,21 @@ namespace MetaInit {
 			SERIALIZER(notec, NoteCollection);
 			ADD(notec);
 
+			DEFINET2(navcamm, NavCam::EnumMode);
+			FIRSTMEM1(navcamm, "Baseclass_EnumBase", ALAIS, mVal,
+				NavCam::EnumMode, enumbase, 0x10);
+			NEXTMEM2(navcamm, mVal, NavCam::EnumMode, long, 0, ALAIS);
+			FIRSTENUM2(navcamm, mVal, "eNone", r, 1, 0);
+			NEXTENUM2(navcamm, mVal, "eLookAt", f, 2, 0, r);
+			NEXTENUM2(navcamm, mVal, "eOrbit", a, 3, 0, f);
+			NEXTENUM2(navcamm, mVal, "eAnimation_Track", b, 4, 0, a);
+			NEXTENUM2(navcamm, mVal, "eAnimation_Time", c, 5, 0, b);
+			NEXTENUM2(navcamm, mVal, "eAnimation_Pos_ProceduralLookAt", d, 6, 0, c);
+			NEXTENUM2(navcamm, mVal, "eScenePosition", e, 7, 0, d);
+			NEXTENUM2(navcamm, mVal, "eDynamicConversationCamera", g, 8, 0, e);
+			ADDFLAGS(navcamm, 0x8008);
+			ADD(navcamm);
+
 			DEFINET2(testt, DlgNodeCriteria::EnumTestT);
 			FIRSTMEM1(testt, "Baseclass_EnumBase", ALAIS, mVal,
 				DlgNodeCriteria::EnumTestT, enumbase, 0x10);
@@ -2748,6 +2822,7 @@ namespace MetaInit {
 			ADD(line);
 
 			DEFINEMAP(int, DlgLine, std::less<int>);
+			MKNAME(meta_Map_int_DlgLine, "Map<int,DlgLine,less<int>>");
 
 			DEFINET2(lcol, DlgLineCollection);
 			FIRSTMEM1(lcol, "Baseclass_UID::Generator", ALAISGEN, miNextUniqueID,
@@ -3313,6 +3388,9 @@ namespace MetaInit {
 			DEFINEKEYFRAMEDVALUE(int, int, long);
 			DEFINEMAP2(float, KeyframedValue<int>, float, kfvi, std::less<float>);
 			DEFINEMAP2(float, Map<float SEP KeyframedValue<int>>, float, map_f_kfv, std::less<float>);
+			MKNAME(meta_kfv_int, "KeyframedValue<int>");
+			MKNAME(meta_Map_float_kfvi, "Map<float,KeyframedValue<int>,less<float>>");
+			MKNAME(meta_Map_float_map_f_kfv, "Map<float,Map<float,KeyframedValue<int>,less<float>>,less<float>>");
 
 			DEFINET2(bg, BlendGraph);
 			EXT(bg, bgh);

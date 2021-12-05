@@ -90,4 +90,26 @@ struct LocationInfo {
 	Transform mInitialLocalTransform;
 };
 
+struct ResourceGroupInfo {
+	Color mColor;
+	long mPriority;
+};
+
+namespace NavCam {
+	enum Mode : i32 {
+		eNone = 1,
+		eLookAt = 2,
+		eOrbit = 3,
+		eAnimation_Track = 4,
+		eAnimation_Time = 5,
+		eAnimation_Pos_ProceduralLookAt = 6,
+		eScenePosition = 7,
+		eDynamicConversationCamera = 8,
+	};
+
+	struct EnumMode : EnumBase {
+		Mode mVal;
+	};
+}
+
 #endif

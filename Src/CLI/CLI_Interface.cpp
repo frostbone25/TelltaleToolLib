@@ -453,7 +453,7 @@ struct _LeakSlave {
 };
 
 void _anm_chk() {
-	TelltaleToolLib_Initialize("WD3");
+	TelltaleToolLib_Initialize("MICHONNE");
 
 	TelltaleToolLib_SetGlobalHashDatabaseFromStream(
 		_OpenDataStreamFromDisc("c:/users/lucas/desktop/My Stuff/Projects/HashDB Creator/LibTelltale DB/LibTelltale.HashDB",
@@ -461,25 +461,25 @@ void _anm_chk() {
 
 	struct dirent* dp;
 	static char dir1[1000];
-	DIR* dir = opendir("D:/games/telltale archives/the walking dead - new frontier");
-	const char* s = "D:/games/telltale archives/the walking dead - new frontier/";//TODO check games
+	DIR* dir = opendir("D:/games/telltale archives/the walking dead - michonne");
+	const char* s = "D:/games/telltale archives/the walking dead - michonne/";//TODO check games
 	int l = strlen(s);
 	memcpy(dir1, s, l);
 	std::string f;
 	static u64 array[0x1000];
 	while (dp = readdir(dir)) {
-		if (dp->d_type == DT_REG && dp->d_name[dp->d_namlen-1] == 'h' && dp->d_name[dp->d_namlen - 2] == 's'
-			&& dp->d_name[dp->d_namlen - 3] == 'e' && dp->d_name[dp->d_namlen - 4] == 'm') {
+		if (dp->d_type == DT_REG && dp->d_name[dp->d_namlen-1] == 'p' && dp->d_name[dp->d_namlen - 2] == 'o'
+			&& dp->d_name[dp->d_namlen - 3] == 'r') {
 			MetaStream meta{};
+			PropertySet p{};
 			memcpy(dir1 + l, dp->d_name, dp->d_namlen + 1);
 			meta.Open(_OpenDataStreamFromDisc(dir1, DataStreamMode::eMode_Read), MetaStreamMode::eMetaStream_Read, { 0 });
-			for (auto v : meta.mVersionInfo) {
-				if (v.mTypeSymbolCrc == 0x825EC630BEE9EA3E) {
-					printf("FOUND %s\n", dir1);
-					return;
-				}
+			MetaOpResult r = PerformMetaSerializeAsync(&meta, &p);
+			if (r != eMetaOp_Succeed) {
+				printf("bad: %s\n", dir1);
+				break;
 			}
-			printf("- not %s\n",dir1);
+			printf("- %s\n",dir1);
 		}
 	}
 	closedir(dir);
@@ -521,8 +521,8 @@ int main(int argn, char* argv[]) {
 	_LeakSlave _s;
 
 	{
-		_testing_func();
-		//_anm_chk();
+		//_testing_func();
+		_anm_chk();
 	}
 
 	return 0;
